@@ -17,6 +17,15 @@ class DNestModel {
         // Metropolis-Hastings proposals
         double perturb(DNest4::RNG& rng);
 
+        // Likelihood function
+        double log_likelihood() const;
+
+        // Print to stream
+        void print(std::ostream& out) const;
+
+        // Return string with column information
+        std::string description() const;
+
     private:
 
         SkyModel* sky_model;
