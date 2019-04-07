@@ -1,0 +1,45 @@
+#ifndef BSC__GAINS_H_
+#define BSC__GAINS_H_
+
+#include "Gain.h"
+#include "Data.h"
+
+
+class Gains {
+    public:
+        explicit Gains(Data data);
+        // Setting hyperparameters fo the amplitude and phase GP for all gains
+        void set_hp_amp(std::valarray<double> params);
+        void set_hp_phase(std::valarray<double> params);
+        // Setting latent variables for all gains
+        void set_v_amp(std::valarray<double> params);
+        void set_v_phase(std::valarray<double> params);
+        // Generates latent variables from N(0, 1) for all gains
+        void from_prior_v_amp();
+        void from_prior_v_phase();
+        int size() const;
+        // Getting i-th gain
+        Gain* operator[](int i);
+
+        // Calculate covariance matrixes using current hyperparameters for all gains
+        void calculate_C_amp();
+        void calculate_C_phase();
+        // Calculate rotation matrixes using current covariance matrixes for all gains
+        void calculate_L_amp();
+        void calculate_L_phase();
+        // Calculate amplitudes and phases of all gains using current rotation matrixes and latent variables
+        void calculate_amplitudes();
+        void calculate_phases();
+        // Print for all individual antennas gains
+        void print_amplitudes(std::ostream& out) const;
+        void print_phases(std::ostream& out) const;
+        void print_times(std::ostream &out) const;
+        void print_hp(std::ostream &out) const;
+        void print_v(std::ostream &out) const;
+        void print_C(std::ostream &out) const;
+        void print_L(std::ostream &out) const;
+    private:
+        std::vector<Gain*> gains;
+};
+
+#endif //BSC__GAINS_H_
