@@ -3,6 +3,7 @@
 
 #include <vector>
 #include "Component.h"
+#include "RNG.h"
 
 
 class SkyModel {
@@ -15,9 +16,15 @@ class SkyModel {
         std::valarray<double> get_mu_imag() const { return mu_imag; }
         size_t size() const;
         void print(std::ostream& out) const;
+        void from_prior(DNest4::RNG& rng);
+        // MH proposal for SkyModel. Returns logH
+        double perturb(DNest4::RNG& rng);
+        int get_n_components();
+        std::vector<int> get_components_sizes();
 
     private:
         std::vector<Component*> components_;
+        std::vector<int> components_sizes_;
         // SkyModel prediction
         std::valarray<double> mu_real;
         std::valarray<double> mu_imag;

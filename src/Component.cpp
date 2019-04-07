@@ -94,3 +94,97 @@ void CGComponent::print(std::ostream &out) const
 {
     out << "x=" << dx_ << ", " << "y=" << dy_ << ", " << "flux=" << flux_ << ", "<< "size=" << bmaj_ << "\n";
 }
+
+
+void CGComponent::from_prior(DNest4::RNG &rng) {
+     // Normal diffuse prior for x & y
+     dx_ = 5*rng.randn();
+     dy_ = 5*rng.randn();
+     // Log-normal prior for flux and bmaj
+     flux_ = exp(-7. + 2.5*rng.randn());
+     bmaj_ = exp(-7. + 2.5*rng.randn());
+}
+
+
+double CGComponent::perturb(DNest4::RNG &rng) {
+    double log_H = 0.;
+    // Proposals explore the prior
+    // For normal priors I usually use the hastings factor to do it
+    int which = rng.rand_int(4);
+    if(which%4 == 0)
+    {
+        log_H -= -0.5*pow(dx_/5, 2);
+        dx_ += 5*rng.randh();
+        log_H += -0.5*pow(dx_/5, 2);
+
+        // Example of the proposal that keeps components sorted
+        //double old = params[which];
+        //log_H -= -0.5*pow(params[which]/5, 2);
+        //
+        //do {
+        //    double perturbation = 5*rng.randh();
+        //    params[which] = old + perturbation;
+        //    old = params[which] - perturbation;
+        //} while (!are_sorted());
+        //log_H += -0.5*pow(params[which]/5, 2);
+    }
+    else if(which%4 == 1)
+    {
+        log_H -= -0.5*pow(dy_/5, 2);
+        dy_ += 5*rng.randh();
+        log_H += -0.5*pow(dy_/5, 2);
+    }
+    else if(which%4 == 2)
+    {
+        //// Usual log-uniform prior trick
+        //params[which] = log(params[which]);
+        //params[which] += 8.*rng.randh();
+        //wrap(params[which], -7., 1.);
+        //params[which] = exp(params[which]);
+
+        double logflux = log(flux_);
+        log_H -= -0.5*pow((logflux+7.0)/2.5, 2);
+        logflux += 2.5*rng.randh();
+        log_H += -0.5*pow((logflux+7.0)/2.5, 2);
+        flux_ = exp(logflux);
+    }
+    else
+    {
+        //// Usual log-uniform prior trick
+        //params[which] = log(params[which]);
+        //params[which] += 12.*rng.randh();
+        //wrap(params[which], -10., 2.);
+        //params[which] = exp(params[which]);
+
+        double logbmaj = log(bmaj_);
+        log_H -= -0.5*pow((logbmaj+7.0)/2.5, 2);
+        bmaj_ += 2.5*rng.randh();
+        log_H += -0.5*pow((logbmaj+7.0)/2.5, 2);
+        bmaj_ = exp(logbmaj);
+    }
+
+    //// This naively skip unsorted perturbations
+    //if (!are_sorted())
+    //    return -1E300;
+    //    // Pre-reject
+    //else if(rng.rand() >= exp(log_H))
+    //    return -1E300;
+    //
+    //else
+    //    log_H = 0.0;
+
+    // Without sorting
+    // Pre-reject
+     if(rng.rand() >= exp(log_H))
+          return -1E300;
+     else
+          log_H = 0.0;
+
+
+    //// Calculate model visibilities again if Gaussian parameters changed
+    //// Here we can save calculation
+    //if(which%4 == 0 || which%4 == 1 || which%4 == 2 || which%4 == 3)
+    //    calculate_mu();
+
+    return log_H;
+}

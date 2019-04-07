@@ -4,6 +4,7 @@
 #include <vector>
 #include <Eigen/Core>
 #include <valarray>
+#include "RNG.h"
 
 
 using Eigen::MatrixXd;
@@ -29,9 +30,14 @@ class Gain {
         // Set latent variables of amplitude and phase GP
         void set_v_amp(std::valarray<double> params);
         void set_v_phase(std::valarray<double> params);
+        // Generate from prior HP for amplitude and phase
+        void from_prior_hp_amp(DNest4::RNG& rng);
+        void from_prior_hp_phase(DNest4::RNG& rng);
         // Generate from prior latent variables of amplitude and phase GP
         void from_prior_v_amp();
         void from_prior_v_phase();
+        // MH proposals returning logH
+        double perturb(DNest4::RNG& rng);
         // Calculate covariance matrixes using current hyperparameters of the gain amplitude and phase
         void calculate_C_amp();
         void calculate_C_phase();

@@ -14,6 +14,9 @@ class Gains {
         // Setting latent variables for all gains
         void set_v_amp(std::valarray<double> params);
         void set_v_phase(std::valarray<double> params);
+        // Generate HP for amplitudes and phases for all gains
+        void from_prior_hp_amp(DNest4::RNG& rng);
+        void from_prior_hp_phase(DNest4::RNG& rng);
         // Generates latent variables from N(0, 1) for all gains
         void from_prior_v_amp();
         void from_prior_v_phase();

@@ -4,6 +4,7 @@
 #include <valarray>
 #include <vector>
 #include <complex>
+#include "RNG.h"
 
 const double mas_to_rad = 4.84813681109536e-09;
 const double PI = 3.1415926;
@@ -22,6 +23,8 @@ class Component {
             return mu_imag;
         }
         virtual void print(std::ostream& out) const = 0;
+        virtual void from_prior(DNest4::RNG& rng) = 0;
+        virtual double perturb(DNest4::RNG& rng) = 0;
 
     protected:
         // SkyModel prediction
@@ -40,6 +43,8 @@ class DFComponent : public  Component {
             return 3;
         }
         void print(std::ostream& out) const override;
+        void from_prior(DNest4::RNG& rng) override {}
+        double perturb(DNest4::RNG& rng) override { return 0.0; }
 
     private:
         // Parameters of a single Delta Function
@@ -58,6 +63,8 @@ class EGComponent : public Component {
             return 6;
         }
         void print(std::ostream& out) const override;
+        void from_prior(DNest4::RNG& rng) override {}
+        double perturb(DNest4::RNG& rng) override { return 0.0; }
 
     private:
         // Parameters of a single Gaussian
@@ -75,8 +82,10 @@ class CGComponent : public EGComponent {
             return 4;
         }
         void print(std::ostream& out) const override;
+        void from_prior(DNest4::RNG& rng) override;
+        double perturb(DNest4::RNG& rng) override;
 
-private:
+    private:
         // Parameters of a single Gaussian
         double dx_, dy_, flux_, bmaj_;
 };

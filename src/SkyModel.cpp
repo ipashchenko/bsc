@@ -6,6 +6,7 @@ SkyModel::SkyModel() = default;
 
 void SkyModel::add_component(Component *component) {
     components_.push_back(component);
+    components_sizes_.push_back(component->size());
 }
 
 void SkyModel::ft(const std::valarray<double>& u, const std::valarray<double>& v) {
@@ -44,9 +45,35 @@ size_t SkyModel::size() const {
     return cursize;
 }
 
+
 void SkyModel::print(std::ostream &out) const
 {
     for (auto comp: components_) {
         comp->print(out);
     }
 }
+
+
+void SkyModel::from_prior(DNest4::RNG &rng) {
+    for (auto comp: components_) {
+        comp->from_prior(rng);
+    }
+}
+
+
+double SkyModel::perturb(DNest4::RNG &rng) {
+    int which = rng.rand_int(get_n_components());
+    return components_[which]->perturb(rng);
+}
+
+
+int SkyModel::get_n_components() {
+    return components_.size();
+}
+
+
+std::vector<int> SkyModel::get_components_sizes() {
+    return components_sizes_;
+}
+
+

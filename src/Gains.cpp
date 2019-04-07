@@ -72,6 +72,20 @@ void Gains::from_prior_v_phase() {
 }
 
 
+void Gains::from_prior_hp_amp(DNest4::RNG &rng) {
+    for (auto gain: gains) {
+        gain->from_prior_hp_amp(rng);
+    }
+}
+
+
+void Gains::from_prior_hp_phase(DNest4::RNG &rng) {
+    for (auto gain: gains) {
+        gain->from_prior_hp_phase(rng);
+    }
+}
+
+
 void Gains::calculate_C_amp() {
     for (auto gain: gains) {
         gain->calculate_C_amp();

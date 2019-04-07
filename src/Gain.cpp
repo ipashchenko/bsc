@@ -7,6 +7,7 @@
 #include <valarray>
 #include <set>
 #include <iostream>
+#include "RNG.h"
 
 using Eigen::VectorXd;
 using Eigen::MatrixXd;
@@ -169,6 +170,19 @@ void Gain::from_prior_v_phase() {
 }
 
 
+
+void Gain::from_prior_hp_amp(DNest4::RNG& rng) {
+    amp_amp = exp(-3.0 + 1.0*rng.randn());
+    scale_amp = exp(6.0 + 1.0*rng.randn());
+}
+
+
+void Gain::from_prior_hp_phase(DNest4::RNG& rng) {
+    amp_phase = exp(-3.0 + 1.0*rng.randn());
+    scale_phase = exp(5.0 + 1.0*rng.randn());
+}
+
+
 void Gain::calculate_C_amp() {
     Eigen::MatrixXd sqdist = - 2*times_amp*times_amp.transpose();
     sqdist.rowwise() += times_amp.array().square().transpose().matrix();
@@ -258,6 +272,45 @@ void Gain::print_phases(std::ostream &out) const {
         out << phases[i] << ", ";
     }
     out << std::endl;
+}
+
+
+double Gain::perturb(DNest4::RNG &rng) {
+    double logH = 0.;
+
+    int which = rng.rand_int(4);
+    // Perturb Heperparameters half of time and latent variables - other half
+    // Amplitude GP hyperparameters
+    if(which == 0) {
+        if(rng.rand() <= 0.5)
+        {
+            logH -= -0.5*pow(amp_amp/5, 2);
+            amp_amp += 5*rng.randh();
+            logH += -0.5*pow(amp_amp/5, 2);
+        }
+        else {
+            logH -= -0.5*pow(scale_amp/5, 2);
+            scale_amp += 5*rng.randh();
+            logH += -0.5*pow(scale_amp/5, 2);
+        }
+    }
+    // Phase GP hyperparameters
+    else if(which == 1) {
+        if(rng.rand() <= 0.5)
+        {
+            logH -= -0.5*pow(amp_phase/5, 2);
+            amp_phase += 5*rng.randh();
+            logH += -0.5*pow(amp_phase/5, 2);
+        }
+        else {
+            logH -= -0.5*pow(scale_phase/5, 2);
+            scale_phase += 5*rng.randh();
+            logH += -0.5*pow(scale_phase/5, 2);
+        }
+    }
+    else {
+        // Figure how to calculate logH here using make_random_normal as MV proposal
+    }
 }
 
 
