@@ -1,6 +1,7 @@
 #include <valarray>
 #include <iostream>
 #include "Gain.h"
+#include "DNestModel.h"
 
 
 void check_random() {
@@ -10,7 +11,15 @@ void check_random() {
     }
 }
 
+
+void check_dnestmodel() {
+    DNestModel model = DNestModel();
+    std::cout << "Done" << std::endl;
+}
+
+
 int main() {
-    check_random();
+    //check_random();
+    check_dnestmodel();
     return 0;
 }

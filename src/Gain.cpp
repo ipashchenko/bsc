@@ -278,9 +278,8 @@ void Gain::print_phases(std::ostream &out) const {
 double Gain::perturb(DNest4::RNG &rng) {
     double logH = 0.;
 
-    int which = rng.rand_int(4);
-    // Perturb Heperparameters half of time and latent variables - other half
-    // Amplitude GP hyperparameters
+    int which = rng.rand_int(3);
+    // Amplitude GP - update less often than phase GP
     if(which == 0) {
         if(rng.rand() <= 0.5)
         {
@@ -288,29 +287,40 @@ double Gain::perturb(DNest4::RNG &rng) {
             amp_amp += 5*rng.randh();
             logH += -0.5*pow(amp_amp/5, 2);
         }
-        else {
+        else if (rng.rand() <= 0.5) {
             logH -= -0.5*pow(scale_amp/5, 2);
             scale_amp += 5*rng.randh();
             logH += -0.5*pow(scale_amp/5, 2);
         }
+        else {
+            // Figure how to calculate logH here using make_random_normal as MV proposal
+            logH -= pow(v_amp.sum(), 2);
+            v_amp += 0.5*make_normal_random(size_amp());
+            logH += pow(v_amp.sum(), 2);
+        }
     }
-    // Phase GP hyperparameters
-    else if(which == 1) {
+    // Phase GP
+    else {
         if(rng.rand() <= 0.5)
         {
             logH -= -0.5*pow(amp_phase/5, 2);
             amp_phase += 5*rng.randh();
             logH += -0.5*pow(amp_phase/5, 2);
         }
-        else {
+        else if (rng.rand() <= 0.5) {
             logH -= -0.5*pow(scale_phase/5, 2);
             scale_phase += 5*rng.randh();
             logH += -0.5*pow(scale_phase/5, 2);
         }
+        else {
+            // Figure how to calculate logH here using make_random_normal as MV proposal
+            logH -= pow(v_phase.sum(), 2);
+            v_phase += 0.5*make_normal_random(size_phase());
+            logH += pow(v_phase.sum(), 2);
+        }
     }
-    else {
-        // Figure how to calculate logH here using make_random_normal as MV proposal
-    }
+
+    return logH;
 }
 
 

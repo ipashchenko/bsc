@@ -1,4 +1,5 @@
 #include "DNestModel.h"
+#include "RNG.h"
 
 
 DNestModel::DNestModel() {
@@ -37,8 +38,16 @@ void DNestModel::from_prior(DNest4::RNG &rng) {
 
 
 double DNestModel::perturb(DNest4::RNG &rng) {
-    double log_H = 0.;
-    return log_H;
+    double logH = 0.;
+    // Perturb SkyModel
+    if(rng.rand() <= 0.25) {
+        logH += sky_model->perturb(rng);
+    }
+    // Perturb Gains
+    else {
+        logH += gains->perturb(rng);
+    }
+    return logH;
 }
 
 

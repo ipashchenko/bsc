@@ -2,7 +2,7 @@
 #include <cmath>
 #include <Component.h>
 #include <iostream>
-
+#include "RNG.h"
 
 
 DFComponent::DFComponent() : dx_(0.0), dy_(0.0), flux_(0.0)

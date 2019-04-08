@@ -1,13 +1,16 @@
 cmake_minimum_required(VERSION 3.13)
 project(bsc)
 
-include_directories("src", "eigen", "DNest4/code")
+include_directories("/usr/include/eigen3", "/home/ilya/github/DNest4/code", "src")
+
 
 set(CMAKE_CXX_STANDARD 14)
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3 -fext-numeric-literals")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pthread -std=c++11 -O3 -DNDEBUG -w -DEIGEN_MPL2_ONLY")
 
 set(SOURCE_FILES src/main.cpp src/Component.cpp src/Data.cpp src/Gain.cpp src/Gains.cpp src/SkyModel.cpp src/DNestModel.cpp)
 add_executable(bsc ${SOURCE_FILES})
+
+TARGET_LINK_LIBRARIES(bsc /home/ilya/github/DNest4/code/libdnest4.a)
 
 set(TEST_DIR tests)
 set(TEST_FILES ${TEST_DIR}/simple_test.cpp)

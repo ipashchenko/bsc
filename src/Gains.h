@@ -3,6 +3,7 @@
 
 #include "Gain.h"
 #include "Data.h"
+#include "RNG.h"
 
 
 class Gains {
@@ -20,6 +21,8 @@ class Gains {
         // Generates latent variables from N(0, 1) for all gains
         void from_prior_v_amp();
         void from_prior_v_phase();
+        // MH proposal that returns logH
+        double perturb(DNest4::RNG& rng);
         int size() const;
         // Getting i-th gain
         Gain* operator[](int i);

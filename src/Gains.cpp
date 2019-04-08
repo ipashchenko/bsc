@@ -175,3 +175,11 @@ void Gains::print_L(std::ostream &out) const {
         gain->print_L(out);
     }
 }
+
+
+double Gains::perturb(DNest4::RNG& rng) {
+    double logH = 0;
+    int which = rng.rand_int(gains.size());
+    logH += gains[which]->perturb(rng);
+    return logH;
+}
