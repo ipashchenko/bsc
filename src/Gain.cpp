@@ -170,7 +170,6 @@ void Gain::from_prior_v_phase() {
 }
 
 
-
 void Gain::from_prior_hp_amp(DNest4::RNG& rng) {
     amp_amp = exp(-3.0 + 1.0*rng.randn());
     scale_amp = exp(6.0 + 1.0*rng.randn());
@@ -283,40 +282,46 @@ double Gain::perturb(DNest4::RNG &rng) {
     if(which == 0) {
         if(rng.rand() <= 0.5)
         {
-            logH -= -0.5*pow(amp_amp/5, 2);
-            amp_amp += 5*rng.randh();
-            logH += -0.5*pow(amp_amp/5, 2);
+            double log_amp_amp = log(amp_amp);
+            logH -= -0.5*pow((log_amp_amp+3)/1, 2);
+            log_amp_amp += 1*rng.randh();
+            logH += -0.5*pow((log_amp_amp+3)/1, 2);
+            amp_amp = exp(log_amp_amp);
         }
         else if (rng.rand() <= 0.5) {
-            logH -= -0.5*pow(scale_amp/5, 2);
-            scale_amp += 5*rng.randh();
-            logH += -0.5*pow(scale_amp/5, 2);
+            double log_scale_amp = log(scale_amp);
+            logH -= -0.5*pow((log_scale_amp-6)/1, 2);
+            log_scale_amp += 1*rng.randh();
+            logH += -0.5*pow((log_scale_amp-6)/1, 2);
+            scale_amp = exp(log_scale_amp);
         }
         else {
-            // Figure how to calculate logH here using make_random_normal as MV proposal
-            logH -= pow(v_amp.sum(), 2);
-            v_amp += 0.5*make_normal_random(size_amp());
-            logH += pow(v_amp.sum(), 2);
+            logH -= -0.5*pow(v_amp, 2.0).sum();
+            v_amp += 0.1*make_normal_random(size_amp());
+            logH += -0.5*pow(v_amp, 2.0).sum();
         }
     }
     // Phase GP
     else {
         if(rng.rand() <= 0.5)
         {
-            logH -= -0.5*pow(amp_phase/5, 2);
-            amp_phase += 5*rng.randh();
-            logH += -0.5*pow(amp_phase/5, 2);
+            double log_amp_phase = log(amp_phase);
+            logH -= -0.5*pow((log_amp_phase+3)/1, 2);
+            log_amp_phase += 1*rng.randh();
+            logH += -0.5*pow((log_amp_phase+3)/1, 2);
+            amp_phase = exp(log_amp_phase);
         }
         else if (rng.rand() <= 0.5) {
-            logH -= -0.5*pow(scale_phase/5, 2);
-            scale_phase += 5*rng.randh();
-            logH += -0.5*pow(scale_phase/5, 2);
+            double log_scale_phase = log(scale_phase);
+            logH -= -0.5*pow((log_scale_phase-5)/1, 2);
+            log_scale_phase += 1*rng.randh();
+            logH += -0.5*pow((log_scale_phase-5)/1, 2);
+            scale_phase = exp(log_scale_phase);
         }
         else {
-            // Figure how to calculate logH here using make_random_normal as MV proposal
-            logH -= pow(v_phase.sum(), 2);
-            v_phase += 0.5*make_normal_random(size_phase());
-            logH += pow(v_phase.sum(), 2);
+            logH -= 0.5*pow(v_phase, 2.0).sum();
+            v_phase += 0.1*make_normal_random(size_phase());
+            logH += 0.5*pow(v_phase, 2.0).sum();
         }
     }
 
