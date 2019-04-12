@@ -104,6 +104,7 @@ void DNestModel::calculate_mu() {
     }
 
     // SkyModel modified by gains
+    // This implies g = amp*exp(+1j*phi) and V = amp*exp(+1j*phi) - note "+" sign
     mu_real_full = amp_ant_i*amp_ant_j*(cos(phase_ant_i-phase_ant_j)*sky_model_mu_real-
                                         sin(phase_ant_i-phase_ant_j)*sky_model_mu_imag);
     mu_imag_full = amp_ant_i*amp_ant_j*(cos(phase_ant_i-phase_ant_j)*sky_model_mu_imag+
