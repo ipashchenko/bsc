@@ -62,10 +62,10 @@ class Gain {
         Eigen::VectorXd times_amp;
         Eigen::VectorXd times_phase;
         // Hyperparameters of GP for amplitude and phase time dependence
-        double amp_amp;
-        double amp_phase;
-        double scale_amp;
-        double scale_phase;
+        double logamp_amp;
+        double logamp_phase;
+        double logscale_amp;
+        double logscale_phase;
         // Latent variables ~ N(0, 1)
         std::valarray<double> v_amp;
         std::valarray<double> v_phase;

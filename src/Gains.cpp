@@ -1,3 +1,4 @@
+#include <iostream>
 #include "Gains.h"
 #include "Gain.h"
 
@@ -7,6 +8,7 @@ Gains::Gains(Data data) {
     for (int i=0; i<data.n_antennas(); i++) {
         gains.emplace_back(new Gain(data.get_times_amp(), data.get_times_phase()));
     }
+    std::cout << "Ctor of Gains finished" << std::endl;
 }
 
 
@@ -73,6 +75,7 @@ void Gains::from_prior_v_phase() {
 
 
 void Gains::from_prior_hp_amp(DNest4::RNG &rng) {
+    std::cout << "Generating from prior Gains HP AMP" << std::endl;
     for (auto gain: gains) {
         gain->from_prior_hp_amp(rng);
     }
@@ -181,5 +184,6 @@ double Gains::perturb(DNest4::RNG& rng) {
     double logH = 0;
     int which = rng.rand_int(gains.size());
     logH += gains[which]->perturb(rng);
+    std::cout << "Perturbing gain # " << which << " with logH =" << logH << std::endl;
     return logH;
 }

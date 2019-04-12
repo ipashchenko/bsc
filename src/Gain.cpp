@@ -14,10 +14,10 @@ using Eigen::MatrixXd;
 
 
 Gain::Gain(std::vector<double> new_times_amp, std::vector<double> new_times_phase) :
-    amp_amp(0.1),
-    amp_phase(0.1),
-    scale_amp(300),
-    scale_phase(30)
+    logamp_amp(-2.3),
+    logamp_phase(-2.3),
+    logscale_amp(6.0),
+    logscale_phase(4.0)
 
     {
     // Get unique times of gain amplitudes
@@ -49,10 +49,10 @@ Gain::Gain(std::vector<double> new_times_amp, std::vector<double> new_times_phas
 
 
 Gain::Gain(std::vector<double> new_times) :
-    amp_amp(1),
-    amp_phase(1),
-    scale_amp(1),
-    scale_phase(1)
+    logamp_amp(-2.3),
+    logamp_phase(-2.3),
+    logscale_amp(6.0),
+    logscale_phase(4.0)
 
     {
     // Get unique times of gain amplitude & phase
@@ -98,8 +98,8 @@ void Gain::print_times(std::ostream &out) const
 
 void Gain::print_hp(std::ostream &out) const
 {
-    out << "For amplitude: amplitude = " << amp_amp << ", " << "scale = " << scale_amp << std::endl;
-    out << "For phase: amplitude = " << amp_phase << ", " << "scale = " << scale_phase << std::endl;
+    out << "For amplitude: logamplitude = " << logamp_amp << ", " << "logscale = " << logscale_amp << std::endl;
+    out << "For phase: logamplitude = " << logamp_phase << ", " << "logscale = " << logscale_phase << std::endl;
 
 }
 
@@ -139,14 +139,14 @@ void Gain::print_L(std::ostream &out) const
 
 
 void Gain::set_hp_amp(std::valarray<double> params) {
-    amp_amp = params[0];
-    scale_amp = params[1];
+    logamp_amp = params[0];
+    logscale_amp = params[1];
 }
 
 
 void Gain::set_hp_phase(std::valarray<double> params) {
-    amp_phase = params[0];
-    scale_phase = params[1];
+    logamp_phase = params[0];
+    logscale_phase = params[1];
 }
 
 
@@ -161,24 +161,27 @@ void Gain::set_v_phase(std::valarray<double> params) {
 
 
 void Gain::from_prior_v_amp() {
-    v_amp = make_normal_random(size_amp());
+    //v_amp = make_normal_random(size_amp());
+    v_amp = std::valarray<double> (0.0, size_amp());
 }
 
 
 void Gain::from_prior_v_phase() {
-    v_phase = make_normal_random(size_phase());
+    //v_phase = make_normal_random(size_phase());
+    v_phase = std::valarray<double> (0.0, size_phase());
 }
 
 
 void Gain::from_prior_hp_amp(DNest4::RNG& rng) {
-    amp_amp = exp(-3.0 + 1.0*rng.randn());
-    scale_amp = exp(6.0 + 1.0*rng.randn());
+    std::cout << "Generating from prior Gain HP AMP" << std::endl;
+    logamp_amp = -3.0 + 1.0*rng.randn();
+    logscale_amp = 6.0 + 1.0*rng.randn();
 }
 
 
 void Gain::from_prior_hp_phase(DNest4::RNG& rng) {
-    amp_phase = exp(-3.0 + 1.0*rng.randn());
-    scale_phase = exp(5.0 + 1.0*rng.randn());
+    logamp_phase = -3.0 + 1.0*rng.randn();
+    logscale_phase = 5.0 + 1.0*rng.randn();
 }
 
 
@@ -186,8 +189,8 @@ void Gain::calculate_C_amp() {
     Eigen::MatrixXd sqdist = - 2*times_amp*times_amp.transpose();
     sqdist.rowwise() += times_amp.array().square().transpose().matrix();
     sqdist.colwise() += times_amp.array().square().matrix();
-    sqdist *= (-0.5/(scale_amp*scale_amp));
-    C_amp = amp_amp * sqdist.array().exp();
+    sqdist *= (-0.5/(exp(2.0*logscale_amp)));
+    C_amp = exp(logamp_amp) * sqdist.array().exp();
 }
 
 
@@ -195,8 +198,8 @@ void Gain::calculate_C_phase() {
     Eigen::MatrixXd sqdist = - 2*times_phase*times_phase.transpose();
     sqdist.rowwise() += times_phase.array().square().transpose().matrix();
     sqdist.colwise() += times_phase.array().square().matrix();
-    sqdist *= (-0.5/(scale_phase*scale_phase));
-    C_phase = amp_phase * sqdist.array().exp();
+    sqdist *= (-0.5/(exp(2.0*logscale_phase)));
+    C_phase = exp(logamp_phase) * sqdist.array().exp();
 }
 
 
@@ -282,46 +285,59 @@ double Gain::perturb(DNest4::RNG &rng) {
     if(which == 0) {
         if(rng.rand() <= 0.5)
         {
-            double log_amp_amp = log(amp_amp);
-            logH -= -0.5*pow((log_amp_amp+3)/1, 2);
-            log_amp_amp += 1*rng.randh();
-            logH += -0.5*pow((log_amp_amp+3)/1, 2);
-            amp_amp = exp(log_amp_amp);
+            logH -= -0.5*pow((logamp_amp+3)/1, 2);
+            logamp_amp += 1*rng.randh();
+            logH += -0.5*pow((logamp_amp+3)/1, 2);
+            calculate_C_amp();
+            calculate_L_amp();
+            calculate_amplitudes();
+            std::cout << "Perturbing amp of GP AMP with logH =" << logH << std::endl;
+
         }
         else if (rng.rand() <= 0.5) {
-            double log_scale_amp = log(scale_amp);
-            logH -= -0.5*pow((log_scale_amp-6)/1, 2);
-            log_scale_amp += 1*rng.randh();
-            logH += -0.5*pow((log_scale_amp-6)/1, 2);
-            scale_amp = exp(log_scale_amp);
+            logH -= -0.5*pow((logscale_amp-6)/1, 2);
+            logscale_amp += 1*rng.randh();
+            logH += -0.5*pow((logscale_amp-6)/1, 2);
+            calculate_C_amp();
+            calculate_L_amp();
+            calculate_amplitudes();
+            std::cout << "Perturbing scale of GP AMP with logH =" << logH << std::endl;
         }
         else {
             logH -= -0.5*pow(v_amp, 2.0).sum();
             v_amp += 0.1*make_normal_random(size_amp());
             logH += -0.5*pow(v_amp, 2.0).sum();
+            calculate_amplitudes();
+            std::cout << "Perturbing v of GP AMP with logH =" << logH << std::endl;
         }
     }
     // Phase GP
     else {
         if(rng.rand() <= 0.5)
         {
-            double log_amp_phase = log(amp_phase);
-            logH -= -0.5*pow((log_amp_phase+3)/1, 2);
-            log_amp_phase += 1*rng.randh();
-            logH += -0.5*pow((log_amp_phase+3)/1, 2);
-            amp_phase = exp(log_amp_phase);
+            logH -= -0.5*pow((logamp_phase+3.0)/1.0, 2.0);
+            logamp_phase += 1*rng.randh();
+            logH += -0.5*pow((logamp_phase+3.0)/1.0, 2.0);
+            calculate_C_phase();
+            calculate_L_phase();
+            calculate_phases();
+            std::cout << "Perturbing amp of GP AMP with logH =" << logH << std::endl;
         }
         else if (rng.rand() <= 0.5) {
-            double log_scale_phase = log(scale_phase);
-            logH -= -0.5*pow((log_scale_phase-5)/1, 2);
-            log_scale_phase += 1*rng.randh();
-            logH += -0.5*pow((log_scale_phase-5)/1, 2);
-            scale_phase = exp(log_scale_phase);
+            logH -= -0.5*pow((logscale_phase-5.0)/1.0, 2.0);
+            logscale_phase += 1*rng.randh();
+            logH += -0.5*pow((logscale_phase-5.0)/1.0, 2.0);
+            calculate_C_phase();
+            calculate_L_phase();
+            calculate_phases();
+            std::cout << "Perturbing scale of GP AMP with logH =" << logH << std::endl;
         }
         else {
             logH -= 0.5*pow(v_phase, 2.0).sum();
             v_phase += 0.1*make_normal_random(size_phase());
             logH += 0.5*pow(v_phase, 2.0).sum();
+            calculate_phases();
+            std::cout << "Perturbing v of GP AMP with logH =" << logH << std::endl;
         }
     }
 

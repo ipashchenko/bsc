@@ -4,6 +4,7 @@
 #include <valarray>
 #include <vector>
 #include <complex>
+#include <iostream>
 #include "RNG.h"
 
 const double mas_to_rad = 4.84813681109536e-09;
@@ -48,7 +49,7 @@ class DFComponent : public  Component {
 
     private:
         // Parameters of a single Delta Function
-        double dx_, dy_, flux_;
+        double dx_, dy_, logflux_;
 };
 
 
@@ -64,11 +65,13 @@ class EGComponent : public Component {
         }
         void print(std::ostream& out) const override;
         void from_prior(DNest4::RNG& rng) override {}
-        double perturb(DNest4::RNG& rng) override { return 0.0; }
+        double perturb(DNest4::RNG& rng) override {
+            std::cout << "Hope this is not called" << std::endl;
+            return 0.0; }
 
-    private:
+    protected:
         // Parameters of a single Gaussian
-        double dx_, dy_, flux_, bmaj_, e_, bpa_;
+        double dx_, dy_, logflux_, logbmaj_, e_, bpa_;
 };
 
 
@@ -85,9 +88,9 @@ class CGComponent : public EGComponent {
         void from_prior(DNest4::RNG& rng) override;
         double perturb(DNest4::RNG& rng) override;
 
-    private:
+    //private:
         // Parameters of a single Gaussian
-        double dx_, dy_, flux_, bmaj_;
+        //double dx_, dy_, flux_, bmaj_;
 };
 
 

@@ -16,9 +16,11 @@ void SkyModel::ft(const std::valarray<double>& u, const std::valarray<double>& v
         comp->ft(u, v);
         real = real + comp->get_mu_real();
         imag = imag + comp->get_mu_imag();
+        std::cout << "Component real[0] = " << real[0] << std::endl;
     }
     mu_real = real;
     mu_imag = imag;
+    std::cout << "SkuModel mu_real[0] = " << mu_real[0] << std::endl;
 
 }
 
@@ -55,6 +57,7 @@ void SkyModel::print(std::ostream &out) const
 
 
 void SkyModel::from_prior(DNest4::RNG &rng) {
+    std::cout << "Generating from prior SkyModel" << std::endl;
     for (auto comp: components_) {
         comp->from_prior(rng);
     }
