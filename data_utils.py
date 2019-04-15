@@ -217,6 +217,25 @@ def inject_gains(df_original, outfname=None,
     return df_updated, antennas_gp
 
 
+def plot_gains(gains_dict, savefn=None):
+    import matplotlib.pyplot as plt
+    fig, axes = plt.subplots(len(gains_dict), 2, sharex=True)
+    for i, ant in enumerate(gains_dict):
+        amp = gains_dict[ant]["amp"]
+        phase = gains_dict[ant]["phase"]
+        axes[i, 0].plot(amp.keys(), amp.values(), '.')
+        axes[i, 1].plot(phase.keys(), phase.values(), '.')
+        axes[i, 1].yaxis.set_ticks_position("right")
+    axes[0, 0].set_title("Amplitudes")
+    axes[0, 1].set_title("Phases")
+    axes[i, 0].set_xlabel("time, s")
+    axes[i, 1].set_xlabel("time, s")
+    if savefn:
+        fig.savefig(savefn, bbox_inches="tight", dpi=300)
+    fig.show()
+    return fig
+
+
 if __name__ == "__main__":
     uvfits_fname = "/home/ilya/github/DNest4/code/Examples/UV/J2001+2416_K_2006_06_11_yyk_vis.fits"
     fname = "/home/ilya/github/bsc/uv_data.txt"
