@@ -9,6 +9,8 @@
 class SkyModel {
     public:
         SkyModel();
+        SkyModel(const SkyModel& other);
+
         void add_component(Component* component);
         void ft(const std::valarray<double>& u, const std::valarray<double>& v);
         void set_param_vec(std::valarray<double> param);
@@ -21,6 +23,7 @@ class SkyModel {
         double perturb(DNest4::RNG& rng);
         int get_n_components();
         std::vector<int> get_components_sizes();
+        void set_x(double x);
 
     private:
         std::vector<Component*> components_;

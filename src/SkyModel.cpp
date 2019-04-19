@@ -4,10 +4,20 @@
 
 SkyModel::SkyModel() = default;
 
+
+SkyModel::SkyModel(const SkyModel &other) {
+    for (auto other_comp : other.components_) {
+        Component* comp = other_comp->clone();
+        components_.push_back(comp);
+    }
+}
+
+
 void SkyModel::add_component(Component *component) {
     components_.push_back(component);
     components_sizes_.push_back(component->size());
 }
+
 
 void SkyModel::ft(const std::valarray<double>& u, const std::valarray<double>& v) {
     std::valarray<double> real (0.0, u.size());
@@ -77,6 +87,11 @@ int SkyModel::get_n_components() {
 
 std::vector<int> SkyModel::get_components_sizes() {
     return components_sizes_;
+}
+
+
+void SkyModel::set_x(double x) {
+    components_[0]->set_x(x);
 }
 
 

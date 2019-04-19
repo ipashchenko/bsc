@@ -26,6 +26,8 @@ class Component {
         virtual void print(std::ostream& out) const = 0;
         virtual void from_prior(DNest4::RNG& rng) = 0;
         virtual double perturb(DNest4::RNG& rng) = 0;
+        virtual void set_x(double x) = 0;
+        virtual Component* clone() = 0;
 
     protected:
         // SkyModel prediction
@@ -79,7 +81,9 @@ class CGComponent : public EGComponent {
 
     public:
         CGComponent();
+        CGComponent(const CGComponent& other);
         void set_param_vec(std::valarray<double> param) override;
+        void set_x(double x) override;
         const size_t size() const override
         {
             return 4;
@@ -87,6 +91,7 @@ class CGComponent : public EGComponent {
         void print(std::ostream& out) const override;
         void from_prior(DNest4::RNG& rng) override;
         double perturb(DNest4::RNG& rng) override;
+        CGComponent* clone() override;
 
     //private:
         // Parameters of a single Gaussian

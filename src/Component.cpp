@@ -48,12 +48,12 @@ EGComponent::EGComponent() : dx_(0.0), dy_(0.0), logflux_(0.0), logbmaj_(0.0), e
 
 void EGComponent::ft(std::valarray<double> u, std::valarray<double> v)
 {
-    std::cout << "In EGComponent ft " << std::endl;
+    //std::cout << "In EGComponent ft " << std::endl;
     std::valarray<double> theta;
     double c;
     std::valarray<double> b;
     std::valarray<double> ft;
-    std::cout << "x=" << dx_ << ", " << "y=" << dy_ << ", " << "logflux=" << logflux_ << ", "<< "logsize=" << logbmaj_ << "\n";
+    //std::cout << "x=" << dx_ << ", " << "y=" << dy_ << ", " << "logflux=" << logflux_ << ", "<< "logsize=" << logbmaj_ << "\n";
 
     // Phase shift due to not being in a phase center
     theta = 2*PI*mas_to_rad*(u*dx_+v*dy_);
@@ -66,7 +66,7 @@ void EGComponent::ft(std::valarray<double> u, std::valarray<double> v)
     // Prediction of visibilities
     mu_real = ft*cos(theta);
     mu_imag = ft*sin(theta);
-    std::cout << "EGComponent.ft mu_real[0] = " << mu_real[0] << std::endl;
+    //std::cout << "EGComponent.ft mu_real[0] = " << mu_real[0] << std::endl;
 
 }
 
@@ -106,11 +106,11 @@ void CGComponent::print(std::ostream &out) const
 
 void CGComponent::from_prior(DNest4::RNG &rng) {
      // Normal diffuse prior for x & y
-     dx_ = 5*rng.randn();
-     dy_ = 5*rng.randn();
+     dx_ = 0.25*rng.randn();
+     dy_ = 0.25*rng.randn();
      // Log-normal prior for flux and bmaj
-     logflux_ = -2. + 1.0*rng.randn();
-     logbmaj_ = -5. + 2.5*rng.randn();
+     logflux_ = -1.5 + 1.0*rng.randn();
+     logbmaj_ = -2. + 1.0*rng.randn();
      std::cout << "Generating from prior CGComponent" << std::endl;
 
      //dx_ = dx_prior->generate(rng);
@@ -132,12 +132,13 @@ double CGComponent::perturb(DNest4::RNG &rng) {
         //log_H -= dx_prior->log_pdf(dx_);
         //dx_prior->perturb(dx_, rng);
         //log_H += -dx_prior->log_pdf(dx_);
+        std::cout << "perturb x from " << dx_;
+        log_H -= -0.5*pow(dx_/0.25, 2);
+        dx_ += 0.25*rng.randh();
+        std::cout << " to " << dx_ << std::endl;
+        log_H += -0.5*pow(dx_/0.25, 2);
 
-        log_H -= -0.5*pow(dx_/5, 2);
-        dx_ += 5*rng.randn();
-        log_H += -0.5*pow(dx_/5, 2);
-
-        std::cout << "Perturbing dx_ with logH =" << log_H << std::endl;
+        //std::cout << "Perturbed dx_ with logH =" << log_H << std::endl;
 
 
         // Example of the proposal that keeps components sorted
@@ -158,11 +159,13 @@ double CGComponent::perturb(DNest4::RNG &rng) {
         //dx_prior->perturb(dx_, rng);
         //log_H += -dx_prior->log_pdf(dx_);
 
-        log_H -= -0.5*pow(dy_/5, 2);
-        dy_ += 5*rng.randn();
-        log_H += -0.5*pow(dy_/5, 2);
+        std::cout << "perturb y from " << dy_;
+        log_H -= -0.5*pow(dy_/0.25, 2);
+        dy_ += 0.25*rng.randh();
+        std::cout << " to " << dy_ << std::endl;
+        log_H += -0.5*pow(dy_/0.25, 2);
 
-        std::cout << "Perturbing dy_ with logH =" << log_H << std::endl;
+        //std::cout << "Perturbed dy_ with logH =" << log_H << std::endl;
 
     }
     else if(which%4 == 2)
@@ -173,11 +176,13 @@ double CGComponent::perturb(DNest4::RNG &rng) {
         //wrap(params[which], -7., 1.);
         //params[which] = exp(params[which]);
 
-        log_H -= -0.5*pow((logflux_+2.0)/1, 2);
+        std::cout << "perturb logflux from " << logflux_;
+        log_H -= -0.5*pow((logflux_+1.5)/1, 2);
         logflux_ += 1*rng.randh();
-        log_H += -0.5*pow((logflux_+2.0)/1, 2);
+        std::cout << " to " << logflux_ << std::endl;
+        log_H += -0.5*pow((logflux_+1.5)/1, 2);
 
-        std::cout << "Perturbing logflux with logH =" << log_H << std::endl;
+        //std::cout << "Perturbed logflux with logH =" << log_H << std::endl;
 
     }
     else
@@ -188,13 +193,13 @@ double CGComponent::perturb(DNest4::RNG &rng) {
         //wrap(params[which], -10., 2.);
         //params[which] = exp(params[which]);
 
-        std::cout << "Perturb logsize from = " << logbmaj_ << std::endl;
-        log_H -= -0.5*pow((logbmaj_+5.0)/2.5, 2);
-        logbmaj_ += 2.5*rng.randn();
-        log_H += -0.5*pow((logbmaj_+5.0)/2.5, 2);
-        std::cout << "to logsize = " << logbmaj_ << std::endl;
+        std::cout << "perturb logsize from " << logbmaj_ << std::endl;
+        log_H -= -0.5*pow((logbmaj_+2.0)/1.0, 2);
+        logbmaj_ += 1.0*rng.randh();
+        log_H += -0.5*pow((logbmaj_+2.0)/1.0, 2);
+        std::cout << " to " << logbmaj_ << std::endl;
 
-        std::cout << "Perturbing logsize with logH =" << log_H << std::endl;
+        //std::cout << "Perturbed logsize with logH =" << log_H << std::endl;
 
     }
 
@@ -208,18 +213,30 @@ double CGComponent::perturb(DNest4::RNG &rng) {
     //else
     //    log_H = 0.0;
 
-    //// Without sorting
-    //// Pre-reject
-    // if(rng.rand() >= exp(log_H))
-    //      return -1E300;
-    // else
-    //      log_H = 0.0;
-
 
     //// Calculate model visibilities again if Gaussian parameters changed
     //// Here we can save calculation
     //if(which%4 == 0 || which%4 == 1 || which%4 == 2 || which%4 == 3)
     //    calculate_mu();
-    std::cout << "In SkyModel::perturb with logH =" << log_H << std::endl;
+    //std::cout << "In SkyModel::perturb with logH =" << log_H << std::endl;
     return log_H;
 }
+
+
+void CGComponent::set_x(double x) {
+    dx_ = x;
+}
+
+
+CGComponent *CGComponent::clone() {
+    return new CGComponent(*this);
+}
+
+
+CGComponent::CGComponent(const CGComponent &other) {
+    dx_ = other.dx_;
+    dy_ = other.dy_;
+    logflux_ = other.logflux_;
+    logbmaj_ = other.logbmaj_;
+}
+
