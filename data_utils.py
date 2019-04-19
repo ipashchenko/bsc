@@ -1,7 +1,14 @@
 import numpy as np
 import astropy.io.fits as pf
 from astropy.time import Time
+from astropy import units as u
 import pandas as pd
+# import sys
+# sys.path.insert(0, '../ve/vlbi_errors')
+# sys.path.insert(0, '/home/ilya/github/ve/vlbi_errors')
+# from components import CGComponent
+
+mas_to_rad = u.mas.to(u.rad)
 
 
 def kernel(a, b, amp, scale):
@@ -13,6 +20,33 @@ def gp_pred(amp, scale, v, t):
     K_ss = kernel(t.reshape(-1, 1), t.reshape(-1, 1), amp, scale)
     L = np.linalg.cholesky(K_ss+1e-6*np.eye(len(t)))
     return np.dot(L, v.reshape(-1, 1))[:, 0]
+
+
+def gaussian_circ_ft(flux, dx, dy, bmaj, uv):
+    """
+    FT of circular gaussian at ``uv`` points.
+
+    :param flux:
+        Full flux of gaussian.
+    :param dx:
+        Distance from phase center [mas].
+    :param dy:
+        Distance from phase center [mas].
+    :param bmaj:
+        FWHM of a gaussian [mas].
+    :param uv:
+        2D numpy array of (u,v)-coordinates (dimensionless).
+    :return:
+        Tuple of real and imaginary visibilities parts.
+    """
+    shift = [dx*mas_to_rad, dy*mas_to_rad]
+    result = np.exp(-2.0*np.pi*1j*(uv @ shift))
+    c = (np.pi*bmaj*mas_to_rad)**2/(4. * np.log(2.))
+    b = uv[:, 0]**2 + uv[:, 1]**2
+    ft = flux*np.exp(-c*b)
+    ft = np.array(ft, dtype=complex)
+    result *= ft
+    return result.real, result.imag
 
 
 def create_data_file(uvfits, outfile, step_amp=60, step_phase=None):
@@ -76,7 +110,6 @@ def create_data_file(uvfits, outfile, step_amp=60, step_phase=None):
     # df["ant1_ntimes"] = [antennas_times_lengths[ant] for ant in df["ant1"]]
     # df["ant2_ntimes"] = [antennas_times_lengths[ant] for ant in df["ant2"]]
 
-
     # Re-grid time measurements
     new_idx_dict = {}
     new_times_dict = {}
@@ -103,7 +136,6 @@ def create_data_file(uvfits, outfile, step_amp=60, step_phase=None):
                           df[["ant2", "id_ant2"]].values]
     df["times_amp"] = [new_times_dict[ant][idx] for (ant, idx) in
                        df[["ant1", "idx_amp_ant1"]].values]
-
 
     if step_phase is not None:
         # Re-grid time measurements
@@ -138,7 +170,6 @@ def create_data_file(uvfits, outfile, step_amp=60, step_phase=None):
         df["idx_phase_ant2"] = df["id_ant2"]
         df["times_phase"] = df["times"]
 
-
     df = df[["times",
              "ant1", "ant2",
              "u", "v",
@@ -146,8 +177,55 @@ def create_data_file(uvfits, outfile, step_amp=60, step_phase=None):
              "times_amp", "idx_amp_ant1", "idx_amp_ant2",
              "times_phase", "idx_phase_ant1", "idx_phase_ant2"]]
 
+    df["ant1"] = df["ant1"].astype(int)
+    df["ant2"] = df["ant2"].astype(int)
     df.to_csv(outfile, sep=" ", index=False, header=False)
     return df
+
+
+def add_noise(df, use_global_median_noise=False, use_per_baseline_median_noise=True):
+    """
+    Add noise as specified in ``error`` columns to ``vis_re`` and ``vis_im`` columns.
+
+    :param df:
+        DataFrame with columns ``error``, ``vis_re`` and ``vis_im``.
+    :param use_global_median_noise: (optional)
+        Noise is estimated using median over all visibilities. Usefull if template uv-data
+        has shitty baselines with high noise. (default: ``None``)
+    :param use_per_baseline_median_noise: (optional)
+        Noise is estimated using median over individual baselines. (default: True)
+    :return:
+        New DataFrame with noise added.
+    """
+    df_ = df.copy()
+
+    if use_global_median_noise and use_per_baseline_median_noise:
+        raise Exception("Conflicting options of noise estimation!")
+
+    if use_per_baseline_median_noise:
+        df_["bl"] = 256*df["ant1"]+df["ant2"]
+        g = df_.groupby("bl")
+        print("Number of visibilities per-baseline :")
+        print(g.bl.count())
+        # median error for each baseline
+        baselines_med_errors = df_.groupby(["bl"]).median()["error"]
+        print("Median error for each baseline :")
+        print(baselines_med_errors)
+        df_["bl_med_error"] = df_["bl"].map(lambda bl: baselines_med_errors[bl])
+        df_["vis_re"] += df_["bl_med_error"].map(lambda x: np.random.normal(0, x, size=1)[0])
+        df_["vis_im"] += df_["bl_med_error"].map(lambda x: np.random.normal(0, x, size=1)[0])
+        # remove unneeded columns
+        del df_["bl"]
+        del df_["bl_med_error"]
+    elif use_global_median_noise:
+        error = df_["error"].median()
+        df_["vis_re"] += np.random.normal(0, error, size=df.shape[0])
+        df_["vis_im"] += np.random.normal(0, error, size=df.shape[0])
+    # Use individual visibilities noise estimated
+    else:
+        df_["vis_re"] += df_["error"].map(lambda x: np.random.normal(0, x, size=1)[0])
+        df_["vis_im"] += df_["error"].map(lambda x: np.random.normal(0, x, size=1)[0])
+    return df_
 
 
 def inject_gains(df_original, outfname=None,
@@ -219,7 +297,7 @@ def inject_gains(df_original, outfname=None,
 
 def plot_gains(gains_dict, savefn=None):
     import matplotlib.pyplot as plt
-    fig, axes = plt.subplots(len(gains_dict), 2, sharex=True)
+    fig, axes = plt.subplots(len(gains_dict), 2, sharex=True, figsize=(8, 20))
     for i, ant in enumerate(gains_dict):
         amp = gains_dict[ant]["amp"]
         phase = gains_dict[ant]["phase"]
@@ -236,12 +314,50 @@ def plot_gains(gains_dict, savefn=None):
     return fig
 
 
+def radplot(df, fig=None, color=None, label=None, style="ap"):
+    uv = df[["u", "v"]].values
+    r = np.hypot(uv[:, 0], uv[:, 1])
+
+    if style == "ap":
+        value1 = np.hypot(df["vis_re"].values, df["vis_im"].values)
+        value2 = np.arctan2(df["vis_re"].values, df["vis_im"].values)
+    elif style == "reim":
+        value1 = df["vis_re"].values
+        value2 = df["vis_im"].values
+    else:
+        raise Exception("style can be ap or reim")
+
+    import matplotlib.pyplot as plt
+    if fig is None:
+        fig, axes = plt.subplots(2, 1, sharex=True)
+    else:
+        axes = fig.axes
+
+    if color is None:
+        color = "#1f77b4"
+
+    axes[0].plot(r, value1, '.', color=color, label=label)
+    axes[1].plot(r, value2, '.', color=color)
+    if style == "ap":
+        axes[0].set_ylabel("Amp, Jy")
+        axes[1].set_ylabel("Phase, rad")
+    else:
+        axes[0].set_ylabel("Re, Jy")
+        axes[1].set_ylabel("Im, Jy")
+    axes[1].set_xlabel(r"$r_{\rm uv}$, $\lambda$")
+    if label is not None:
+        axes[0].legend()
+    plt.tight_layout()
+    fig.show()
+    return fig
+
+
 if __name__ == "__main__":
     uvfits_fname = "/home/ilya/github/DNest4/code/Examples/UV/J2001+2416_K_2006_06_11_yyk_vis.fits"
     fname = "/home/ilya/github/bsc/uv_data.txt"
 
     df = create_data_file(uvfits_fname, fname, step_amp=120)
-    # # Load data frame
+# # Load data frame
     # columns = ["times",
     #            "ant1", "ant2",
     #            "u", "v",
@@ -249,15 +365,35 @@ if __name__ == "__main__":
     #            "times_amp", "idx_amp_ant1", "idx_amp_ant2",
     #            "times_phase", "idx_phase_ant1", "idx_phase_ant2"]
     # df = pd.read_csv(fname, sep=" ", names=columns)
-    fname_gains = "/home/ilya/github/bsc/uv_data_gains.txt"
-    df_updated, gains_dict = inject_gains(df, outfname=fname_gains)
 
-    import json
-    # Save gains
-    with open("/home/ilya/github/bsc/gains.json", "w") as fo:
-        json.dump(str(gains_dict), fo)
-    # Load gains
-    with open("/home/ilya/github/bsc/gains.json", "r") as fo:
-        loaded_gains_dict = json.load(fo)
-    import ast
-    loaded_gains_dict = ast.literal_eval(loaded_gains_dict)
+    # Zero observed data
+    df["vis_re"] = 0
+    df["vis_im"] = 0
+    # Add model
+    re, im = gaussian_circ_ft(flux=1.0, dx=0.0, dy=0.0, bmaj=1.0, uv=df[["u", "v"]].values)
+    df["vis_re"] += re
+    df["vis_im"] += im
+    # Add noise
+    df = add_noise(df, use_global_median_noise=True, use_per_baseline_median_noise=False)
+    # Plot
+    fig = radplot(df, label="Sky Model")
+
+    # Add gains
+    fname_gains = "/home/ilya/github/bsc/uv_data_gains.txt"
+    df_updated, gains_dict = inject_gains(df, outfname=fname_gains,
+                                          scale_gpamp=np.exp(7),
+                                          scale_gpphase=np.exp(5),
+                                          amp_gpamp=np.exp(-2),
+                                          amp_gpphase=np.exp(-2))
+    fig = radplot(df_updated, color="#ff7f0e", fig=fig, label="With gains")
+    fig = plot_gains(gains_dict)
+    #
+    # import json
+    # # Save gains
+    # with open("/home/ilya/github/bsc/gains.json", "w") as fo:
+    #     json.dump(str(gains_dict), fo)
+    # # Load gains
+    # with open("/home/ilya/github/bsc/gains.json", "r") as fo:
+    #     loaded_gains_dict = json.load(fo)
+    # import ast
+    # loaded_gains_dict = ast.literal_eval(loaded_gains_dict)
