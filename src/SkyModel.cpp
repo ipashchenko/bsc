@@ -13,6 +13,14 @@ SkyModel::SkyModel(const SkyModel &other) {
 }
 
 
+SkyModel::~SkyModel() {
+    for (auto comp : components_) {
+        delete comp;
+    }
+}
+
+
+
 void SkyModel::add_component(Component *component) {
     components_.push_back(component);
     components_sizes_.push_back(component->size());

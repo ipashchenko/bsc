@@ -10,6 +10,7 @@ class SkyModel {
     public:
         SkyModel();
         SkyModel(const SkyModel& other);
+        ~SkyModel();
 
         void add_component(Component* component);
         void ft(const std::valarray<double>& u, const std::valarray<double>& v);
