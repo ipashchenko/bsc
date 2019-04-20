@@ -18,22 +18,22 @@ void check_random() {
 }
 
 
-//void check_dnestmodel() {
-//    Data::get_instance().load("/home/ilya/github/bsc/uv_data_gains.txt");
-//    DNestModel model = DNestModel();
-//    std::cout << "Original model : ";
-//    model.print(std::cout);
-//    DNestModel newmodel = model;
-//    std::cout << "New model : ";
-//    newmodel.print(std::cout);
-//    double new_x = 100;
-//    model.set_x_skymodel(new_x);
-//    std::cout << "Original model after = : ";
-//    model.print(std::cout);
-//    std::cout << "New model : ";
-//    newmodel.print(std::cout);
-//    std::cout << "Done" << std::endl;
-//}
+void check_dnestmodel() {
+    Data::get_instance().load("/home/ilya/github/bsc/uv_data_gains.txt");
+    DNestModel model = DNestModel();
+    std::cout << "Original model : ";
+    model.print(std::cout);
+    DNestModel newmodel = model;
+    std::cout << "Copied model : ";
+    newmodel.print(std::cout);
+    double new_x = 100;
+    model.set_x_skymodel(new_x);
+    std::cout << "Original model after = : ";
+    model.print(std::cout);
+    std::cout << "Copied model after = : ";
+    newmodel.print(std::cout);
+    std::cout << "Done" << std::endl;
+}
 
 
 void check_skymodel() {
@@ -103,11 +103,11 @@ void check_gains() {
 
 int main() {
     //check_random();
-    //check_dnestmodel();
+    check_dnestmodel();
     //check_skymodel();
     //check_gain();
     //check_gain_ptr();
-    check_gains();
+    //check_gains();
     return 0;
 }
 
