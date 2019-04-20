@@ -1,8 +1,10 @@
 #include <valarray>
 #include <iostream>
 #include "Gain.h"
+#include "Gains.h"
 #include "Data.h"
 #include "DNestModel.h"
+#include "SkyModel.h"
 #include "DNest4.h"
 
 using namespace DNest4;
@@ -16,25 +18,80 @@ void check_random() {
 }
 
 
-void check_dnestmodel() {
-    DNestModel model = DNestModel();
-    std::cout << "Done" << std::endl;
-}
-
-
-//int main() {
-//    //check_random();
-//    //check_dnestmodel();
-//    return 0;
+//void check_dnestmodel() {
+//    Data::get_instance().load("/home/ilya/github/bsc/uv_data_gains.txt");
+//    DNestModel model = DNestModel();
+//    std::cout << "Original model : ";
+//    model.print(std::cout);
+//    DNestModel newmodel = model;
+//    std::cout << "New model : ";
+//    newmodel.print(std::cout);
+//    double new_x = 100;
+//    model.set_x_skymodel(new_x);
+//    std::cout << "Original model after = : ";
+//    model.print(std::cout);
+//    std::cout << "New model : ";
+//    newmodel.print(std::cout);
+//    std::cout << "Done" << std::endl;
 //}
 
 
-int main(int argc, char** argv)
-{
-    Data::get_instance().load("/home/ilya/CLionProjects/ve2/uv_data.txt");
-    // set the sampler and run it!
-    Sampler<DNestModel> sampler = setup<DNestModel>(argc, argv);
-    sampler.run();
+void check_skymodel() {
+    SkyModel sky_model = SkyModel();
+    int ncomp = 1;
+    for (int i=0; i<ncomp; i++) {
+        auto* comp = new CGComponent();
+        sky_model.add_component(comp);
+    }
+    sky_model.print(std::cout);
+    sky_model.set_x(1);
+    SkyModel new_sky_model = sky_model;
+    new_sky_model.print(std::cout);
+    sky_model.set_x(100);
+    sky_model.print(std::cout);
+    new_sky_model.print(std::cout);
+}
 
+
+//void check_gain() {
+//    // Gain has no pointers thus default copy ctor works fine
+//    Data::get_instance().load("/home/ilya/github/bsc/uv_data_gains.txt");
+//    Data data = Data::get_instance();
+//    Gain gain = Gain(data.get_times_amp(), data.get_times_phase());
+//    gain.print_hp(std::cout);
+//    Gain newgain = gain;
+//    newgain.print_hp(std::cout);
+//    std::valarray<double> amplitudes = std::valarray<double>(100.0, 2);
+//    gain.set_hp_amp(amplitudes);
+//    gain.print_hp(std::cout);
+//    newgain.print_hp(std::cout);
+//}
+
+
+
+void check_gains() {
+    Data::get_instance().load("/home/ilya/github/bsc/uv_data_gains.txt");
+    Gains* gains = new Gains(Data::get_instance());
+    gains->print_hp(std::cout);
+
+}
+
+int main() {
+    //check_random();
+    //check_dnestmodel();
+    //check_skymodel();
+    //check_gain();
+    check_gains();
     return 0;
 }
+
+
+//int main(int argc, char** argv)
+//{
+//    Data::get_instance().load("/home/ilya/github/bsc/uv_data_gains.txt");
+//    // set the sampler and run it!
+//    Sampler<DNestModel> sampler = setup<DNestModel>(argc, argv);
+//    sampler.run();
+//
+//    return 0;
+//}
