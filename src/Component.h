@@ -27,6 +27,7 @@ class Component {
         virtual void from_prior(DNest4::RNG& rng) = 0;
         virtual double perturb(DNest4::RNG& rng) = 0;
         virtual void set_x(double x) = 0;
+        // See also https://softwareengineering.stackexchange.com/a/337565 for unique_ptr
         virtual Component* clone() = 0;
 
     protected:

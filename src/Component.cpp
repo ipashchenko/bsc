@@ -238,5 +238,7 @@ CGComponent::CGComponent(const CGComponent &other) {
     dy_ = other.dy_;
     logflux_ = other.logflux_;
     logbmaj_ = other.logbmaj_;
+    mu_real = other.get_mu_real();
+    mu_imag = other.get_mu_imag();
 }
 
