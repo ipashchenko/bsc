@@ -8,13 +8,17 @@
 
 class Gains {
     public:
+        //Gains();
         explicit Gains(Data data);
-        // Setting hyperparameters fo the amplitude and phase GP for all gains
+        Gains(Gains& other);
+        Gains& operator=(const Gains& other);
+        ~Gains();
+        //// Setting hyperparameters fo the amplitude and phase GP for all gains
         void set_hp_amp(std::valarray<double> params);
-        void set_hp_phase(std::valarray<double> params);
-        // Setting latent variables for all gains
-        void set_v_amp(std::valarray<double> params);
-        void set_v_phase(std::valarray<double> params);
+        //void set_hp_phase(std::valarray<double> params);
+        //// Setting latent variables for all gains
+        //void set_v_amp(std::valarray<double> params);
+        //void set_v_phase(std::valarray<double> params);
         // Generate HP for amplitudes and phases for all gains
         void from_prior_hp_amp(DNest4::RNG& rng);
         void from_prior_hp_phase(DNest4::RNG& rng);

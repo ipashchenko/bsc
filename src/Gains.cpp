@@ -3,6 +3,10 @@
 #include "Gain.h"
 
 
+
+//Gains::Gains() = default;
+
+
 Gains::Gains(Data data) {
     std::vector<int> antennas = data.get_instance().get_antennas();
     for (int i=0; i<data.n_antennas(); i++) {
@@ -11,6 +15,42 @@ Gains::Gains(Data data) {
     std::cout << "Ctor of Gains finished" << std::endl;
 }
 
+
+Gains::Gains(Gains &other) {
+    std::cout << "In Gains copy ctor" << std::endl;
+    gains = std::vector<Gain*>();
+    for (auto gain : other.gains) {
+        gains.emplace_back(new Gain(*gain));
+    }
+    std::cout << "check " << std::endl;
+}
+
+
+Gains& Gains::operator=(const Gains& other) {
+    std::cout << "In Gains =" << std::endl;
+
+    if (&other == this)
+        return *this;
+
+    for (auto gain : gains) {
+        delete gain;
+    }
+
+    gains = std::vector<Gain*>();
+    for (auto gain : other.gains) {
+        std::cout << "check -- " << std::endl;
+        gains.emplace_back(new Gain(*gain));
+    }
+    return *this;
+}
+
+
+Gains::~Gains() {
+    std::cout << "in Gains ~ " << std::endl;
+    for (auto gain : gains) {
+        delete gain;
+    }
+}
 
 void Gains::set_hp_amp(std::valarray<double> params) {
     size_t size_used = 0;
@@ -21,31 +61,31 @@ void Gains::set_hp_amp(std::valarray<double> params) {
 }
 
 
-void Gains::set_hp_phase(std::valarray<double> params) {
-    size_t size_used = 0;
-    for (auto gain : gains) {
-        gain->set_hp_phase(params[std::slice(size_used, 2, 1)]);
-        size_used += 2;
-    }
-}
-
-
-void Gains::set_v_amp(std::valarray<double> params) {
-    size_t size_used = 0;
-    for (auto gain : gains) {
-        gain->set_v_amp(params[std::slice(size_used, gain->size_amp(), 1)]);
-        size_used += gain->size_amp();
-    }
-}
-
-
-void Gains::set_v_phase(std::valarray<double> params) {
-    size_t size_used = 0;
-    for (auto gain : gains) {
-        gain->set_v_phase(params[std::slice(size_used, gain->size_phase(), 1)]);
-        size_used += gain->size_phase();
-    }
-}
+//void Gains::set_hp_phase(std::valarray<double> params) {
+//    size_t size_used = 0;
+//    for (auto gain : gains) {
+//        gain->set_hp_phase(params[std::slice(size_used, 2, 1)]);
+//        size_used += 2;
+//    }
+//}
+//
+//
+//void Gains::set_v_amp(std::valarray<double> params) {
+//    size_t size_used = 0;
+//    for (auto gain : gains) {
+//        gain->set_v_amp(params[std::slice(size_used, gain->size_amp(), 1)]);
+//        size_used += gain->size_amp();
+//    }
+//}
+//
+//
+//void Gains::set_v_phase(std::valarray<double> params) {
+//    size_t size_used = 0;
+//    for (auto gain : gains) {
+//        gain->set_v_phase(params[std::slice(size_used, gain->size_phase(), 1)]);
+//        size_used += gain->size_phase();
+//    }
+//}
 
 
 int Gains::size() const {
@@ -183,7 +223,9 @@ void Gains::print_L(std::ostream &out) const {
 double Gains::perturb(DNest4::RNG& rng) {
     double logH = 0;
     int which = rng.rand_int(gains.size());
+    std::cout << "Perturbing gain # " << which << std::endl;
     logH += gains[which]->perturb(rng);
-    std::cout << "Perturbing gain # " << which << " with logH =" << logH << std::endl;
     return logH;
 }
+
+
