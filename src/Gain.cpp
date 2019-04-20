@@ -79,6 +79,24 @@ Gain::Gain(std::vector<double> new_times) :
     }
 
 
+//Gain::Gain(const Gain &other) {
+//    logamp_amp = other.logamp_amp;
+//    logamp_phase = other.logamp_phase;
+//    logscale_amp = other.logscale_amp;
+//    logscale_phase = other.logscale_phase;
+//    times_amp = other.times_amp;
+//    times_phase = other.times_phase;
+//    amplitudes =other.amplitudes;
+//    phases = other.phases;
+//    v_amp = other.v_amp;
+//    v_phase = other.v_phase;
+//    C_amp = other.C_amp;
+//    C_phase = other.C_phase;
+//    L_amp = other.L_amp;
+//    L_phase = other.L_phase;
+//}
+
+
 void Gain::print_times(std::ostream &out) const
 {
     out << "times amp = " << std::endl;
@@ -150,14 +168,14 @@ void Gain::set_hp_phase(std::valarray<double> params) {
 }
 
 
-void Gain::set_v_amp(std::valarray<double> params) {
-    v_amp = std::move(params);
-}
-
-
-void Gain::set_v_phase(std::valarray<double> params) {
-    v_phase = std::move(params);
-}
+//void Gain::set_v_amp(std::valarray<double> params) {
+//    v_amp = std::move(params);
+//}
+//
+//
+//void Gain::set_v_phase(std::valarray<double> params) {
+//    v_phase = std::move(params);
+//}
 
 
 void Gain::from_prior_v_amp() {
@@ -174,18 +192,23 @@ void Gain::from_prior_v_phase() {
 
 void Gain::from_prior_hp_amp(DNest4::RNG& rng) {
     std::cout << "Generating from prior Gain HP AMP" << std::endl;
-    logamp_amp = -3.0 + 1.0*rng.randn();
-    logscale_amp = 6.0 + 1.0*rng.randn();
+    //logamp_amp = -3.0 + 1.0*rng.randn();
+    //logscale_amp = 7.0 + 1.0*rng.randn();
+    logamp_amp = -3.0;
+    logscale_amp = 7.0;
 }
 
 
 void Gain::from_prior_hp_phase(DNest4::RNG& rng) {
-    logamp_phase = -3.0 + 1.0*rng.randn();
-    logscale_phase = 5.0 + 1.0*rng.randn();
+    //logamp_phase = -3.0 + 1.0*rng.randn();
+    //logscale_phase = 5.0 + 1.0*rng.randn();
+    logamp_phase = -3.0;
+    logscale_phase = 5.0;
 }
 
 
 void Gain::calculate_C_amp() {
+    std::cout << "Calculating C of amp GP" << std::endl;
     Eigen::MatrixXd sqdist = - 2*times_amp*times_amp.transpose();
     sqdist.rowwise() += times_amp.array().square().transpose().matrix();
     sqdist.colwise() += times_amp.array().square().matrix();
@@ -204,6 +227,7 @@ void Gain::calculate_C_phase() {
 
 
 void Gain::calculate_L_amp() {
+    std::cout << "Calculating L of amp GP" << std::endl;
     // perform the Cholesky decomposition of covariance matrix
     Eigen::LLT<Eigen::MatrixXd> cholesky = C_amp.llt();
     // get the lower triangular matrix L
@@ -240,12 +264,16 @@ std::valarray<double>& Gain::get_phases() {
 
 
 void Gain::calculate_amplitudes() {
+    //std::cout << "Calculating amplitudes" << std::endl;
     // Convert std::valarray ``v_amp`` to Eigen::VectorXd
     VectorXd v_amp_vec = Eigen::Map<Eigen::VectorXd, Eigen::Unaligned>(&v_amp[0], v_amp.size());
 
     VectorXd amp = L_amp*v_amp_vec;
     // Convert Eigen::VectorXd to std::valarray
-    amplitudes = std::valarray<double>(amp.data(), amp.size());
+    amplitudes = 1.0 + std::valarray<double>(amp.data(), amp.size());
+    std::cout << "Calculated amplitudes: " << std::endl;
+    print_amplitudes(std::cout);
+
 }
 
 
@@ -256,6 +284,9 @@ void Gain::calculate_phases() {
     VectorXd phase = L_phase*v_phase_vec;
     // Convert Eigen::VectorXd to std::valarray
     phases = std::valarray<double>(phase.data(), phase.size());
+    std::cout << "Calculated phases: " << std::endl;
+    print_phases(std::cout);
+
 }
 
 
@@ -280,65 +311,118 @@ void Gain::print_phases(std::ostream &out) const {
 double Gain::perturb(DNest4::RNG &rng) {
     double logH = 0.;
 
-    int which = rng.rand_int(3);
+    int which = rng.rand_int(2);
     // Amplitude GP - update less often than phase GP
     if(which == 0) {
-        if(rng.rand() <= 0.5)
-        {
-            logH -= -0.5*pow((logamp_amp+3)/1, 2);
-            logamp_amp += 1*rng.randh();
-            logH += -0.5*pow((logamp_amp+3)/1, 2);
-            calculate_C_amp();
-            calculate_L_amp();
-            calculate_amplitudes();
-            std::cout << "Perturbing amp of GP AMP with logH =" << logH << std::endl;
 
+
+        //if(rng.rand() <= 0.5)
+        //{
+        //    std::cout << "Perturbing amp of GP AMP" << std::endl;
+        //    std::cout << "from logamp_amp = " << logamp_amp << " ";
+        //    logH -= -0.5*pow((logamp_amp+3)/1, 2);
+        //    logamp_amp += 1*rng.rand();
+        //    std::cout << "to logamp_amp = " << logamp_amp << std::endl;
+        //    logH += -0.5*pow((logamp_amp+3)/1, 2);
+        //    calculate_C_amp();
+        //    calculate_L_amp();
+        //    std::cout << "amplitudes of GP AMP before = " << std::endl;
+        //    print_amplitudes(std::cout);
+        //    calculate_amplitudes();
+        //    std::cout << "amplitudes of GP AMP after = " << std::endl;
+        //    print_amplitudes(std::cout);
+        //    std::cout << "Perturbed amp of GP AMP with logH =" << logH << std::endl;
+        //
+        //}
+        //else if (rng.rand() <= 0.5) {
+        //    std::cout << "Perturbing scale of GP AMP" << std::endl;
+        //    std::cout << "from logscale_amp = " << logscale_amp;
+        //    logH -= -0.5*pow((logscale_amp-7)/1, 2);
+        //    logscale_amp += 1*rng.rand();
+        //    std::cout << "to logscale_amp = " << logscale_amp << std::endl;
+        //    logH += -0.5*pow((logscale_amp-7)/1, 2);
+        //    calculate_C_amp();
+        //    calculate_L_amp();
+        //    calculate_amplitudes();
+        //    std::cout << "Perturbed scale of GP AMP with logH =" << logH << std::endl;
+        //}
+        //else {
+        //    std::cout << "Perturbing v of GP AMP" << std::endl;
+        //    logH -= -0.5*pow(v_amp, 2.0).sum();
+        //    v_amp += 0.1*make_normal_random(size_amp());
+        //    logH += -0.5*pow(v_amp, 2.0).sum();
+        //    calculate_amplitudes();
+        //    std::cout << "Perturbed v of GP AMP with logH =" << logH << std::endl;
+        //}
+
+        std::cout << "Perturbing v of GP AMP" << std::endl;
+        logH -= -0.5*pow(v_amp, 2.0).sum();
+        v_amp += 0.1*make_normal_random(size_amp());
+        logH += -0.5*pow(v_amp, 2.0).sum();
+        // It shouldn't be called in case of pre-rejection
+        //calculate_amplitudes();
+        std::cout << "Perturbed v of GP AMP with logH =" << logH << std::endl;
+
+        // Pre-reject
+        if(rng.rand() >= exp(logH)) {
+            std::cout << "Pre-rejected proposal v of GP AMP" << std::endl;
+            return -1E300;
         }
-        else if (rng.rand() <= 0.5) {
-            logH -= -0.5*pow((logscale_amp-6)/1, 2);
-            logscale_amp += 1*rng.randh();
-            logH += -0.5*pow((logscale_amp-6)/1, 2);
-            calculate_C_amp();
-            calculate_L_amp();
-            calculate_amplitudes();
-            std::cout << "Perturbing scale of GP AMP with logH =" << logH << std::endl;
-        }
-        else {
-            logH -= -0.5*pow(v_amp, 2.0).sum();
-            v_amp += 0.1*make_normal_random(size_amp());
-            logH += -0.5*pow(v_amp, 2.0).sum();
-            calculate_amplitudes();
-            std::cout << "Perturbing v of GP AMP with logH =" << logH << std::endl;
-        }
+        else
+            logH = 0.0;
+
+        calculate_amplitudes();
+
     }
     // Phase GP
     else {
-        if(rng.rand() <= 0.5)
-        {
-            logH -= -0.5*pow((logamp_phase+3.0)/1.0, 2.0);
-            logamp_phase += 1*rng.randh();
-            logH += -0.5*pow((logamp_phase+3.0)/1.0, 2.0);
-            calculate_C_phase();
-            calculate_L_phase();
-            calculate_phases();
-            std::cout << "Perturbing amp of GP AMP with logH =" << logH << std::endl;
+
+
+
+        //if(rng.rand() <= 0.5)
+        //{
+        //    logH -= -0.5*pow((logamp_phase+3.0)/1.0, 2.0);
+        //    logamp_phase += 1*rng.rand();
+        //    logH += -0.5*pow((logamp_phase+3.0)/1.0, 2.0);
+        //    calculate_C_phase();
+        //    calculate_L_phase();
+        //    calculate_phases();
+        //    std::cout << "Perturbed amp of GP PHASE with logH =" << logH << std::endl;
+        //}
+        //else if (rng.rand() <= 0.5) {
+        //    logH -= -0.5*pow((logscale_phase-5.0)/1.0, 2.0);
+        //    logscale_phase += 1*rng.rand();
+        //    logH += -0.5*pow((logscale_phase-5.0)/1.0, 2.0);
+        //    calculate_C_phase();
+        //    calculate_L_phase();
+        //    calculate_phases();
+        //    std::cout << "Perturbed scale of GP PHASE with logH =" << logH << std::endl;
+        //}
+        //else {
+        //    logH -= 0.5*pow(v_phase, 2.0).sum();
+        //    v_phase += 0.1*make_normal_random(size_phase());
+        //    logH += 0.5*pow(v_phase, 2.0).sum();
+        //    calculate_phases();
+        //    std::cout << "Perturbed v of GP PHASE with logH =" << logH << std::endl;
+        //}
+
+        logH -= 0.5*pow(v_phase, 2.0).sum();
+        v_phase += 0.1*make_normal_random(size_phase());
+        logH += 0.5*pow(v_phase, 2.0).sum();
+        // It shouldn't be called in case of pre-rejection
+        //calculate_phases();
+        std::cout << "Perturbed v of GP PHASE with logH =" << logH << std::endl;
+
+        // Pre-reject
+        if(rng.rand() >= exp(logH)) {
+            std::cout << "Pre-rejected proposal v of GP PHASE" << std::endl;
+            return -1E300;
         }
-        else if (rng.rand() <= 0.5) {
-            logH -= -0.5*pow((logscale_phase-5.0)/1.0, 2.0);
-            logscale_phase += 1*rng.randh();
-            logH += -0.5*pow((logscale_phase-5.0)/1.0, 2.0);
-            calculate_C_phase();
-            calculate_L_phase();
-            calculate_phases();
-            std::cout << "Perturbing scale of GP AMP with logH =" << logH << std::endl;
-        }
-        else {
-            logH -= 0.5*pow(v_phase, 2.0).sum();
-            v_phase += 0.1*make_normal_random(size_phase());
-            logH += 0.5*pow(v_phase, 2.0).sum();
-            calculate_phases();
-            std::cout << "Perturbing v of GP AMP with logH =" << logH << std::endl;
-        }
+        else
+            logH = 0.0;
+
+        calculate_phases();
+
     }
 
     return logH;
