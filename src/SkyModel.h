@@ -11,6 +11,7 @@ class SkyModel {
         SkyModel();
         SkyModel(const SkyModel& other);
         ~SkyModel();
+        SkyModel&operator=(const SkyModel& other);
 
         void add_component(Component* component);
         void ft(const std::valarray<double>& u, const std::valarray<double>& v);
@@ -19,6 +20,7 @@ class SkyModel {
         std::valarray<double> get_mu_imag() const { return mu_imag; }
         size_t size() const;
         void print(std::ostream& out) const;
+        std::string description() const;
         void from_prior(DNest4::RNG& rng);
         // MH proposal for SkyModel. Returns logH
         double perturb(DNest4::RNG& rng);

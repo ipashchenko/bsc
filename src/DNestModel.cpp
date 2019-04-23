@@ -14,8 +14,8 @@ DNestModel::DNestModel() {
     }
 
     gains = new Gains(Data::get_instance());
-    std::cout << "gains # " << gains->size() << std::endl;
-    std::cout << "Ctor of DNestModel finished" << std::endl;
+    //std::cout << "gains # " << gains->size() << std::endl;
+    //std::cout << "Ctor of DNestModel finished" << std::endl;
 }
 
 
@@ -33,7 +33,7 @@ DNestModel::DNestModel(const DNestModel& other) {
     mu_real_full = other.mu_real_full;
     mu_imag_full = other.mu_imag_full;
     //*(gains) = *(obj.gains);
-    std::cout << "Copy Ctor of DNestModel finished" << std::endl;
+    //std::cout << "Copy Ctor of DNestModel finished" << std::endl;
 }
 
 
@@ -48,17 +48,16 @@ DNestModel& DNestModel::operator=(const DNestModel& other) {
 }
 
 
-
 void DNestModel::from_prior(DNest4::RNG &rng) {
-    std::cout << "Generating from prior DNestModel" << std::endl;
+    //std::cout << "Generating from prior DNestModel" << std::endl;
     sky_model->from_prior(rng);
-    sky_model->print(std::cout);
+    //sky_model->print(std::cout);
     gains->from_prior_hp_amp(rng);
     gains->from_prior_hp_phase(rng);
-    gains->print_hp(std::cout);
+    //gains->print_hp(std::cout);
     gains->from_prior_v_amp();
     gains->from_prior_v_phase();
-    gains->print_v(std::cout);
+    //gains->print_v(std::cout);
     // Calculate C, L matrixes for rotation of v
     gains->calculate_C_amp();
     gains->calculate_C_phase();
@@ -67,28 +66,28 @@ void DNestModel::from_prior(DNest4::RNG &rng) {
     // Calculate latent v using calculated L and generated from prior v
     gains->calculate_amplitudes();
     gains->calculate_phases();
-    gains->print_amplitudes(std::cout);
-    gains->print_phases(std::cout);
+    //gains->print_amplitudes(std::cout);
+    //gains->print_phases(std::cout);
     // Calculate SkyModel
     calculate_sky_mu();
     // Calculate full model (SkyModel + gains)
     calculate_mu();
-    std::cout << "End of DNestModel::from_prior - mu_real_full[0] = " << mu_real_full[0] << std::endl;
+    //std::cout << "End of DNestModel::from_prior - mu_real_full[0] = " << mu_real_full[0] << std::endl;
 }
 
 
 double DNestModel::perturb(DNest4::RNG &rng) {
-    std::cout << "In DNestModel::perturb" << std::endl;
+    //std::cout << "In DNestModel::perturb" << std::endl;
     double logH = 0.;
     // Perturb SkyModel
     if(rng.rand() <= 0.5) {
         logH += sky_model->perturb(rng);
-        std::cout << "Perturbed SkyModel with logH =" << logH << std::endl;
+        //std::cout << "Perturbed SkyModel with logH =" << logH << std::endl;
 
         // Without sorting
         // Pre-reject
         if(rng.rand() >= exp(logH)) {
-            std::cout << "Pre-rejected proposal SkyModel" << std::endl;
+            //std::cout << "Pre-rejected proposal SkyModel" << std::endl;
             return -1E300;
         }
         else
@@ -98,7 +97,7 @@ double DNestModel::perturb(DNest4::RNG &rng) {
     }
     // Perturb Gains
     else {
-        std::cout << "Perturbing gains" << std::endl;
+        //std::cout << "Perturbing gains" << std::endl;
         // C, L and v are re-calculated by individual Gains that is perturbed
         logH += gains->perturb(rng);
         // Gains pre-reject in individual Gain instances
@@ -110,13 +109,13 @@ double DNestModel::perturb(DNest4::RNG &rng) {
 
 
 void DNestModel::calculate_sky_mu() {
-    std::cout << "In DNestModel::calculate_sky_mu" << std::endl;
+    //std::cout << "In DNestModel::calculate_sky_mu" << std::endl;
     // Get (u, v)-points for calculating SkyModel predictions
     const std::valarray<double>& u = Data::get_instance().get_u();
     const std::valarray<double>& v = Data::get_instance().get_v();
     // FT (calculate SkyModel prediction)
     sky_model->ft(u, v);
-    sky_model->print(std::cout);
+    //sky_model->print(std::cout);
 }
 
 
@@ -159,7 +158,7 @@ void DNestModel::calculate_mu() {
 
 
 double DNestModel::log_likelihood() const {
-    std::cout << "In DNestModel::log_likelihood" << std::endl;
+    //std::cout << "In DNestModel::log_likelihood" << std::endl;
     // Grab the visibilities from the dataset
     const std::valarray<double>& vis_real = Data::get_instance().get_vis_real();
     const std::valarray<double>& vis_imag = Data::get_instance().get_vis_imag();
@@ -167,12 +166,12 @@ double DNestModel::log_likelihood() const {
 
     // Variance
     const std::valarray<double> var = sigma*sigma;
-    std::cout << "In DNestModel::log_likelihood - mu_real_full[0] = " << mu_real_full[0] << std::endl;
+    //std::cout << "In DNestModel::log_likelihood - mu_real_full[0] = " << mu_real_full[0] << std::endl;
     // Complex Gaussian sampling distribution
     std::valarray<double> result = -log(2*PI*var) - 0.5*(pow(vis_real - mu_real_full, 2) +
         pow(vis_imag - mu_imag_full, 2))/var;
     double loglik = result.sum();
-    std::cout << "In DNestModel::log_likelihood - loglik = " << loglik << std::endl;
+    //std::cout << "In DNestModel::log_likelihood - loglik = " << loglik << std::endl;
     return loglik;
 
 }
@@ -180,11 +179,17 @@ double DNestModel::log_likelihood() const {
 
 void DNestModel::print(std::ostream &out) const {
     sky_model->print(out);
+    gains->print(out);
 }
 
 
 std::string DNestModel::description() const {
-    return std::__cxx11::string();
+    std::string descr;
+    descr += sky_model->description();
+    descr += " ";
+    descr += gains->description();
+
+    return descr;
 }
 
 

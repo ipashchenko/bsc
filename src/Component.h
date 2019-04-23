@@ -24,6 +24,7 @@ class Component {
             return mu_imag;
         }
         virtual void print(std::ostream& out) const = 0;
+        virtual std::string description() const = 0;
         virtual void from_prior(DNest4::RNG& rng) = 0;
         virtual double perturb(DNest4::RNG& rng) = 0;
         virtual void set_x(double x) = 0;
@@ -90,6 +91,7 @@ class CGComponent : public EGComponent {
             return 4;
         }
         void print(std::ostream& out) const override;
+        std::string description() const override;
         void from_prior(DNest4::RNG& rng) override;
         double perturb(DNest4::RNG& rng) override;
         CGComponent* clone() override;

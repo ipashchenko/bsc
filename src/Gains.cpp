@@ -12,22 +12,21 @@ Gains::Gains(Data data) {
     for (int i=0; i<data.n_antennas(); i++) {
         gains.emplace_back(new Gain(data.get_times_amp(), data.get_times_phase()));
     }
-    std::cout << "Ctor of Gains finished" << std::endl;
+    //std::cout << "Ctor of Gains finished" << std::endl;
 }
 
 
 Gains::Gains(Gains &other) {
-    std::cout << "In Gains copy ctor" << std::endl;
+    //std::cout << "In Gains copy ctor" << std::endl;
     gains = std::vector<Gain*>();
     for (auto gain : other.gains) {
         gains.emplace_back(new Gain(*gain));
     }
-    std::cout << "check " << std::endl;
 }
 
 
 Gains& Gains::operator=(const Gains& other) {
-    std::cout << "In Gains =" << std::endl;
+    //std::cout << "In Gains =" << std::endl;
 
     if (&other == this)
         return *this;
@@ -38,7 +37,6 @@ Gains& Gains::operator=(const Gains& other) {
 
     gains = std::vector<Gain*>();
     for (auto gain : other.gains) {
-        std::cout << "check -- " << std::endl;
         gains.emplace_back(new Gain(*gain));
     }
     return *this;
@@ -46,7 +44,7 @@ Gains& Gains::operator=(const Gains& other) {
 
 
 Gains::~Gains() {
-    std::cout << "in Gains ~ " << std::endl;
+    //std::cout << "in Gains ~ " << std::endl;
     for (auto gain : gains) {
         delete gain;
     }
@@ -115,7 +113,7 @@ void Gains::from_prior_v_phase() {
 
 
 void Gains::from_prior_hp_amp(DNest4::RNG &rng) {
-    std::cout << "Generating from prior Gains HP AMP" << std::endl;
+    //std::cout << "Generating from prior Gains HP AMP" << std::endl;
     for (auto gain: gains) {
         gain->from_prior_hp_amp(rng);
     }
@@ -222,10 +220,29 @@ void Gains::print_L(std::ostream &out) const {
 
 double Gains::perturb(DNest4::RNG& rng) {
     double logH = 0;
-    int which = rng.rand_int(gains.size());
-    std::cout << "Perturbing gain # " << which << std::endl;
-    logH += gains[which]->perturb(rng);
+    // Leaving first gains as it is (amplitudes = 1s, phases = 0s)
+    int which = rng.rand_int(gains.size()-1);
+    //std::cout << "Perturbing gain # " << which+1 << std::endl;
+    logH += gains[which+1]->perturb(rng);
     return logH;
+}
+
+
+std::string Gains::description() const {
+    std::string descr;
+    for (auto gain : gains) {
+        descr += gain->description();
+        descr += " ";
+    }
+    descr.pop_back();
+    return descr;
+}
+
+
+void Gains::print(std::ostream &out) const {
+    for (auto gain : gains) {
+        gain->print(out);
+    }
 }
 
 

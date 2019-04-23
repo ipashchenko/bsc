@@ -48,6 +48,8 @@ class Gains {
         void print_v(std::ostream &out) const;
         void print_C(std::ostream &out) const;
         void print_L(std::ostream &out) const;
+        std::string description() const;
+        void print(std::ostream &out) const;
     private:
         std::vector<Gain*> gains;
 };

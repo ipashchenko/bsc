@@ -191,7 +191,7 @@ void Gain::from_prior_v_phase() {
 
 
 void Gain::from_prior_hp_amp(DNest4::RNG& rng) {
-    std::cout << "Generating from prior Gain HP AMP" << std::endl;
+    //std::cout << "Generating from prior Gain HP AMP" << std::endl;
     //logamp_amp = -3.0 + 1.0*rng.randn();
     //logscale_amp = 7.0 + 1.0*rng.randn();
     logamp_amp = -3.0;
@@ -208,7 +208,7 @@ void Gain::from_prior_hp_phase(DNest4::RNG& rng) {
 
 
 void Gain::calculate_C_amp() {
-    std::cout << "Calculating C of amp GP" << std::endl;
+    //std::cout << "Calculating C of amp GP" << std::endl;
     Eigen::MatrixXd sqdist = - 2*times_amp*times_amp.transpose();
     sqdist.rowwise() += times_amp.array().square().transpose().matrix();
     sqdist.colwise() += times_amp.array().square().matrix();
@@ -227,7 +227,7 @@ void Gain::calculate_C_phase() {
 
 
 void Gain::calculate_L_amp() {
-    std::cout << "Calculating L of amp GP" << std::endl;
+    //std::cout << "Calculating L of amp GP" << std::endl;
     // perform the Cholesky decomposition of covariance matrix
     Eigen::LLT<Eigen::MatrixXd> cholesky = C_amp.llt();
     // get the lower triangular matrix L
@@ -268,11 +268,21 @@ void Gain::calculate_amplitudes() {
     // Convert std::valarray ``v_amp`` to Eigen::VectorXd
     VectorXd v_amp_vec = Eigen::Map<Eigen::VectorXd, Eigen::Unaligned>(&v_amp[0], v_amp.size());
 
+
+    //// Debug print out v
+    //std::valarray<double> v_amp = std::valarray<double>(v_amp_vec.data(), v_amp_vec.size());
+    ////std::cout << "V amplitudes = " << std::endl;
+    //for (int i=0; i < times_amp.size(); i++) {
+    //    std::cout << v_amp[i] << ", ";
+    //}
+    //std::cout << std::endl;
+
+
     VectorXd amp = L_amp*v_amp_vec;
     // Convert Eigen::VectorXd to std::valarray
     amplitudes = 1.0 + std::valarray<double>(amp.data(), amp.size());
-    std::cout << "Calculated amplitudes: " << std::endl;
-    print_amplitudes(std::cout);
+    //std::cout << "Calculated amplitudes: " << std::endl;
+    //print_amplitudes(std::cout);
 
 }
 
@@ -282,10 +292,21 @@ void Gain::calculate_phases() {
     VectorXd v_phase_vec = Eigen::Map<Eigen::VectorXd, Eigen::Unaligned>(&v_phase[0], v_phase.size());
 
     VectorXd phase = L_phase*v_phase_vec;
+
+
+    //// Debug print out v
+    //std::valarray<double> v_phases = std::valarray<double>(v_phase_vec.data(), v_phase_vec.size());
+    //std::cout << "V phases = " << std::endl;
+    //for (int i=0; i < times_phase.size(); i++) {
+    //    std::cout << v_phases[i] << ", ";
+    //}
+    //std::cout << std::endl;
+
+
     // Convert Eigen::VectorXd to std::valarray
     phases = std::valarray<double>(phase.data(), phase.size());
-    std::cout << "Calculated phases: " << std::endl;
-    print_phases(std::cout);
+    //std::cout << "Calculated phases: " << std::endl;
+    //print_phases(std::cout);
 
 }
 
@@ -355,17 +376,17 @@ double Gain::perturb(DNest4::RNG &rng) {
         //    std::cout << "Perturbed v of GP AMP with logH =" << logH << std::endl;
         //}
 
-        std::cout << "Perturbing v of GP AMP" << std::endl;
+        //std::cout << "Perturbing v of GP AMP" << std::endl;
         logH -= -0.5*pow(v_amp, 2.0).sum();
         v_amp += 0.1*make_normal_random(size_amp());
         logH += -0.5*pow(v_amp, 2.0).sum();
         // It shouldn't be called in case of pre-rejection
         //calculate_amplitudes();
-        std::cout << "Perturbed v of GP AMP with logH =" << logH << std::endl;
+        //std::cout << "Perturbed v of GP AMP with logH =" << logH << std::endl;
 
         // Pre-reject
         if(rng.rand() >= exp(logH)) {
-            std::cout << "Pre-rejected proposal v of GP AMP" << std::endl;
+            //std::cout << "Pre-rejected proposal v of GP AMP" << std::endl;
             return -1E300;
         }
         else
@@ -406,16 +427,16 @@ double Gain::perturb(DNest4::RNG &rng) {
         //    std::cout << "Perturbed v of GP PHASE with logH =" << logH << std::endl;
         //}
 
-        logH -= 0.5*pow(v_phase, 2.0).sum();
+        logH -= -0.5*pow(v_phase, 2.0).sum();
         v_phase += 0.1*make_normal_random(size_phase());
-        logH += 0.5*pow(v_phase, 2.0).sum();
+        logH += -0.5*pow(v_phase, 2.0).sum();
         // It shouldn't be called in case of pre-rejection
         //calculate_phases();
-        std::cout << "Perturbed v of GP PHASE with logH =" << logH << std::endl;
+        //std::cout << "Perturbed v of GP PHASE with logH =" << logH << std::endl;
 
         // Pre-reject
         if(rng.rand() >= exp(logH)) {
-            std::cout << "Pre-rejected proposal v of GP PHASE" << std::endl;
+            //std::cout << "Pre-rejected proposal v of GP PHASE" << std::endl;
             return -1E300;
         }
         else
@@ -426,6 +447,29 @@ double Gain::perturb(DNest4::RNG &rng) {
     }
 
     return logH;
+}
+
+
+std::string Gain::description() const {
+    std::string descr;
+    for (int i = 0; i < times_amp.size(); i++) {
+        descr += ("amp" + std::to_string(i) + " ");
+    }
+    for (int i = 0; i < times_phase.size(); i++) {
+        descr += ("phase" + std::to_string(i) + " ");
+    }
+    descr.pop_back();
+    return descr;
+}
+
+
+void Gain::print(std::ostream &out) const {
+    for (int i = 0; i < times_amp.size(); i++) {
+        out << amplitudes[i] << '\t';
+    }
+    for (int i = 0; i < times_phase.size(); i++) {
+        out << phases[i] << '\t';
+    }
 }
 
 

@@ -101,23 +101,55 @@ void check_gains() {
 
 }
 
-int main() {
-    //check_random();
-    check_dnestmodel();
-    //check_skymodel();
-    //check_gain();
-    //check_gain_ptr();
-    //check_gains();
-    return 0;
-}
 
 
-//int main(int argc, char** argv)
-//{
-//    Data::get_instance().load("/home/ilya/github/bsc/uv_data_gains.txt");
-//    // set the sampler and run it!
-//    Sampler<DNestModel> sampler = setup<DNestModel>(argc, argv);
-//    sampler.run();
+//void check_description() {
+//    //SkyModel sky_model = SkyModel();
+//    //int ncomp = 1;
+//    //for (int i=0; i<ncomp; i++) {
+//    //    auto* comp = new CGComponent();
+//    //    sky_model.add_component(comp);
+//    //}
+//    //std::string descr_skymodel = sky_model.description();
+//    //std::cout << descr_skymodel << std::endl;
+//    //
+//    //Data::get_instance().load("/home/ilya/github/bsc/uv_data_gains.txt");
+//    //Data data = Data::get_instance();
+//    //Gain gain = Gain(data.get_times_amp(), data.get_times_phase());
+//    //std::string descr_gain = gain.description();
+//    //std::cout << descr_gain << std::endl;
+//    //
+//    //Data::get_instance().load("/home/ilya/github/bsc/uv_data_gains.txt");
+//    //Gains* gains = new Gains(Data::get_instance());
+//    //std::string descr_gains = gains->description();
+//    //std::cout << descr_gains << std::endl;
 //
+//    Data::get_instance().load("/home/ilya/github/bsc/uv_data_gains.txt");
+//    DNestModel model = DNestModel();
+//    std::string descr_dn = model.description();
+//    std::cout << descr_dn << std::endl;
+//    model.print(std::cout);
+//}
+
+
+//int main() {
+//    //check_random();
+//    //check_dnestmodel();
+//    //check_skymodel();
+//    //check_gain();
+//    //check_gain_ptr();
+//    //check_gains();
+//    check_description();
 //    return 0;
 //}
+
+
+int main(int argc, char** argv)
+{
+    Data::get_instance().load("/home/ilya/github/bsc/uv_data_gains.txt");
+    // set the sampler and run it!
+    Sampler<DNestModel> sampler = setup<DNestModel>(argc, argv);
+    sampler.run();
+
+    return 0;
+}

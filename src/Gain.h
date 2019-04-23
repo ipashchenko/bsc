@@ -24,7 +24,7 @@ class Gain {
 
         //Gain&operator=(const Gain& other);
 
-
+        void print(std::ostream &out) const;
         void print_times(std::ostream &out) const;
         void print_hp(std::ostream &out) const;
         void print_v(std::ostream &out) const;
@@ -61,6 +61,7 @@ class Gain {
 
         void print_amplitudes(std::ostream& out) const;
         void print_phases(std::ostream& out) const;
+        std::string description() const;
 
 
     private:

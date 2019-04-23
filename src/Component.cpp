@@ -100,7 +100,7 @@ void CGComponent::set_param_vec(std::valarray<double> param) {
 
 void CGComponent::print(std::ostream &out) const
 {
-    out << "x=" << dx_ << ", " << "y=" << dy_ << ", " << "logflux=" << logflux_ << ", "<< "logsize=" << logbmaj_ << "\n";
+    out << dx_ << '\t' << dy_ << '\t' << logflux_ << '\t' << logbmaj_ << '\t';
 }
 
 
@@ -111,7 +111,7 @@ void CGComponent::from_prior(DNest4::RNG &rng) {
      // Log-normal prior for flux and bmaj
      logflux_ = -1.5 + 1.0*rng.randn();
      logbmaj_ = -2. + 1.0*rng.randn();
-     std::cout << "Generating from prior CGComponent" << std::endl;
+     //std::cout << "Generating from prior CGComponent" << std::endl;
 
      //dx_ = dx_prior->generate(rng);
      //dy_ = dy_prior->generate(rng);
@@ -132,10 +132,10 @@ double CGComponent::perturb(DNest4::RNG &rng) {
         //log_H -= dx_prior->log_pdf(dx_);
         //dx_prior->perturb(dx_, rng);
         //log_H += -dx_prior->log_pdf(dx_);
-        std::cout << "perturb x from " << dx_;
+        //std::cout << "perturb x from " << dx_;
         log_H -= -0.5*pow(dx_/0.25, 2);
         dx_ += 0.25*rng.randh();
-        std::cout << " to " << dx_ << std::endl;
+        //std::cout << " to " << dx_ << std::endl;
         log_H += -0.5*pow(dx_/0.25, 2);
 
         //std::cout << "Perturbed dx_ with logH =" << log_H << std::endl;
@@ -159,10 +159,10 @@ double CGComponent::perturb(DNest4::RNG &rng) {
         //dx_prior->perturb(dx_, rng);
         //log_H += -dx_prior->log_pdf(dx_);
 
-        std::cout << "perturb y from " << dy_;
+        //std::cout << "perturb y from " << dy_;
         log_H -= -0.5*pow(dy_/0.25, 2);
         dy_ += 0.25*rng.randh();
-        std::cout << " to " << dy_ << std::endl;
+        //std::cout << " to " << dy_ << std::endl;
         log_H += -0.5*pow(dy_/0.25, 2);
 
         //std::cout << "Perturbed dy_ with logH =" << log_H << std::endl;
@@ -176,10 +176,10 @@ double CGComponent::perturb(DNest4::RNG &rng) {
         //wrap(params[which], -7., 1.);
         //params[which] = exp(params[which]);
 
-        std::cout << "perturb logflux from " << logflux_;
+        //std::cout << "perturb logflux from " << logflux_;
         log_H -= -0.5*pow((logflux_+1.5)/1, 2);
         logflux_ += 1*rng.randh();
-        std::cout << " to " << logflux_ << std::endl;
+        //std::cout << " to " << logflux_ << std::endl;
         log_H += -0.5*pow((logflux_+1.5)/1, 2);
 
         //std::cout << "Perturbed logflux with logH =" << log_H << std::endl;
@@ -193,11 +193,11 @@ double CGComponent::perturb(DNest4::RNG &rng) {
         //wrap(params[which], -10., 2.);
         //params[which] = exp(params[which]);
 
-        std::cout << "perturb logsize from " << logbmaj_ << std::endl;
+        //std::cout << "perturb logsize from " << logbmaj_ << std::endl;
         log_H -= -0.5*pow((logbmaj_+2.0)/1.0, 2);
         logbmaj_ += 1.0*rng.randh();
         log_H += -0.5*pow((logbmaj_+2.0)/1.0, 2);
-        std::cout << " to " << logbmaj_ << std::endl;
+        //std::cout << " to " << logbmaj_ << std::endl;
 
         //std::cout << "Perturbed logsize with logH =" << log_H << std::endl;
 
@@ -240,5 +240,12 @@ CGComponent::CGComponent(const CGComponent &other) {
     logbmaj_ = other.logbmaj_;
     mu_real = other.get_mu_real();
     mu_imag = other.get_mu_imag();
+}
+
+
+std::string CGComponent::description() const {
+    std::string descr;
+    descr += "x y flux bmaj";
+    return descr;
 }
 
