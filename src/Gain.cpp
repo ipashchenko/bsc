@@ -333,110 +333,37 @@ double Gain::perturb(DNest4::RNG &rng) {
     double logH = 0.;
 
     int which = rng.rand_int(2);
-    // Amplitude GP - update less often than phase GP
+    // Amplitude GP
     if(which == 0) {
 
+        // Choose what value to perturb
+        int which = rng.rand_int(amplitudes.size());
 
-        //if(rng.rand() <= 0.5)
-        //{
-        //    std::cout << "Perturbing amp of GP AMP" << std::endl;
-        //    std::cout << "from logamp_amp = " << logamp_amp << " ";
-        //    logH -= -0.5*pow((logamp_amp+3)/1, 2);
-        //    logamp_amp += 1*rng.rand();
-        //    std::cout << "to logamp_amp = " << logamp_amp << std::endl;
-        //    logH += -0.5*pow((logamp_amp+3)/1, 2);
-        //    calculate_C_amp();
-        //    calculate_L_amp();
-        //    std::cout << "amplitudes of GP AMP before = " << std::endl;
-        //    print_amplitudes(std::cout);
-        //    calculate_amplitudes();
-        //    std::cout << "amplitudes of GP AMP after = " << std::endl;
-        //    print_amplitudes(std::cout);
-        //    std::cout << "Perturbed amp of GP AMP with logH =" << logH << std::endl;
-        //
-        //}
-        //else if (rng.rand() <= 0.5) {
-        //    std::cout << "Perturbing scale of GP AMP" << std::endl;
-        //    std::cout << "from logscale_amp = " << logscale_amp;
-        //    logH -= -0.5*pow((logscale_amp-7)/1, 2);
-        //    logscale_amp += 1*rng.rand();
-        //    std::cout << "to logscale_amp = " << logscale_amp << std::endl;
-        //    logH += -0.5*pow((logscale_amp-7)/1, 2);
-        //    calculate_C_amp();
-        //    calculate_L_amp();
-        //    calculate_amplitudes();
-        //    std::cout << "Perturbed scale of GP AMP with logH =" << logH << std::endl;
-        //}
-        //else {
-        //    std::cout << "Perturbing v of GP AMP" << std::endl;
-        //    logH -= -0.5*pow(v_amp, 2.0).sum();
-        //    v_amp += 0.1*make_normal_random(size_amp());
-        //    logH += -0.5*pow(v_amp, 2.0).sum();
-        //    calculate_amplitudes();
-        //    std::cout << "Perturbed v of GP AMP with logH =" << logH << std::endl;
-        //}
-
-        //std::cout << "Perturbing v of GP AMP" << std::endl;
-        logH -= -0.5*pow(v_amp, 2.0).sum();
-        v_amp += 0.1*make_normal_random(size_amp());
-        logH += -0.5*pow(v_amp, 2.0).sum();
-        // It shouldn't be called in case of pre-rejection
-        //calculate_amplitudes();
-        //std::cout << "Perturbed v of GP AMP with logH =" << logH << std::endl;
+        logH -= -0.5*pow(v_amp[which], 2.0);
+        v_amp[which] += rng.randn();
+        logH += -0.5*pow(v_amp[which], 2.0);
 
         // Pre-reject
         if(rng.rand() >= exp(logH)) {
-            //std::cout << "Pre-rejected proposal v of GP AMP" << std::endl;
             return -1E300;
         }
         else
             logH = 0.0;
 
         calculate_amplitudes();
-
     }
     // Phase GP
     else {
 
+        // Choose what value to perturb
+        int which = rng.rand_int(phases.size());
 
-
-        //if(rng.rand() <= 0.5)
-        //{
-        //    logH -= -0.5*pow((logamp_phase+3.0)/1.0, 2.0);
-        //    logamp_phase += 1*rng.rand();
-        //    logH += -0.5*pow((logamp_phase+3.0)/1.0, 2.0);
-        //    calculate_C_phase();
-        //    calculate_L_phase();
-        //    calculate_phases();
-        //    std::cout << "Perturbed amp of GP PHASE with logH =" << logH << std::endl;
-        //}
-        //else if (rng.rand() <= 0.5) {
-        //    logH -= -0.5*pow((logscale_phase-5.0)/1.0, 2.0);
-        //    logscale_phase += 1*rng.rand();
-        //    logH += -0.5*pow((logscale_phase-5.0)/1.0, 2.0);
-        //    calculate_C_phase();
-        //    calculate_L_phase();
-        //    calculate_phases();
-        //    std::cout << "Perturbed scale of GP PHASE with logH =" << logH << std::endl;
-        //}
-        //else {
-        //    logH -= 0.5*pow(v_phase, 2.0).sum();
-        //    v_phase += 0.1*make_normal_random(size_phase());
-        //    logH += 0.5*pow(v_phase, 2.0).sum();
-        //    calculate_phases();
-        //    std::cout << "Perturbed v of GP PHASE with logH =" << logH << std::endl;
-        //}
-
-        logH -= -0.5*pow(v_phase, 2.0).sum();
-        v_phase += 0.1*make_normal_random(size_phase());
-        logH += -0.5*pow(v_phase, 2.0).sum();
-        // It shouldn't be called in case of pre-rejection
-        //calculate_phases();
-        //std::cout << "Perturbed v of GP PHASE with logH =" << logH << std::endl;
+        logH -= -0.5*pow(v_phase[which], 2.0);
+        v_phase[which] += rng.randn();
+        logH += -0.5*pow(v_phase[which], 2.0);
 
         // Pre-reject
         if(rng.rand() >= exp(logH)) {
-            //std::cout << "Pre-rejected proposal v of GP PHASE" << std::endl;
             return -1E300;
         }
         else
