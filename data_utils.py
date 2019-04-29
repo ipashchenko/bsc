@@ -378,8 +378,7 @@ if __name__ == "__main__":
     re, im = gaussian_circ_ft(flux=1.0, dx=0.0, dy=0.0, bmaj=1.0, uv=df[["u", "v"]].values)
     df["vis_re"] += re
     df["vis_im"] += im
-    # Add noise
-    df = add_noise(df, use_global_median_noise=True, use_per_baseline_median_noise=False)
+
     # Plot
     fig = radplot(df, label="Sky Model")
 
@@ -390,13 +389,16 @@ if __name__ == "__main__":
                                           scale_gpphase=np.exp(5),
                                           amp_gpamp=np.exp(-2),
                                           amp_gpphase=np.exp(-2))
+    # Add noise
+    df_updated = add_noise(df_updated, use_global_median_noise=True, use_per_baseline_median_noise=False)
+
     fig = radplot(df_updated, color="#ff7f0e", fig=fig, label="With gains")
     fig = plot_gains(gains_dict)
-    #
-    # import json
-    # # Save gains
-    # with open("/home/ilya/github/bsc/gains.json", "w") as fo:
-    #     json.dump(str(gains_dict), fo)
+
+    import json
+    # Save gains
+    with open("/home/ilya/github/bsc/gains.json", "w") as fo:
+        json.dump(str(gains_dict), fo)
     # # Load gains
     # with open("/home/ilya/github/bsc/gains.json", "r") as fo:
     #     loaded_gains_dict = json.load(fo)
