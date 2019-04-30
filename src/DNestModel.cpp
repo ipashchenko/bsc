@@ -121,6 +121,9 @@ void DNestModel::calculate_sky_mu() {
 
 void DNestModel::calculate_mu() {
 
+    // Mapping from antenna numbers (ant_i/j) to position in vector of antennas.
+    std::unordered_map<int, int>& antennas_map = Data::get_instance().get_antennas_map();
+
     // Grab antenna numbers and indexes in gain curves of individual visibility measurements
     const std::vector<int>& ant_i = Data::get_instance().get_ant_i();
     const std::vector<int>& ant_j = Data::get_instance().get_ant_j();
@@ -141,10 +144,10 @@ void DNestModel::calculate_mu() {
     std::valarray<double> phase_ant_j (0.0, ant_i.size());
 
     for (int k=0; k<ant_i.size(); k++) {
-        amp_ant_i[k] += gains->operator[](ant_i[k]-1)->get_amplitudes()[idx_amp_ant_i[k]];
-        amp_ant_j[k] += gains->operator[](ant_j[k]-1)->get_amplitudes()[idx_amp_ant_j[k]];
-        phase_ant_i[k] += gains->operator[](ant_i[k]-1)->get_phases()[idx_amp_ant_i[k]];
-        phase_ant_j[k] += gains->operator[](ant_j[k]-1)->get_phases()[idx_amp_ant_j[k]];
+        amp_ant_i[k] += gains->operator[](antennas_map[ant_i[k]])->get_amplitudes()[idx_amp_ant_i[k]];
+        amp_ant_j[k] += gains->operator[](antennas_map[ant_j[k]])->get_amplitudes()[idx_amp_ant_j[k]];
+        phase_ant_i[k] += gains->operator[](antennas_map[ant_i[k]])->get_phases()[idx_amp_ant_i[k]];
+        phase_ant_j[k] += gains->operator[](antennas_map[ant_j[k]])->get_phases()[idx_amp_ant_j[k]];
         //std::cout << "Amplitudes of gains in DNEstModel::calculate_mu : " << amp_ant_i[k] << ", " << amp_ant_j[k] << std::endl;
     }
 

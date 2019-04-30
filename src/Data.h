@@ -3,12 +3,14 @@
 
 #include <valarray>
 #include <vector>
+#include <unordered_map>
 
 
 class Data
 {
 private:
     std::vector<int> antennas;
+    std::unordered_map<int, int> antennas_map;
     // The data points
     // Antenna numbers
     std::vector<int> ant_i;
@@ -76,6 +78,8 @@ public:
     { return idx_phase_ant_j; }
     const std::vector<int>& get_antennas() const
     { return antennas; }
+    std::unordered_map<int, int>& get_antennas_map()
+    { return antennas_map; }
 
 private:
     // Static "global" instance

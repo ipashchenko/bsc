@@ -61,7 +61,15 @@ void Data::load(const char* filename)
     std::set<int> s( antennas.begin(), antennas.end() );
     antennas.assign( s.begin(), s.end() );
 
-    // Copy the data to the valarrays
+    // Generate the map between ant_i, ant_j and their position in antennas vector
+    for (int i=0; i<antennas.size();i++) {
+        antennas_map[antennas[i]] = i;
+    }
+    for (auto x : antennas_map) {
+        std::cout << x.first << " -- " << x.second << std::endl;
+    }
+
+        // Copy the data to the valarrays
     u = valarray<double>(&_u[0], _u.size());
     v = valarray<double>(&_v[0], _v.size());
     vis_real = valarray<double>(&_vis_real[0], _vis_real.size());
