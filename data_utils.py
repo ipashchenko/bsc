@@ -64,8 +64,12 @@ def create_data_file(uvfits, outfile, step_amp=60, step_phase=None):
         ant1 = int(baseline//256)
         ant2 = int(baseline-ant1*256)
 
-        u = group["UU"]
-        v = group["VV"]
+        try:
+            u = group["UU"]
+            v = group["VV"]
+        except KeyError:
+            u = group["UU--"]
+            v = group["VV--"]
         if abs(u) < 1.:
             u *= freq
             v *= freq
