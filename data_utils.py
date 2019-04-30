@@ -375,7 +375,7 @@ if __name__ == "__main__":
     df["vis_re"] = 0
     df["vis_im"] = 0
     # Add model
-    re, im = gaussian_circ_ft(flux=1.0, dx=0.0, dy=0.0, bmaj=1.0, uv=df[["u", "v"]].values)
+    re, im = gaussian_circ_ft(flux=3.0, dx=0.0, dy=0.0, bmaj=0.1, uv=df[["u", "v"]].values)
     df["vis_re"] += re
     df["vis_im"] += im
 
