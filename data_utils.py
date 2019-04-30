@@ -329,7 +329,7 @@ def radplot(df, fig=None, color=None, label=None, style="ap"):
 
     if style == "ap":
         value1 = np.hypot(df["vis_re"].values, df["vis_im"].values)
-        value2 = np.arctan2(df["vis_re"].values, df["vis_im"].values)
+        value2 = np.arctan2(df["vis_im"].values, df["vis_re"].values)
     elif style == "reim":
         value1 = df["vis_re"].values
         value2 = df["vis_im"].values
