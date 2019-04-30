@@ -146,7 +146,7 @@ using namespace DNest4;
 
 int main(int argc, char** argv)
 {
-    Data::get_instance().load("/home/ilya/github/bsc/uv_data_gains.txt");
+    Data::get_instance().load("/home/ilya/github/bsc/0716_gains.txt");
     // set the sampler and run it!
     Sampler<DNestModel> sampler = setup<DNestModel>(argc, argv);
     sampler.run();

@@ -14,10 +14,10 @@ using Eigen::MatrixXd;
 
 
 Gain::Gain(std::vector<double> new_times_amp, std::vector<double> new_times_phase) :
-    logamp_amp(-2.3),
-    logamp_phase(-2.3),
-    logscale_amp(6.0),
-    logscale_phase(4.0)
+    logamp_amp(-3.0),
+    logamp_phase(-3.0),
+    logscale_amp(7.0),
+    logscale_phase(5.0)
 
     {
     // Get unique times of gain amplitudes
@@ -49,10 +49,10 @@ Gain::Gain(std::vector<double> new_times_amp, std::vector<double> new_times_phas
 
 
 Gain::Gain(std::vector<double> new_times) :
-    logamp_amp(-2.3),
-    logamp_phase(-2.3),
-    logscale_amp(6.0),
-    logscale_phase(4.0)
+    logamp_amp(-3.0),
+    logamp_phase(-3.0),
+    logscale_amp(7.0),
+    logscale_phase(5.0)
 
     {
     // Get unique times of gain amplitude & phase

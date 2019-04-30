@@ -362,10 +362,11 @@ def radplot(df, fig=None, color=None, label=None, style="ap"):
 
 
 if __name__ == "__main__":
-    uvfits_fname = "/home/ilya/github/DNest4/code/Examples/UV/J2001+2416_K_2006_06_11_yyk_vis.fits"
-    fname = "/home/ilya/github/bsc/uv_data.txt"
+    # uvfits_fname = "/home/ilya/github/DNest4/code/Examples/UV/J2001+2416_K_2006_06_11_yyk_vis.fits"
+    uvfits_fname = "/home/ilya/github/DNest4/code/Examples/UV/0716+714.u.2013_08_20.uvf"
+    fname = "/home/ilya/github/bsc/0716.txt"
 
-    df = create_data_file(uvfits_fname, fname, step_amp=120)
+    df = create_data_file(uvfits_fname, fname, step_amp=120, step_phase=60)
 # # Load data frame
     # columns = ["times",
     #            "ant1", "ant2",
@@ -379,7 +380,7 @@ if __name__ == "__main__":
     df["vis_re"] = 0
     df["vis_im"] = 0
     # Add model
-    re, im = gaussian_circ_ft(flux=3.0, dx=0.0, dy=0.0, bmaj=0.1, uv=df[["u", "v"]].values)
+    re, im = gaussian_circ_ft(flux=3.0, dx=0.0, dy=0.0, bmaj=0.25, uv=df[["u", "v"]].values)
     df["vis_re"] += re
     df["vis_im"] += im
 
@@ -387,12 +388,12 @@ if __name__ == "__main__":
     fig = radplot(df, label="Sky Model")
 
     # Add gains
-    fname_gains = "/home/ilya/github/bsc/uv_data_gains.txt"
+    fname_gains = "/home/ilya/github/bsc/0716_gains.txt"
     df_updated, gains_dict = inject_gains(df, outfname=fname_gains,
                                           scale_gpamp=np.exp(7),
                                           scale_gpphase=np.exp(5),
-                                          amp_gpamp=np.exp(-2),
-                                          amp_gpphase=np.exp(-2))
+                                          amp_gpamp=np.exp(-3),
+                                          amp_gpphase=np.exp(-3))
     # Add noise
     df_updated = add_noise(df_updated, use_global_median_noise=True, use_per_baseline_median_noise=False)
 
@@ -401,7 +402,7 @@ if __name__ == "__main__":
 
     import json
     # Save gains
-    with open("/home/ilya/github/bsc/gains.json", "w") as fo:
+    with open("/home/ilya/github/bsc/gains_0716.json", "w") as fo:
         json.dump(str(gains_dict), fo)
     # # Load gains
     # with open("/home/ilya/github/bsc/gains.json", "r") as fo:
