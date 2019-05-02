@@ -44,9 +44,9 @@ void Data::load(const char* filename)
         _vis_imag.push_back(temp5);
         _sigma.push_back(temp6);
         times_amp.push_back(temp7);
-        std::cout << "Adding to ant=" << temp9 << " amp time=" << temp7 << std::endl;
+        //std::cout << "Adding to ant=" << temp9 << " amp time=" << temp7 << std::endl;
         antennas_amp_times_map[temp9].emplace(temp7);
-        std::cout << "Adding to ant=" << temp10 << " amp time=" << temp7 << std::endl;
+        //std::cout << "Adding to ant=" << temp10 << " amp time=" << temp7 << std::endl;
         antennas_amp_times_map[temp10].emplace(temp7);
         idx_amp_ant_i.push_back(temp11);
         idx_amp_ant_j.push_back(temp12);
