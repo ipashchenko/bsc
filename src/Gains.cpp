@@ -8,11 +8,11 @@
 
 
 Gains::Gains(Data data) {
-    std::vector<int> antennas = data.get_instance().get_antennas();
+    // This map from antenna numbers to antenna indexes.
+    auto antennas_map = data.get_antennas_map();
     for (int i=0; i<data.n_antennas(); i++) {
-        gains.emplace_back(new Gain(data.get_times_amp(), data.get_times_phase()));
+        gains.emplace_back(new Gain(data.get_times_amp()[antennas_map[i]], data.get_times_phase()[antennas_map[i]]));
     }
-    //std::cout << "Ctor of Gains finished" << std::endl;
 }
 
 
