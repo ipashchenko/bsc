@@ -146,8 +146,8 @@ void DNestModel::calculate_mu() {
     for (int k=0; k<ant_i.size(); k++) {
         amp_ant_i[k] += gains->operator[](antennas_map[ant_i[k]])->get_amplitudes()[idx_amp_ant_i[k]];
         amp_ant_j[k] += gains->operator[](antennas_map[ant_j[k]])->get_amplitudes()[idx_amp_ant_j[k]];
-        phase_ant_i[k] += gains->operator[](antennas_map[ant_i[k]])->get_phases()[idx_amp_ant_i[k]];
-        phase_ant_j[k] += gains->operator[](antennas_map[ant_j[k]])->get_phases()[idx_amp_ant_j[k]];
+        phase_ant_i[k] += gains->operator[](antennas_map[ant_i[k]])->get_phases()[idx_phase_ant_i[k]];
+        phase_ant_j[k] += gains->operator[](antennas_map[ant_j[k]])->get_phases()[idx_phase_ant_j[k]];
         //std::cout << "Amplitudes of gains in DNEstModel::calculate_mu : " << amp_ant_i[k] << ", " << amp_ant_j[k] << std::endl;
     }
 
