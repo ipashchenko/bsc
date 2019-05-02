@@ -44,9 +44,15 @@ void Data::load(const char* filename)
         _vis_imag.push_back(temp5);
         _sigma.push_back(temp6);
         times_amp.push_back(temp7);
+        std::cout << "Adding to ant=" << temp9 << " amp time=" << temp7 << std::endl;
+        antennas_amp_times_map[temp9].emplace(temp7);
+        std::cout << "Adding to ant=" << temp10 << " amp time=" << temp7 << std::endl;
+        antennas_amp_times_map[temp10].emplace(temp7);
         idx_amp_ant_i.push_back(temp11);
         idx_amp_ant_j.push_back(temp12);
         times_phase.push_back(temp8);
+        antennas_phase_times_map[temp9].emplace(temp8);
+        antennas_phase_times_map[temp10].emplace(temp8);
         idx_phase_ant_i.push_back(temp13);
         idx_phase_ant_j.push_back(temp14);
 
@@ -55,27 +61,27 @@ void Data::load(const char* filename)
     // Close the file
     fin.close();
 
-    // Vector of antenna numbers
+    // Vector of the unique antenna numbers
     antennas.insert(antennas.end(), ant_i.begin(), ant_i.end());
     antennas.insert(antennas.end(), ant_j.begin(), ant_j.end());
-    std::set<int> s( antennas.begin(), antennas.end() );
-    antennas.assign( s.begin(), s.end() );
+    std::set<int> s(antennas.begin(), antennas.end());
+    antennas.assign(s.begin(), s.end());
 
     // Generate the map between ant_i and its position in antennas vector
     for (int i=0; i<antennas.size();i++) {
         antennas_map[antennas[i]] = i;
     }
-    for (auto x : antennas_map) {
-        std::cout << x.first << " -- " << x.second << std::endl;
-    }
+    //for (auto x : antennas_map) {
+    //    std::cout << x.first << " -- " << x.second << std::endl;
+    //}
 
     // Generate the map between antenna position in antennas vector and ant_i
     for (int i=0; i<antennas.size();i++) {
         antennas_map_inv[i] = antennas[i];
     }
-    for (auto x : antennas_map_inv) {
-        std::cout << x.first << " -- " << x.second << std::endl;
-    }
+    //for (auto x : antennas_map_inv) {
+    //    std::cout << x.first << " -- " << x.second << std::endl;
+    //}
 
     // Copy the data to the valarrays
     u = valarray<double>(&_u[0], _u.size());
@@ -84,6 +90,16 @@ void Data::load(const char* filename)
     vis_imag = valarray<double>(&_vis_imag[0], _vis_imag.size());
     sigma = valarray<double>(&_sigma[0], _sigma.size());
 
+}
+
+
+std::unordered_map<int, std::set<double>> &Data::get_times_amp() {
+    return antennas_amp_times_map;
+}
+
+
+std::unordered_map<int, std::set<double>> &Data::get_times_phase() {
+    return antennas_phase_times_map;
 }
 
 

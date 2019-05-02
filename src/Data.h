@@ -3,6 +3,7 @@
 
 #include <valarray>
 #include <vector>
+#include <set>
 #include <unordered_map>
 
 
@@ -16,6 +17,11 @@ class Data
         std::unordered_map<int, int> antennas_map;
         // Map between antenna position in antennas vector and ant_i
         std::unordered_map<int, int> antennas_map_inv;
+        // Map between ant_i and amplitude times of ant_i
+        std::unordered_map<int, std::set<double>> antennas_amp_times_map;
+        // Map between ant_i and phases times of ant_i
+        std::unordered_map<int, std::set<double>> antennas_phase_times_map;
+
         // Antenna numbers
         std::vector<int> ant_i;
         std::vector<int> ant_j;
@@ -70,10 +76,11 @@ class Data
         { return sigma; }
         const std::vector<double>& get_times() const
         { return times; }
-        const std::vector<double>& get_times_amp() const
-        { return times_amp; }
-        const std::vector<double>& get_times_phase() const
-        { return times_phase; }
+
+        std::unordered_map<int, std::set<double>>& get_times_amp();
+
+        std::unordered_map<int, std::set<double>>& get_times_phase();
+
         const std::vector<int>& get_idx_amp_ant_i() const
         { return idx_amp_ant_i; }
         const std::vector<int>& get_idx_amp_ant_j() const
