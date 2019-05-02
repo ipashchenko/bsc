@@ -9,9 +9,9 @@
 
 Gains::Gains(Data data) {
     // This map from antenna numbers to antenna indexes.
-    auto antennas_map = data.get_antennas_map();
+    auto antennas_map_inv = data.get_antennas_map_inv();
     for (int i=0; i<data.n_antennas(); i++) {
-        gains.emplace_back(new Gain(data.get_times_amp()[antennas_map[i]], data.get_times_phase()[antennas_map[i]]));
+        gains.emplace_back(new Gain(data.get_times_amp()[antennas_map_inv[i]], data.get_times_phase()[antennas_map_inv[i]]));
     }
 }
 
