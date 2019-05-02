@@ -114,30 +114,34 @@ def create_data_file(uvfits, outfile, step_amp=60, step_phase=None):
     # df["ant1_ntimes"] = [antennas_times_lengths[ant] for ant in df["ant1"]]
     # df["ant2_ntimes"] = [antennas_times_lengths[ant] for ant in df["ant2"]]
 
+    # Here using common time grid for re-gridding
+    times = df["times"].unique()
+    tmin = np.min(times)
+    tmax = np.max(times)
+    dt = tmax-tmin
     if step_amp is not None:
         # Re-grid time measurements
         new_idx_dict = {}
         new_times_dict = {}
+
+        # Step size for amplitudes
+        step = step_amp
+        n = int(dt/step)
+        tsamples, step = np.linspace(tmin, tmax, n, retstep=True)
+        hist, bins_enges = np.histogram(times, tsamples)
+        non_empty = np.where(hist > 0)[0]
+        # New times of samples - for amplitudes
+        new_times = (tsamples + step/2)[:-1][non_empty]
+        new_idx = [a*[i] for i, a in enumerate(hist[non_empty])]
+        new_idx = np.array([item for sublist in new_idx for item in sublist], dtype=int)
+
+        # To keep old code working
         for ant in antennas:
-            # Step size for amplitudes
-            step = step_amp
-            times = np.array(antennas_times[ant])
-            tmin = np.min(times)
-            tmax = np.max(times)
-            dt = tmax-tmin
-            n = int(dt/step)
-            tsamples, step = np.linspace(tmin, tmax, n, retstep=True)
-            hist, bins_enges = np.histogram(times, tsamples)
-            non_empty = np.where(hist > 0)[0]
-            # New times of samples
-            new_times = (tsamples + step/2)[:-1][non_empty]
-            new_idx = [a*[i] for i, a in enumerate(hist[non_empty])]
-            new_idx = np.array([item for sublist in new_idx for item in sublist], dtype=int)
             new_idx_dict[ant] = new_idx
             new_times_dict[ant] = new_times
-        df["idx_amp_ant1"] = [new_idx_dict[ant][idx]  for (ant, idx) in
+        df["idx_amp_ant1"] = [new_idx_dict[ant][idx] for (ant, idx) in
                               df[["ant1", "id_ant1"]].values]
-        df["idx_amp_ant2"] = [new_idx_dict[ant][idx]  for (ant, idx) in
+        df["idx_amp_ant2"] = [new_idx_dict[ant][idx] for (ant, idx) in
                               df[["ant2", "id_ant2"]].values]
         df["times_amp"] = [new_times_dict[ant][idx] for (ant, idx) in
                            df[["ant1", "idx_amp_ant1"]].values]
@@ -150,22 +154,20 @@ def create_data_file(uvfits, outfile, step_amp=60, step_phase=None):
         # Re-grid time measurements
         new_idx_dict = {}
         new_times_dict = {}
+
+        # Step size for phases
+        step = step_phase
+        n = int(dt/step)
+        tsamples, step = np.linspace(tmin, tmax, n, retstep=True)
+        hist, bins_enges = np.histogram(times, tsamples)
+        non_empty = np.where(hist > 0)[0]
+        # New times of samples - for phases
+        new_times = (tsamples+step/2)[:-1][non_empty]
+        new_idx = [a*[i] for i, a in enumerate(hist[non_empty])]
+        new_idx = np.array([item for sublist in new_idx for item in sublist], dtype=int)
+
+        # To keep old code working
         for ant in antennas:
-            # Step size for amplitudes
-            step = step_phase
-            times = np.array(antennas_times[ant])
-            tmin = np.min(times)
-            tmax = np.max(times)
-            dt = tmax-tmin
-            n = int(dt/step)
-            tsamples, step = np.linspace(tmin, tmax, n, retstep=True)
-            hist, bins_enges = np.histogram(times, tsamples)
-            non_empty = np.where(hist > 0)[0]
-            # New times of samples
-            new_times = (tsamples+step/2)[:-1][non_empty]
-            new_idx = [a*[i] for i, a in enumerate(hist[non_empty])]
-            new_idx = np.array(
-                [item for sublist in new_idx for item in sublist], dtype=int)
             new_idx_dict[ant] = new_idx
             new_times_dict[ant] = new_times
         df["idx_phase_ant1"] = [new_idx_dict[ant][idx] for (ant, idx) in
@@ -405,7 +407,7 @@ if __name__ == "__main__":
     with open("/home/ilya/github/bsc/gains_0716.json", "w") as fo:
         json.dump(str(gains_dict), fo)
     # # Load gains
-    # with open("/home/ilya/github/bsc/gains.json", "r") as fo:
+    # with open("/home/ilya/github/bsc/gains_0716.json", "r") as fo:
     #     loaded_gains_dict = json.load(fo)
     # import ast
     # loaded_gains_dict = ast.literal_eval(loaded_gains_dict)
