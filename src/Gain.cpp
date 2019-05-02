@@ -13,7 +13,7 @@ using Eigen::VectorXd;
 using Eigen::MatrixXd;
 
 
-Gain::Gain(std::vector<double> new_times_amp, std::vector<double> new_times_phase) :
+Gain::Gain(std::set<double> new_times_amp, std::set<double> new_times_phase) :
     logamp_amp(-3.0),
     logamp_phase(-3.0),
     logscale_amp(7.0),
@@ -22,12 +22,10 @@ Gain::Gain(std::vector<double> new_times_amp, std::vector<double> new_times_phas
     {
     // Get unique times of gain amplitudes
     std::vector<double> times_amp_vec;
-    std::set<double> s_amp( new_times_amp.begin(), new_times_amp.end() );
-    times_amp_vec.assign( s_amp.begin(), s_amp.end() );
+    times_amp_vec.assign(new_times_amp.begin(), new_times_amp.end());
     // Get unique times of gain phases
     std::vector<double> times_phase_vec;
-    std::set<double> s_phase( new_times_phase.begin(), new_times_phase.end() );
-    times_phase_vec.assign( s_phase.begin(), s_phase.end() );
+    times_phase_vec.assign(new_times_phase.begin(), new_times_phase.end());
     // Convert to Eigen VectorXd
     times_amp = Eigen::Map<Eigen::VectorXd, Eigen::Unaligned>(times_amp_vec.data(), times_amp_vec.size());
     times_phase = Eigen::Map<Eigen::VectorXd, Eigen::Unaligned>(times_phase_vec.data(), times_phase_vec.size());
@@ -48,7 +46,7 @@ Gain::Gain(std::vector<double> new_times_amp, std::vector<double> new_times_phas
     }
 
 
-Gain::Gain(std::vector<double> new_times) :
+Gain::Gain(std::set<double> new_times) :
     logamp_amp(-3.0),
     logamp_phase(-3.0),
     logscale_amp(7.0),
@@ -57,8 +55,7 @@ Gain::Gain(std::vector<double> new_times) :
     {
     // Get unique times of gain amplitude & phase
     std::vector<double> times_vec;
-    std::set<double> s( new_times.begin(), new_times.end() );
-    times_vec.assign( s.begin(), s.end() );
+    times_vec.assign(new_times.begin(), new_times.end());
     // Convert to Eigen VectorXd
     times_amp = Eigen::Map<Eigen::VectorXd, Eigen::Unaligned>(times_vec.data(), times_vec.size());
     times_phase = Eigen::Map<Eigen::VectorXd, Eigen::Unaligned>(times_vec.data(), times_vec.size());

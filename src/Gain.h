@@ -2,6 +2,7 @@
 #define BSC__GAIN_H_
 
 #include <vector>
+#include <set>
 #include <Eigen/Core>
 #include <valarray>
 #include "RNG.h"
@@ -16,9 +17,9 @@ std::valarray<double> make_normal_random(int number);
 class Gain {
     public:
         // Different times for amplitudes and phases of the gains ctor
-        Gain(std::vector<double> times_amp, std::vector<double> times_phase);
+        Gain(std::set<double> times_amp, std::set<double> times_phase);
         // The same times for amplitudes and phases ctor
-        explicit Gain(std::vector<double> times);
+        explicit Gain(std::set<double> times);
 
         //Gain(const Gain& other);
 
