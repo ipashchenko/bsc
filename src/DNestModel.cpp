@@ -99,7 +99,14 @@ double DNestModel::perturb(DNest4::RNG &rng) {
         //std::cout << "Perturbing gains" << std::endl;
         // C, L and v are re-calculated by individual Gains that is perturbed
         logH += gains->perturb(rng);
-        // Gains pre-reject in individual Gain instances
+        // Gains pre-reject also in individual Gain instances
+        // Pre-reject
+        if(rng.rand() >= exp(logH)) {
+            //std::cout << "Pre-rejected proposal SkyModel" << std::endl;
+            return -1E300;
+        }
+        else
+            logH = 0.0;
     }
     // It shouldn't be called in case of pre-rejection (if -1E300 is returned from sky_model or gains perturb
     calculate_mu();
