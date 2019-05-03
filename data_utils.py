@@ -368,7 +368,7 @@ if __name__ == "__main__":
     uvfits_fname = "/home/ilya/github/DNest4/code/Examples/UV/0716+714.u.2013_08_20.uvf"
     fname = "/home/ilya/github/bsc/0716.txt"
 
-    df = create_data_file(uvfits_fname, fname, step_amp=120, step_phase=60)
+    df = create_data_file(uvfits_fname, fname, step_amp=120, step_phase=30)
 # # Load data frame
     # columns = ["times",
     #            "ant1", "ant2",
@@ -395,17 +395,17 @@ if __name__ == "__main__":
                                           scale_gpamp=np.exp(7),
                                           scale_gpphase=np.exp(5),
                                           amp_gpamp=np.exp(-3),
-                                          amp_gpphase=np.exp(-3))
+                                          amp_gpphase=np.exp(-2))
     # Add noise
     df_updated = add_noise(df_updated, use_global_median_noise=True, use_per_baseline_median_noise=False)
 
     fig = radplot(df_updated, color="#ff7f0e", fig=fig, label="With gains")
     fig = plot_gains(gains_dict)
 
-    import json
-    # Save gains
-    with open("/home/ilya/github/bsc/gains_0716.json", "w") as fo:
-        json.dump(str(gains_dict), fo)
+    # import json
+    # # Save gains
+    # with open("/home/ilya/github/bsc/gains.json", "w") as fo:
+    #     json.dump(str(gains_dict), fo)
     # # Load gains
     # with open("/home/ilya/github/bsc/gains_0716.json", "r") as fo:
     #     loaded_gains_dict = json.load(fo)

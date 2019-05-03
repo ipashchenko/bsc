@@ -15,7 +15,7 @@ using Eigen::MatrixXd;
 
 Gain::Gain(std::set<double> new_times_amp, std::set<double> new_times_phase) :
     logamp_amp(-3.0),
-    logamp_phase(-3.0),
+    logamp_phase(-2.0),
     logscale_amp(7.0),
     logscale_phase(5.0)
 
@@ -48,7 +48,7 @@ Gain::Gain(std::set<double> new_times_amp, std::set<double> new_times_phase) :
 
 Gain::Gain(std::set<double> new_times) :
     logamp_amp(-3.0),
-    logamp_phase(-3.0),
+    logamp_phase(-2.0),
     logscale_amp(7.0),
     logscale_phase(5.0)
 
@@ -199,7 +199,7 @@ void Gain::from_prior_hp_amp(DNest4::RNG& rng) {
 void Gain::from_prior_hp_phase(DNest4::RNG& rng) {
     //logamp_phase = -3.0 + 1.0*rng.randn();
     //logscale_phase = 5.0 + 1.0*rng.randn();
-    logamp_phase = -3.0;
+    logamp_phase = -2.0;
     logscale_phase = 5.0;
 }
 
