@@ -80,11 +80,10 @@ double DNestModel::perturb(DNest4::RNG &rng) {
     //std::cout << "In DNestModel::perturb" << std::endl;
     double logH = 0.;
     // Perturb SkyModel
-    if(rng.rand() <= 0.5) {
+    if(rng.rand() <= 0.25) {
         logH += sky_model->perturb(rng);
         //std::cout << "Perturbed SkyModel with logH =" << logH << std::endl;
 
-        // Without sorting
         // Pre-reject
         if(rng.rand() >= exp(logH)) {
             //std::cout << "Pre-rejected proposal SkyModel" << std::endl;
@@ -102,7 +101,7 @@ double DNestModel::perturb(DNest4::RNG &rng) {
         logH += gains->perturb(rng);
         // Gains pre-reject in individual Gain instances
     }
-    // It shouldn't be called in case of pre-rejection
+    // It shouldn't be called in case of pre-rejection (if -1E300 is returned from sky_model or gains perturb
     calculate_mu();
     return logH;
 }
