@@ -91,7 +91,8 @@ double DNestModel::perturb(DNest4::RNG &rng) {
         }
         else
             logH = 0.0;
-        // It shouldn't be called in case of pre-rejection
+        // This shouldn't be called in case of pre-rejection
+        sky_model->recenter();
         calculate_sky_mu();
     }
     // Perturb Gains
