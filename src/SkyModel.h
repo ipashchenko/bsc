@@ -17,6 +17,7 @@ class SkyModel {
         void ft(const std::valarray<double>& u, const std::valarray<double>& v);
         std::pair<double,double> center_mass() const;
         void shift_xy(std::pair<double, double> xy);
+        void recenter();
         void set_param_vec(std::valarray<double> param);
         std::valarray<double> get_mu_real() const { return mu_real; }
         std::valarray<double> get_mu_imag() const { return mu_imag; }

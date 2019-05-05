@@ -166,3 +166,9 @@ void SkyModel::shift_xy(std::pair<double, double> xy) {
 }
 
 
+void SkyModel::recenter() {
+    auto xy = center_mass();
+    shift_xy(xy);
+}
+
+
