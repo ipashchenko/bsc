@@ -1,6 +1,7 @@
 #ifndef BSC_COMPONENT_H
 #define BSC_COMPONENT_H
 
+#include <cmath>
 #include <valarray>
 #include <vector>
 #include <complex>
@@ -27,6 +28,10 @@ class Component {
         virtual std::string description() const = 0;
         virtual void from_prior(DNest4::RNG& rng) = 0;
         virtual double perturb(DNest4::RNG& rng) = 0;
+        virtual double get_flux() const = 0;
+        virtual double get_x() const = 0;
+        virtual double get_y() const = 0;
+        virtual void shift_xy(std::pair<double, double>) = 0;
         virtual void set_x(double x) = 0;
         // See also https://softwareengineering.stackexchange.com/a/337565 for unique_ptr
         virtual Component* clone() = 0;
@@ -72,6 +77,23 @@ class EGComponent : public Component {
         double perturb(DNest4::RNG& rng) override {
             std::cout << "Hope this is not called" << std::endl;
             return 0.0; }
+
+        // Getters for caclulating center of mass
+        double get_x() const override {
+            return dx_;
+        }
+        double get_y() const override  {
+            return dy_;
+        }
+        double get_flux() const override {
+            return exp(logflux_);
+        }
+
+        // Shifting coordinates (used to bring center of mass to zero)
+        void shift_xy(std::pair<double, double> xy) override {
+            dx_ -= xy.first;
+            dy_ -= xy.second;
+        }
 
     protected:
         // Parameters of a single Gaussian
