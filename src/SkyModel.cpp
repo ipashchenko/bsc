@@ -106,6 +106,9 @@ void SkyModel::from_prior(DNest4::RNG &rng) {
     for (auto comp: components_) {
         comp->from_prior(rng);
     }
+    // Move center of mass to the phase center
+    auto xy = center_mass();
+    shift_xy(xy);
 }
 
 
