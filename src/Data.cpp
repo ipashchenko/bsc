@@ -11,7 +11,8 @@ Data Data::instance;
 
 Data::Data() = default;
 
-
+// TODO: Do not need times_amp & times_phase
+// TODO: Use files with header
 void Data::load(const char* filename)
 {
     std::vector<int> _antennas;
