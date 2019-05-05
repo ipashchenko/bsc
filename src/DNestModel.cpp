@@ -28,12 +28,9 @@ DNestModel::~DNestModel() {
 
 DNestModel::DNestModel(const DNestModel& other) {
     sky_model = new SkyModel(*other.sky_model);
-    //*(sky_model) = *(obj.sky_model);
     gains = new Gains(*other.gains);
     mu_real_full = other.mu_real_full;
     mu_imag_full = other.mu_imag_full;
-    //*(gains) = *(obj.gains);
-    //std::cout << "Copy Ctor of DNestModel finished" << std::endl;
 }
 
 
