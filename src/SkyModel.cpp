@@ -141,3 +141,25 @@ std::string SkyModel::description() const {
 }
 
 
+std::pair<double, double> SkyModel::center_mass() const {
+    double x = 0;
+    double y = 0;
+    double flux = 0;
+    double sum_flux = 0;
+    for (auto comp: components_) {
+        flux = comp->get_flux();
+        x += comp->get_x()*flux;
+        y += comp->get_y()*flux;
+        sum_flux += flux;
+    }
+    return std::make_pair<double, double>(x/sum_flux, y/sum_flux);
+}
+
+
+void SkyModel::shift_xy(std::pair<double, double> xy) {
+    for (auto comp: components_) {
+        comp->shift_xy(xy);
+    }
+}
+
+
