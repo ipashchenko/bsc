@@ -17,7 +17,8 @@ Gain::Gain(std::set<double> new_times_amp, std::set<double> new_times_phase) :
     logamp_amp(-3.0),
     logamp_phase(-2.0),
     logscale_amp(7.0),
-    logscale_phase(5.0)
+    logscale_phase(5.0),
+    phase_mean(0.0)
 
     {
     // Get unique times of gain amplitudes
@@ -50,7 +51,8 @@ Gain::Gain(std::set<double> new_times) :
     logamp_amp(-3.0),
     logamp_phase(-2.0),
     logscale_amp(7.0),
-    logscale_phase(5.0)
+    logscale_phase(5.0),
+    phase_mean(0.0)
 
     {
     // Get unique times of gain amplitude & phase
@@ -187,6 +189,11 @@ void Gain::from_prior_v_phase() {
 }
 
 
+void Gain::from_prior_phase_mean(DNest4::RNG& rng) {
+    phase_mean = 0.0 + 1.5*rng.randn();
+}
+
+
 void Gain::from_prior_hp_amp(DNest4::RNG& rng) {
     //std::cout << "Generating from prior Gain HP AMP" << std::endl;
     //logamp_amp = -3.0 + 1.0*rng.randn();
@@ -301,7 +308,7 @@ void Gain::calculate_phases() {
 
 
     // Convert Eigen::VectorXd to std::valarray
-    phases = std::valarray<double>(phase.data(), phase.size());
+    phases = phase_mean + std::valarray<double>(phase.data(), phase.size());
     //std::cout << "Calculated phases: " << std::endl;
     //print_phases(std::cout);
 
@@ -352,19 +359,34 @@ double Gain::perturb(DNest4::RNG &rng) {
     // Phase GP
     else {
 
-        // Choose what value to perturb
-        int which = rng.rand_int(phases.size());
+        // More often perturb phase latent variables
+        if(rng.rand() <= 0.9) {
 
-        logH -= -0.5*pow(v_phase[which], 2.0);
-        v_phase[which] += rng.randn();
-        logH += -0.5*pow(v_phase[which], 2.0);
+            // Choose what value to perturb
+            int which = rng.rand_int(phases.size());
 
-        // Pre-reject
-        if(rng.rand() >= exp(logH)) {
-            return -1E300;
+            logH -= -0.5*pow(v_phase[which], 2.0);
+            v_phase[which] += rng.randn();
+            logH += -0.5*pow(v_phase[which], 2.0);
+
+            // Pre-reject
+            if (rng.rand() >= exp(logH)) {
+                return -1E300;
+            } else
+                logH = 0.0;
+
         }
-        else
-            logH = 0.0;
+        else {
+            logH -= -0.5*pow(phase_mean/1.5, 2.0);
+            phase_mean += rng.randh();
+            logH += -0.5*pow(phase_mean/1.5, 2.0);
+
+            // Pre-reject
+            if (rng.rand() >= exp(logH)) {
+                return -1E300;
+            } else
+                logH = 0.0;
+        }
 
         calculate_phases();
 
@@ -379,6 +401,7 @@ std::string Gain::description() const {
     for (int i = 0; i < times_amp.size(); i++) {
         descr += ("amp" + std::to_string(i) + " ");
     }
+    descr += "phase_mean ";
     for (int i = 0; i < times_phase.size(); i++) {
         descr += ("phase" + std::to_string(i) + " ");
     }
@@ -391,6 +414,7 @@ void Gain::print(std::ostream &out) const {
     for (int i = 0; i < times_amp.size(); i++) {
         out << amplitudes[i] << '\t';
     }
+    out << phase_mean << '\t';
     for (int i = 0; i < times_phase.size(); i++) {
         out << phases[i] << '\t';
     }

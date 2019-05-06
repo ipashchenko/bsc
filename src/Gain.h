@@ -43,6 +43,8 @@ class Gain {
         // Generate from prior latent variables of amplitude and phase GP
         void from_prior_v_amp();
         void from_prior_v_phase();
+        // Generate from prior mean of the GP phase
+        void from_prior_phase_mean(DNest4::RNG& rng);
         // MH proposals returning logH
         double perturb(DNest4::RNG& rng);
         // Calculate covariance matrixes using current hyperparameters of the gain amplitude and phase
@@ -80,6 +82,8 @@ class Gain {
         // Amplitudes and phases of the gains
         std::valarray<double> amplitudes;
         std::valarray<double> phases;
+        // Mean of the phase GP
+        double phase_mean;
         // Covariance matrix given times and HP
         MatrixXd C_amp;
         MatrixXd C_phase;
