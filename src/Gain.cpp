@@ -190,7 +190,7 @@ void Gain::from_prior_v_phase() {
 
 
 void Gain::from_prior_phase_mean(DNest4::RNG& rng) {
-    phase_mean = 0.0 + 1.5*rng.randn();
+    phase_mean = -0.5*PI + PI*rng.rand();
 }
 
 
@@ -377,15 +377,16 @@ double Gain::perturb(DNest4::RNG &rng) {
 
         }
         else {
-            logH -= -0.5*pow(phase_mean/1.5, 2.0);
-            phase_mean += rng.randh();
-            logH += -0.5*pow(phase_mean/1.5, 2.0);
+            //logH -= -0.5*pow(phase_mean/1.5, 2.0);
+            phase_mean += PI*rng.randh();
+            //logH += -0.5*pow(phase_mean/1.5, 2.0);
+            DNest4::wrap(phase_mean, -0.5*PI, 0.5*PI)
 
-            // Pre-reject
-            if (rng.rand() >= exp(logH)) {
-                return -1E300;
-            } else
-                logH = 0.0;
+            //// Pre-reject
+            //if (rng.rand() >= exp(logH)) {
+            //    return -1E300;
+            //} else
+            //    logH = 0.0;
         }
 
         calculate_phases();

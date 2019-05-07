@@ -9,6 +9,7 @@
 
 
 using Eigen::MatrixXd;
+const double PI = 3.1415926;
 
 
 std::valarray<double> make_normal_random(int number);
