@@ -21,7 +21,7 @@ void DFComponent::ft(std::valarray<double> u, std::valarray<double> v)
 {
     std::valarray<double> theta;
     // Phase shift due to not being in a phase center
-    theta = 2*PI*mas_to_rad*(u*dx_+v*dy_);
+    theta = 2*M_PI*mas_to_rad*(u*dx_+v*dy_);
 
     // Prediction of visibilities
     mu_real = exp(logflux_)*cos(theta);
@@ -56,9 +56,9 @@ void EGComponent::ft(std::valarray<double> u, std::valarray<double> v)
     //std::cout << "x=" << dx_ << ", " << "y=" << dy_ << ", " << "logflux=" << logflux_ << ", "<< "logsize=" << logbmaj_ << "\n";
 
     // Phase shift due to not being in a phase center
-    theta = 2*PI*mas_to_rad*(u*dx_+v*dy_);
+    theta = 2*M_PI*mas_to_rad*(u*dx_+v*dy_);
     // Calculate FT of a Gaussian in a phase center
-    c = pow(PI*exp(logbmaj_)*mas_to_rad, 2)/(4.*log(2.));
+    c = pow(M_PI*exp(logbmaj_)*mas_to_rad, 2)/(4.*log(2.));
     //b = e_*e_*u*u + v*v;
     b = e_*e_*pow((u*cos(bpa_) - v*sin(bpa_)), 2) + pow((u*sin(bpa_)+v*cos(bpa_)), 2);
     ft = exp(logflux_-c*b);
