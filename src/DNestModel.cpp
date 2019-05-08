@@ -5,7 +5,7 @@
 #include "Utils.h"
 
 
-DNestModel::DNestModel() {
+DNestModel::DNestModel() : logjitter(0.0) {
 
     sky_model = new SkyModel();
     int ncomp = 2;
@@ -30,6 +30,7 @@ DNestModel::~DNestModel() {
 DNestModel::DNestModel(const DNestModel& other) {
     sky_model = new SkyModel(*other.sky_model);
     gains = new Gains(*other.gains);
+    logjitter = other.logjitter;
     mu_real_full = other.mu_real_full;
     mu_imag_full = other.mu_imag_full;
 }
@@ -39,6 +40,7 @@ DNestModel& DNestModel::operator=(const DNestModel& other) {
     if (this != &other) {
         *(sky_model) = *(other.sky_model);
         *(gains) = *(other.gains);
+        logjitter = other.logjitter;
         mu_real_full = other.mu_real_full;
         mu_imag_full = other.mu_imag_full;
     }
@@ -48,6 +50,7 @@ DNestModel& DNestModel::operator=(const DNestModel& other) {
 
 void DNestModel::from_prior(DNest4::RNG &rng) {
     //std::cout << "Generating from prior DNestModel" << std::endl;
+    logjitter = -3.0 + 2.0*rng.randn();
     sky_model->from_prior(rng);
     //sky_model->print(std::cout);
     gains->from_prior_hp_amp(rng);
@@ -77,6 +80,23 @@ void DNestModel::from_prior(DNest4::RNG &rng) {
 double DNestModel::perturb(DNest4::RNG &rng) {
     //std::cout << "In DNestModel::perturb" << std::endl;
     double logH = 0.;
+
+
+    // Perturb jitter
+    if(rng.rand() <= 0.1) {
+        logH -= -0.5*pow((logjitter+3)/2.0, 2.0);
+        logjitter += rng.randh();
+        logH += -0.5*pow((logjitter+3)/2.0, 2.0);
+
+        // Pre-reject
+        if(rng.rand() >= exp(logH)) {
+            return -1E300;
+        }
+        else
+            logH = 0.0;
+        // No need to re-calculate sky_model or full model. Just calculate loglike.
+    }
+
     // Perturb SkyModel
     if(rng.rand() <= 0.25) {
         logH += sky_model->perturb(rng);
@@ -176,8 +196,8 @@ double DNestModel::log_likelihood() const {
     const std::valarray<double> var = sigma*sigma;
     //std::cout << "In DNestModel::log_likelihood - mu_real_full[0] = " << mu_real_full[0] << std::endl;
     // Complex Gaussian sampling distribution
-    std::valarray<double> result = -log(2*M_PI*var) - 0.5*(pow(vis_real - mu_real_full, 2) +
-        pow(vis_imag - mu_imag_full, 2))/var;
+    std::valarray<double> result = -log(2*M_PI*(var+exp(2.0*logjitter))) - 0.5*(pow(vis_real - mu_real_full, 2) +
+        pow(vis_imag - mu_imag_full, 2))/(var+exp(2.0*logjitter))   ;
     double loglik = result.sum();
     //std::cout << "In DNestModel::log_likelihood - loglik = " << loglik << std::endl;
     return loglik;
@@ -186,6 +206,7 @@ double DNestModel::log_likelihood() const {
 
 
 void DNestModel::print(std::ostream &out) const {
+    out << logjitter << '\t';
     sky_model->print(out);
     gains->print(out);
 }
@@ -193,6 +214,7 @@ void DNestModel::print(std::ostream &out) const {
 
 std::string DNestModel::description() const {
     std::string descr;
+    descr += "logjitter ";
     descr += sky_model->description();
     descr += " ";
     descr += gains->description();
