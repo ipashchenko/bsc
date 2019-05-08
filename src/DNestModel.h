@@ -4,6 +4,8 @@
 #include "SkyModel.h"
 #include "Gains.h"
 #include "RNG.h"
+#include "DNest4.h"
+#include "MyConditionalPrior.h"
 
 
 class DNestModel {
@@ -20,6 +22,9 @@ class DNestModel {
         // Metropolis-Hastings proposals
         double perturb(DNest4::RNG& rng);
 
+        // Calculate sky_model
+        void DNestModel::calculate_sky_mu(bool update);
+
         // Likelihood function
         double log_likelihood() const;
 
@@ -29,13 +34,18 @@ class DNestModel {
         // Return string with column information
         std::string description() const;
 
-        void set_x_skymodel(double x);
+        void ft(const std::valarray<double>& u, const std::valarray<double>& v);
+        std::pair<double,double> center_mass() const;
+        void shift_xy(std::pair<double, double> xy);
+        void recenter();
 
     private:
-
-        SkyModel* sky_model{};
+        DNest4::RJObject<MyConditionalPrior> components;
         Gains* gains{};
         double logjitter;
+        // Prediction of SkyModel only
+        std::valarray<double> mu_real;
+        std::valarray<double> mu_imag;
         // Prediction of SkyModel + Gains
         std::valarray<double> mu_real_full;
         std::valarray<double> mu_imag_full;

@@ -5,14 +5,17 @@
 #include "Utils.h"
 
 
-DNestModel::DNestModel() : logjitter(0.0) {
+DNestModel::DNestModel() :
+logjitter(0.0),
+components(4, 10, false, MyConditionalPrior(-10, 10, -10, 10), DNest4::PriorType::log_uniform)
+{
 
-    sky_model = new SkyModel();
-    int ncomp = 2;
-    for (int i=0; i<ncomp; i++) {
-        auto* comp = new CGComponent();
-        sky_model->add_component(comp);
-    }
+    //sky_model = new SkyModel();
+    //int ncomp = 2;
+    //for (int i=0; i<ncomp; i++) {
+    //    auto* comp = new CGComponent();
+    //    sky_model->add_component(comp);
+    //}
 
     gains = new Gains(Data::get_instance());
     //std::cout << "gains # " << gains->size() << std::endl;
@@ -21,14 +24,16 @@ DNestModel::DNestModel() : logjitter(0.0) {
 
 
 DNestModel::~DNestModel() {
-    delete sky_model;
+    //delete sky_model;
     delete gains;
 }
 
 
 
-DNestModel::DNestModel(const DNestModel& other) {
-    sky_model = new SkyModel(*other.sky_model);
+DNestModel::DNestModel(const DNestModel& other) : components(4, 10, false, MyConditionalPrior(-10, 10, -10, 10), DNest4::PriorType::log_uniform)
+{
+    //sky_model = new SkyModel(*other.sky_model);
+    components = other.components;
     gains = new Gains(*other.gains);
     logjitter = other.logjitter;
     mu_real_full = other.mu_real_full;
@@ -38,7 +43,8 @@ DNestModel::DNestModel(const DNestModel& other) {
 
 DNestModel& DNestModel::operator=(const DNestModel& other) {
     if (this != &other) {
-        *(sky_model) = *(other.sky_model);
+        //*(sky_model) = *(other.sky_model);
+        components = other.components;
         *(gains) = *(other.gains);
         logjitter = other.logjitter;
         mu_real_full = other.mu_real_full;
@@ -51,7 +57,9 @@ DNestModel& DNestModel::operator=(const DNestModel& other) {
 void DNestModel::from_prior(DNest4::RNG &rng) {
     //std::cout << "Generating from prior DNestModel" << std::endl;
     logjitter = -3.0 + 2.0*rng.randn();
-    sky_model->from_prior(rng);
+    //sky_model->from_prior(rng);
+    components.from_prior(rng);
+    recenter();
     //sky_model->print(std::cout);
     gains->from_prior_hp_amp(rng);
     gains->from_prior_hp_phase(rng);
@@ -94,25 +102,24 @@ double DNestModel::perturb(DNest4::RNG &rng) {
         }
         else
             logH = 0.0;
-        // No need to re-calculate sky_model or full model. Just calculate loglike.
+        // No need to re-calculate skymodel or full model. Just calculate loglike.
     }
 
     // Perturb SkyModel
     if(rng.rand() <= 0.25) {
-        logH += sky_model->perturb(rng);
-        //std::cout << "Perturbed SkyModel with logH =" << logH << std::endl;
+        logH += components.perturb(rng);
 
         // Pre-reject
-        if(rng.rand() >= exp(logH)) {
-            //std::cout << "Pre-rejected proposal SkyModel" << std::endl;
+        if(rng.rand() >= exp(logH))
             return -1E300;
-        }
         else
             logH = 0.0;
+
         // This shouldn't be called in case of pre-rejection
-        sky_model->recenter();
-        calculate_sky_mu();
+        calculate_sky_mu(components.get_removed().size() == 0);
+        recenter();
     }
+
     // Perturb Gains
     else {
         //std::cout << "Perturbing gains" << std::endl;
@@ -133,14 +140,38 @@ double DNestModel::perturb(DNest4::RNG &rng) {
 }
 
 
-void DNestModel::calculate_sky_mu() {
-    //std::cout << "In DNestModel::calculate_sky_mu" << std::endl;
-    // Get (u, v)-points for calculating SkyModel predictions
+void DNestModel::calculate_sky_mu(bool update) {
     const std::valarray<double>& u = Data::get_instance().get_u();
     const std::valarray<double>& v = Data::get_instance().get_v();
-    // FT (calculate SkyModel prediction)
-    sky_model->ft(u, v);
-    //sky_model->print(std::cout);
+
+    std::valarray<double> theta;
+    double c;
+    std::valarray<double> b;
+    std::valarray<double> ft;
+
+    const std::vector<std::vector<double>>& comps = components.get_components();
+
+    if(!update)
+    {
+        // Zero the sky model prediction
+        mu_real *= 0.0;
+        mu_imag *= 0.0;
+    }
+
+    for(auto comp: comps)
+    {
+
+        // Phase shift due to not being in a phase center
+        theta = 2*M_PI*mas_to_rad*(u*comp[0]+v*comp[1]);
+        // Calculate FT of a Gaussian in a phase center
+        c = pow(M_PI*exp(comp[3])*mas_to_rad, 2)/(4.*log(2.));
+        ft = exp(comp[2]-c*(u*u + v*v));
+
+        // Prediction of visibilities
+        mu_real += ft*cos(theta);
+        mu_imag += ft*sin(theta);
+
+    }
 }
 
 
@@ -157,9 +188,9 @@ void DNestModel::calculate_mu() {
     const std::vector<int>& idx_phase_ant_i = Data::get_instance().get_idx_phase_ant_i();
     const std::vector<int>& idx_phase_ant_j = Data::get_instance().get_idx_phase_ant_j();
 
-    // SkyModel predictions
-    std::valarray<double> sky_model_mu_real = sky_model->get_mu_real();
-    std::valarray<double> sky_model_mu_imag = sky_model->get_mu_imag();
+    //// SkyModel predictions
+    //std::valarray<double> sky_model_mu_real = sky_model->get_mu_real();
+    //std::valarray<double> sky_model_mu_imag = sky_model->get_mu_imag();
 
     // Container for amplitudes and phases of gains for corresponding visibilities (TB) - means are inserted inside
     // individual Gain.calculate_amplitudes
@@ -178,28 +209,24 @@ void DNestModel::calculate_mu() {
 
     // SkyModel modified by gains
     // This implies g = amp*exp(+1j*phi) and V = amp*exp(+1j*phi) - note "+" sign
-    mu_real_full = amp_ant_i*amp_ant_j*(cos(phase_ant_i-phase_ant_j)*sky_model_mu_real-
-                                        sin(phase_ant_i-phase_ant_j)*sky_model_mu_imag);
-    mu_imag_full = amp_ant_i*amp_ant_j*(cos(phase_ant_i-phase_ant_j)*sky_model_mu_imag+
-                                        sin(phase_ant_i-phase_ant_j)*sky_model_mu_real);
+    mu_real_full = amp_ant_i*amp_ant_j*(cos(phase_ant_i-phase_ant_j)*mu_real-
+                                        sin(phase_ant_i-phase_ant_j)*mu_imag);
+    mu_imag_full = amp_ant_i*amp_ant_j*(cos(phase_ant_i-phase_ant_j)*mu_imag+
+                                        sin(phase_ant_i-phase_ant_j)*mu_real);
 }
 
 
 double DNestModel::log_likelihood() const {
-    //std::cout << "In DNestModel::log_likelihood" << std::endl;
-    // Grab the visibilities from the dataset
     const std::valarray<double>& vis_real = Data::get_instance().get_vis_real();
     const std::valarray<double>& vis_imag = Data::get_instance().get_vis_imag();
     const std::valarray<double>& sigma = Data::get_instance().get_sigma();
 
     // Variance
     const std::valarray<double> var = sigma*sigma;
-    //std::cout << "In DNestModel::log_likelihood - mu_real_full[0] = " << mu_real_full[0] << std::endl;
     // Complex Gaussian sampling distribution
     std::valarray<double> result = -log(2*M_PI*(var+exp(2.0*logjitter))) - 0.5*(pow(vis_real - mu_real_full, 2) +
         pow(vis_imag - mu_imag_full, 2))/(var+exp(2.0*logjitter))   ;
     double loglik = result.sum();
-    //std::cout << "In DNestModel::log_likelihood - loglik = " << loglik << std::endl;
     return loglik;
 
 }
@@ -207,7 +234,7 @@ double DNestModel::log_likelihood() const {
 
 void DNestModel::print(std::ostream &out) const {
     out << logjitter << '\t';
-    sky_model->print(out);
+    components.print(out); out<<'\t';
     gains->print(out);
 }
 
@@ -215,15 +242,46 @@ void DNestModel::print(std::ostream &out) const {
 std::string DNestModel::description() const {
     std::string descr;
     descr += "logjitter ";
-    descr += sky_model->description();
-    descr += " ";
+
+    const std::vector<std::vector<double>>& comps = components.get_components();
+    for (auto comp: comps) {
+        descr += "x y logflux logbmaj ";
+    }
+
     descr += gains->description();
 
     return descr;
 }
 
 
-void DNestModel::set_x_skymodel(double x) {
-    sky_model->set_x(x);
+std::pair<double, double> DNestModel::center_mass() const {
+    double x = 0;
+    double y = 0;
+    double flux = 0;
+    double sum_flux = 0;
+
+    const std::vector<std::vector<double>>& comps = components.get_components();
+    for(auto comp: comps)
+    {
+        flux = exp(comp[2]);
+        x += comp[0]*flux;
+        y += comp[1]*flux;
+        sum_flux += flux;
+    }
+    return std::make_pair<double, double>(x/sum_flux, y/sum_flux);
 }
 
+
+void DNestModel::shift_xy(std::pair<double, double> xy) {
+    const std::vector<std::vector<double>>& comps = components.get_components();
+    for (auto comp: comps) {
+        comp[0] -= xy.first;
+        comp[1] -= xy.second;
+    }
+}
+
+
+void DNestModel::recenter() {
+    auto xy = center_mass();
+    shift_xy(xy);
+}
