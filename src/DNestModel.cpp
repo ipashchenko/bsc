@@ -9,22 +9,11 @@ DNestModel::DNestModel() :
 logjitter(0.0),
 components(4, 10, false, MyConditionalPrior(-10, 10, -10, 10), DNest4::PriorType::log_uniform)
 {
-
-    //sky_model = new SkyModel();
-    //int ncomp = 2;
-    //for (int i=0; i<ncomp; i++) {
-    //    auto* comp = new CGComponent();
-    //    sky_model->add_component(comp);
-    //}
-
     gains = new Gains(Data::get_instance());
-    //std::cout << "gains # " << gains->size() << std::endl;
-    //std::cout << "Ctor of DNestModel finished" << std::endl;
 }
 
 
 DNestModel::~DNestModel() {
-    //delete sky_model;
     delete gains;
 }
 
@@ -32,10 +21,11 @@ DNestModel::~DNestModel() {
 
 DNestModel::DNestModel(const DNestModel& other) : components(4, 10, false, MyConditionalPrior(-10, 10, -10, 10), DNest4::PriorType::log_uniform)
 {
-    //sky_model = new SkyModel(*other.sky_model);
     components = other.components;
     gains = new Gains(*other.gains);
     logjitter = other.logjitter;
+    mu_real = other.mu_real;
+    mu_imag = other.mu_imag;
     mu_real_full = other.mu_real_full;
     mu_imag_full = other.mu_imag_full;
 }
@@ -43,10 +33,11 @@ DNestModel::DNestModel(const DNestModel& other) : components(4, 10, false, MyCon
 
 DNestModel& DNestModel::operator=(const DNestModel& other) {
     if (this != &other) {
-        //*(sky_model) = *(other.sky_model);
         components = other.components;
         *(gains) = *(other.gains);
         logjitter = other.logjitter;
+        mu_real = other.mu_real;
+        mu_imag = other.mu_imag;
         mu_real_full = other.mu_real_full;
         mu_imag_full = other.mu_imag_full;
     }
@@ -55,18 +46,21 @@ DNestModel& DNestModel::operator=(const DNestModel& other) {
 
 
 void DNestModel::from_prior(DNest4::RNG &rng) {
-    //std::cout << "Generating from prior DNestModel" << std::endl;
+    // I do this because in ``calculate_sky_mu`` ``mu_real`` and ``mu_imag`` are multiplied and added.
+    const std::valarray<double>& u = Data::get_instance().get_u();
+    std::valarray<double> zero (0.0, u.size());
+    mu_real = zero;
+    mu_imag = zero;
+    mu_imag_full = zero;
+    mu_real_full = zero;
+
     logjitter = -3.0 + 2.0*rng.randn();
-    //sky_model->from_prior(rng);
     components.from_prior(rng);
     recenter();
-    //sky_model->print(std::cout);
     gains->from_prior_hp_amp(rng);
     gains->from_prior_hp_phase(rng);
-    //gains->print_hp(std::cout);
     gains->from_prior_v_amp();
     gains->from_prior_v_phase();
-    //gains->print_v(std::cout);
     // Calculate C, L matrixes for rotation of v
     gains->calculate_C_amp();
     gains->calculate_C_phase();
@@ -75,20 +69,16 @@ void DNestModel::from_prior(DNest4::RNG &rng) {
     // Calculate latent v using calculated L and generated from prior v
     gains->calculate_amplitudes();
     gains->calculate_phases();
-    //gains->print_amplitudes(std::cout);
-    //gains->print_phases(std::cout);
-    // Calculate SkyModel
-    calculate_sky_mu();
+    // Calculate SkyModel. ``update = false`` - means re-calculate from scratch, i.e. there is nothing to update
+    calculate_sky_mu(false);
+    recenter();
     // Calculate full model (SkyModel + gains)
     calculate_mu();
-    //std::cout << "End of DNestModel::from_prior - mu_real_full[0] = " << mu_real_full[0] << std::endl;
 }
 
 
 double DNestModel::perturb(DNest4::RNG &rng) {
-    //std::cout << "In DNestModel::perturb" << std::endl;
     double logH = 0.;
-
 
     // Perturb jitter
     if(rng.rand() <= 0.1) {
@@ -122,13 +112,11 @@ double DNestModel::perturb(DNest4::RNG &rng) {
 
     // Perturb Gains
     else {
-        //std::cout << "Perturbing gains" << std::endl;
         // C, L and v are re-calculated by individual Gains that is perturbed
         logH += gains->perturb(rng);
         // Gains pre-reject also in individual Gain instances
         // Pre-reject
         if(rng.rand() >= exp(logH)) {
-            //std::cout << "Pre-rejected proposal SkyModel" << std::endl;
             return -1E300;
         }
         else
@@ -140,6 +128,8 @@ double DNestModel::perturb(DNest4::RNG &rng) {
 }
 
 
+// TODO: Here one can construct ``Component`` instances from ``RJObject`` and use ``Component`` methods
+// for FT
 void DNestModel::calculate_sky_mu(bool update) {
     const std::valarray<double>& u = Data::get_instance().get_u();
     const std::valarray<double>& v = Data::get_instance().get_v();
@@ -188,12 +178,10 @@ void DNestModel::calculate_mu() {
     const std::vector<int>& idx_phase_ant_i = Data::get_instance().get_idx_phase_ant_i();
     const std::vector<int>& idx_phase_ant_j = Data::get_instance().get_idx_phase_ant_j();
 
-    //// SkyModel predictions
-    //std::valarray<double> sky_model_mu_real = sky_model->get_mu_real();
-    //std::valarray<double> sky_model_mu_imag = sky_model->get_mu_imag();
+    // SkyModel predictions should be already calculated
 
-    // Container for amplitudes and phases of gains for corresponding visibilities (TB) - means are inserted inside
-    // individual Gain.calculate_amplitudes
+    // Container for amplitudes and phases of gains for corresponding visibilities (in TB order) - means are inserted
+    // inside individual Gain.calculate_amplitudes()
     std::valarray<double> amp_ant_i (0.0, ant_i.size());
     std::valarray<double> amp_ant_j (0.0, ant_i.size());
     std::valarray<double> phase_ant_i (0.0, ant_i.size());
@@ -204,7 +192,6 @@ void DNestModel::calculate_mu() {
         amp_ant_j[k] += gains->operator[](antennas_map[ant_j[k]])->get_amplitudes()[idx_amp_ant_j[k]];
         phase_ant_i[k] += gains->operator[](antennas_map[ant_i[k]])->get_phases()[idx_phase_ant_i[k]];
         phase_ant_j[k] += gains->operator[](antennas_map[ant_j[k]])->get_phases()[idx_phase_ant_j[k]];
-        //std::cout << "Amplitudes of gains in DNEstModel::calculate_mu : " << amp_ant_i[k] << ", " << amp_ant_j[k] << std::endl;
     }
 
     // SkyModel modified by gains

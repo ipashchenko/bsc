@@ -22,9 +22,6 @@ class DNestModel {
         // Metropolis-Hastings proposals
         double perturb(DNest4::RNG& rng);
 
-        // Calculate sky_model
-        void DNestModel::calculate_sky_mu(bool update);
-
         // Likelihood function
         double log_likelihood() const;
 
@@ -34,7 +31,6 @@ class DNestModel {
         // Return string with column information
         std::string description() const;
 
-        void ft(const std::valarray<double>& u, const std::valarray<double>& v);
         std::pair<double,double> center_mass() const;
         void shift_xy(std::pair<double, double> xy);
         void recenter();
@@ -50,7 +46,7 @@ class DNestModel {
         std::valarray<double> mu_real_full;
         std::valarray<double> mu_imag_full;
         // This runs ``ft`` method of SkyModel with (u, v) from Data and updates SkyModel predictions
-        void calculate_sky_mu();
+        void calculate_sky_mu(bool update);
         // This calculates full model (SkyModel with gains) and updates ``mu_real/imag_full``
         void calculate_mu();
 

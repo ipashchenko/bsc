@@ -3,14 +3,12 @@
 
 using namespace DNest4;
 
-
 MyConditionalPrior::MyConditionalPrior(double x_min, double x_max,
                                        double y_min, double y_max)
     :x_min(x_min)
     ,x_max(x_max)
     ,y_min(y_min)
     ,y_max(y_max)
-    ,scale(sqrt((x_max - x_min)*(y_max - y_min)))
 {
 
 }
@@ -18,18 +16,18 @@ MyConditionalPrior::MyConditionalPrior(double x_min, double x_max,
 void MyConditionalPrior::from_prior(RNG& rng)
 {
     // A Cauchy distribution
-    const DNest4::Cauchy cauchy(0.0, 5.0);
+    const DNest4::Cauchy cauchy(0.0, 1.0);
 
-    // Truncate to (-50, 50)
+    // Truncate to (-6, 6)
     do
     {
         typical_flux = cauchy.generate(rng);
-    }while(std::abs(typical_flux) >= 50.0);
+    }while(std::abs(typical_flux) >= 6.0);
     typical_flux = exp(typical_flux);
 
     dev_log_flux = 3.0*rng.rand();
 
-    typical_radius = exp(log(0.1*scale) + 2.0*rng.randn());
+    typical_radius = exp(2.0*rng.randn());
     dev_log_radius = 3.0*rng.rand();
 }
 
@@ -42,11 +40,11 @@ double MyConditionalPrior::perturb_hyperparameters(RNG& rng)
     if(which == 0)
     {
         // A Cauchy distribution
-        const DNest4::Cauchy cauchy(0.0, 5.0);
+        const DNest4::Cauchy cauchy(0.0, 1.0);
 
         typical_flux = log(typical_flux);
         logH += cauchy.perturb(typical_flux, rng);
-        if(std::abs(typical_flux) >= 50.0)
+        if(std::abs(typical_flux) >= 6.0)
         {
             typical_flux = 1.0;
             return -1E300;
@@ -61,9 +59,9 @@ double MyConditionalPrior::perturb_hyperparameters(RNG& rng)
     else if(which == 2)
     {
         typical_radius = log(typical_radius);
-        logH -= -0.5*pow((typical_radius - log(0.1*scale))/2.0, 2);
+        logH -= -0.5*pow(typical_radius/2.0, 2);
         typical_radius += 2.0*rng.randh();
-        logH += -0.5*pow((typical_radius - log(0.1*scale))/2.0, 2);
+        logH += -0.5*pow(typical_radius/2.0, 2);
         typical_radius = exp(typical_radius);
     }
     else if(which == 3)
