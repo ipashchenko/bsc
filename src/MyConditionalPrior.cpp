@@ -23,11 +23,14 @@ void MyConditionalPrior::from_prior(RNG& rng)
     {
         typical_flux = cauchy.generate(rng);
     }while(std::abs(typical_flux) >= 6.0);
-    typical_flux = exp(typical_flux);
+    // Comment out because we use log of flux
+    //typical_flux = exp(typical_flux);
 
     dev_log_flux = 3.0*rng.rand();
 
-    typical_radius = exp(2.0*rng.randn());
+    // Comment out because we use log of size
+    //typical_radius = exp(2.0*rng.randn());
+    typical_radius = 2.0*rng.randn();
     dev_log_radius = 3.0*rng.rand();
 }
 
@@ -42,14 +45,14 @@ double MyConditionalPrior::perturb_hyperparameters(RNG& rng)
         // A Cauchy distribution
         const DNest4::Cauchy cauchy(0.0, 1.0);
 
-        typical_flux = log(typical_flux);
+        //typical_flux = log(typical_flux);
         logH += cauchy.perturb(typical_flux, rng);
         if(std::abs(typical_flux) >= 6.0)
         {
             typical_flux = 1.0;
             return -1E300;
         }
-        typical_flux = exp(typical_flux);
+        //typical_flux = exp(typical_flux);
     }
     else if(which == 1)
     {
@@ -58,11 +61,11 @@ double MyConditionalPrior::perturb_hyperparameters(RNG& rng)
     }
     else if(which == 2)
     {
-        typical_radius = log(typical_radius);
+        //typical_radius = log(typical_radius);
         logH -= -0.5*pow(typical_radius/2.0, 2);
         typical_radius += 2.0*rng.randh();
         logH += -0.5*pow(typical_radius/2.0, 2);
-        typical_radius = exp(typical_radius);
+        //typical_radius = exp(typical_radius);
     }
     else if(which == 3)
     {
@@ -83,12 +86,16 @@ double MyConditionalPrior::log_pdf(const std::vector<double>& vec) const
         return -1E300;
 
     // Flux
-    DNest4::Laplace laplace1(log(typical_flux), dev_log_flux);
-    logp += -log(vec[2]) + laplace1.log_pdf(log(vec[2]));
+    //DNest4::Laplace laplace1(log(typical_flux), dev_log_flux);
+    DNest4::Laplace laplace1(typical_flux, dev_log_flux);
+    //logp += -log(vec[2]) + laplace1.log_pdf(log(vec[2]));
+    logp += -vec[2] + laplace1.log_pdf(vec[2]);
 
     // Radius
-    DNest4::Laplace laplace2(log(typical_radius), dev_log_radius);
-    logp += -log(vec[3]) + laplace2.log_pdf(log(vec[3]));
+    //DNest4::Laplace laplace2(log(typical_radius), dev_log_radius);
+    DNest4::Laplace laplace2(typical_radius, dev_log_radius);
+    //logp += -log(vec[3]) + laplace2.log_pdf(log(vec[3]));
+    logp += -vec[3] + laplace2.log_pdf(vec[3]);
 
     return logp;
 }
@@ -100,12 +107,12 @@ void MyConditionalPrior::from_uniform(std::vector<double>& vec) const
     vec[1] = y_min + (y_max - y_min)*vec[1];
 
     // Flux
-    DNest4::Laplace laplace1(log(typical_flux), dev_log_flux);
-    vec[2] = exp(laplace1.cdf_inverse(vec[2]));
+    DNest4::Laplace laplace1(typical_flux, dev_log_flux);
+    vec[2] = laplace1.cdf_inverse(vec[2]);
 
     // Radius
-    DNest4::Laplace laplace2(log(typical_radius), dev_log_radius);
-    vec[3] = exp(laplace2.cdf_inverse(vec[3]));
+    DNest4::Laplace laplace2(typical_radius, dev_log_radius);
+    vec[3] = laplace2.cdf_inverse(vec[3]);
 
 }
 
@@ -116,12 +123,12 @@ void MyConditionalPrior::to_uniform(std::vector<double>& vec) const
     vec[1] = (vec[1] - y_min)/(y_max - y_min);
 
     // Flux
-    DNest4::Laplace laplace1(log(typical_flux), dev_log_flux);
-    vec[2] = laplace1.cdf(log(vec[2]));
+    DNest4::Laplace laplace1(typical_flux, dev_log_flux);
+    vec[2] = laplace1.cdf(vec[2]);
 
     // Radius
-    DNest4::Laplace laplace2(log(typical_radius), dev_log_radius);
-    vec[3] = laplace2.cdf(log(vec[3]));
+    DNest4::Laplace laplace2(typical_radius, dev_log_radius);
+    vec[3] = laplace2.cdf(vec[3]);
 
 }
 
