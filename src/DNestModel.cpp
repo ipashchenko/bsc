@@ -7,7 +7,7 @@
 
 DNestModel::DNestModel() :
 logjitter(0.0),
-components(4, 10, false, MyConditionalPrior(-10, 10, -10, 10), DNest4::PriorType::log_uniform)
+components(4, 5, false, MyConditionalPrior(-10, 10, -10, 10), DNest4::PriorType::log_uniform)
 {
     gains = new Gains(Data::get_instance());
 }
@@ -19,7 +19,7 @@ DNestModel::~DNestModel() {
 
 
 
-DNestModel::DNestModel(const DNestModel& other) : components(4, 10, false, MyConditionalPrior(-10, 10, -10, 10), DNest4::PriorType::log_uniform)
+DNestModel::DNestModel(const DNestModel& other) : components(4, 5, false, MyConditionalPrior(-10, 10, -10, 10), DNest4::PriorType::log_uniform)
 {
     components = other.components;
     gains = new Gains(*other.gains);
