@@ -221,22 +221,56 @@ double DNestModel::log_likelihood() const {
 
 void DNestModel::print(std::ostream &out) const {
     out << logjitter << '\t';
-    components.print(out); out<<'\t';
     gains->print(out);
+    // This will be printed by RJObject
+    components.print(out); out << '\t';
 }
 
 
-std::string DNestModel::description() const {
+//std::string DNestModel::description() const {
+//    std::string descr;
+//    descr += "logjitter ";
+//
+//    const std::vector<std::vector<double>>& comps = components.get_components();
+//    for (auto comp: comps) {
+//        descr += "x y logflux logbmaj ";
+//    }
+//
+//    descr += gains->description();
+//
+//    return descr;
+//}
+
+
+std::string DNestModel::description() const
+{
     std::string descr;
+
+    // Anything printed by DNestModel::print (except the last line)
     descr += "logjitter ";
-
-    const std::vector<std::vector<double>>& comps = components.get_components();
-    for (auto comp: comps) {
-        descr += "x y logflux logbmaj ";
-    }
-
     descr += gains->description();
 
+
+    // The rest is all what happens when you call .print on an RJObject
+    descr += " dim_components max_num_components ";
+
+    // Then the hyperparameters (i.e. whatever MyConditionalPrior::print prints)
+    descr += " typical_flux dev_log_flux typical_radius dev_log_radius ";
+
+    // Then the actual number of components
+    descr += " num_components ";
+
+    // Then it's all the components, padded with zeros
+    // max_num_components is 100 in this model, so that's how far the
+    // zero padding goes.
+    for(int i=0; i<10; ++i)
+        descr += " x[" + std::to_string(i) + "] ";
+    for(int i=0; i<10; ++i)
+        descr += " y[" + std::to_string(i) + "] ";
+    for(int i=0; i<10; ++i)
+        descr += " logflux[" + std::to_string(i) + "] ";
+    for(int i=0; i<10; ++i)
+        descr += " logbmaj[" + std::to_string(i) + "] ";
     return descr;
 }
 
