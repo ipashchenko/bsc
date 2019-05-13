@@ -89,13 +89,13 @@ double MyConditionalPrior::log_pdf(const std::vector<double>& vec) const
     //DNest4::Laplace laplace1(log(typical_flux), dev_log_flux);
     DNest4::Laplace laplace1(typical_flux, dev_log_flux);
     //logp += -log(vec[2]) + laplace1.log_pdf(log(vec[2]));
-    logp += -vec[2] + laplace1.log_pdf(vec[2]);
+    logp += laplace1.log_pdf(vec[2]);
 
     // Radius
     //DNest4::Laplace laplace2(log(typical_radius), dev_log_radius);
     DNest4::Laplace laplace2(typical_radius, dev_log_radius);
     //logp += -log(vec[3]) + laplace2.log_pdf(log(vec[3]));
-    logp += -vec[3] + laplace2.log_pdf(vec[3]);
+    logp += laplace2.log_pdf(vec[3]);
 
     return logp;
 }
