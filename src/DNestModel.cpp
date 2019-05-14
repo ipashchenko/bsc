@@ -7,7 +7,7 @@
 
 DNestModel::DNestModel() :
 logjitter(0.0),
-components(4, 5, false, MyConditionalPrior(-10, 10, -10, 10), DNest4::PriorType::log_uniform)
+components(4, 20, false, MyConditionalPrior(-10, 10, -10, 10), DNest4::PriorType::uniform)
 {
     gains = new Gains(Data::get_instance());
 }
@@ -19,7 +19,7 @@ DNestModel::~DNestModel() {
 
 
 
-DNestModel::DNestModel(const DNestModel& other) : components(4, 5, false, MyConditionalPrior(-10, 10, -10, 10), DNest4::PriorType::log_uniform)
+DNestModel::DNestModel(const DNestModel& other) : components(4, 20, false, MyConditionalPrior(-10, 10, -10, 10), DNest4::PriorType::uniform)
 {
     components = other.components;
     gains = new Gains(*other.gains);
@@ -265,13 +265,13 @@ std::string DNestModel::description() const
     // Then it's all the components, padded with zeros
     // max_num_components is 100 in this model, so that's how far the
     // zero padding goes.
-    for(int i=0; i<5; ++i)
+    for(int i=0; i<20; ++i)
         descr += " x[" + std::to_string(i) + "] ";
-    for(int i=0; i<5; ++i)
+    for(int i=0; i<20; ++i)
         descr += " y[" + std::to_string(i) + "] ";
-    for(int i=0; i<5; ++i)
+    for(int i=0; i<20; ++i)
         descr += " logflux[" + std::to_string(i) + "] ";
-    for(int i=0; i<5; ++i)
+    for(int i=0; i<20; ++i)
         descr += " logbmaj[" + std::to_string(i) + "] ";
     return descr;
 }
