@@ -7,7 +7,7 @@
 
 DNestModel::DNestModel() :
 logjitter(0.0),
-components(4, 20, false, MyConditionalPrior(-10, 10, -10, 10), DNest4::PriorType::uniform)
+components(4, 2, true, MyConditionalPrior(-10, 10, -10, 10), DNest4::PriorType::uniform)
 {
     gains = new Gains(Data::get_instance());
 }
@@ -19,7 +19,7 @@ DNestModel::~DNestModel() {
 
 
 
-DNestModel::DNestModel(const DNestModel& other) : components(4, 20, false, MyConditionalPrior(-10, 10, -10, 10), DNest4::PriorType::uniform)
+DNestModel::DNestModel(const DNestModel& other) : components(4, 2, true, MyConditionalPrior(-10, 10, -10, 10), DNest4::PriorType::uniform)
 {
     components = other.components;
     gains = new Gains(*other.gains);
@@ -70,8 +70,8 @@ void DNestModel::from_prior(DNest4::RNG &rng) {
     gains->calculate_amplitudes();
     gains->calculate_phases();
     // Calculate SkyModel. ``update = false`` - means re-calculate from scratch, i.e. there is nothing to update
-    calculate_sky_mu(false);
     recenter();
+    calculate_sky_mu(false);
     // Calculate full model (SkyModel + gains)
     calculate_mu();
 }
@@ -106,8 +106,8 @@ double DNestModel::perturb(DNest4::RNG &rng) {
             logH = 0.0;
 
         // This shouldn't be called in case of pre-rejection
-        calculate_sky_mu(components.get_removed().size() == 0);
         recenter();
+        calculate_sky_mu(false);
     }
 
     // Perturb Gains
@@ -265,13 +265,13 @@ std::string DNestModel::description() const
     // Then it's all the components, padded with zeros
     // max_num_components is 100 in this model, so that's how far the
     // zero padding goes.
-    for(int i=0; i<20; ++i)
+    for(int i=0; i<2; ++i)
         descr += " x[" + std::to_string(i) + "] ";
-    for(int i=0; i<20; ++i)
+    for(int i=0; i<2; ++i)
         descr += " y[" + std::to_string(i) + "] ";
-    for(int i=0; i<20; ++i)
+    for(int i=0; i<2; ++i)
         descr += " logflux[" + std::to_string(i) + "] ";
-    for(int i=0; i<20; ++i)
+    for(int i=0; i<2; ++i)
         descr += " logbmaj[" + std::to_string(i) + "] ";
     return descr;
 }
@@ -297,10 +297,13 @@ std::pair<double, double> DNestModel::center_mass() const {
 
 void DNestModel::shift_xy(std::pair<double, double> xy) {
     const std::vector<std::vector<double>>& comps = components.get_components();
+    std::vector<std::vector<double>> new_comps;
     for (auto comp: comps) {
         comp[0] -= xy.first;
         comp[1] -= xy.second;
+        new_comps.push_back(comp);
     }
+    components.set_components(new_comps);
 }
 
 
