@@ -139,7 +139,9 @@ void DNestModel::calculate_sky_mu(bool update) {
     std::valarray<double> b;
     std::valarray<double> ft;
 
-    const std::vector<std::vector<double>>& comps = components.get_components();
+    // Get the components
+    const std::vector<std::vector<double>>& comps = (update)?(components.get_added()):
+                                                 (components.get_components());
 
     if(!update)
     {
@@ -263,13 +265,13 @@ std::string DNestModel::description() const
     // Then it's all the components, padded with zeros
     // max_num_components is 100 in this model, so that's how far the
     // zero padding goes.
-    for(int i=0; i<10; ++i)
+    for(int i=0; i<5; ++i)
         descr += " x[" + std::to_string(i) + "] ";
-    for(int i=0; i<10; ++i)
+    for(int i=0; i<5; ++i)
         descr += " y[" + std::to_string(i) + "] ";
-    for(int i=0; i<10; ++i)
+    for(int i=0; i<5; ++i)
         descr += " logflux[" + std::to_string(i) + "] ";
-    for(int i=0; i<10; ++i)
+    for(int i=0; i<5; ++i)
         descr += " logbmaj[" + std::to_string(i) + "] ";
     return descr;
 }
