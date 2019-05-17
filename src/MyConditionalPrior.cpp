@@ -17,9 +17,10 @@ void MyConditionalPrior::from_prior(RNG& rng)
 {
     // A Cauchy distribution
     // const DNest4::Cauchy cauchy(0.0, 1.0);
-    const DNest4::Cauchy cauchy(-2.0, 0.25);
+    // const DNest4::Gaussian gauss1(0.0, 0.05);
+    const DNest4::Gaussian gauss1(0.0, 0.25);
 
-    typical_flux = cauchy.generate(rng);
+    typical_flux = gauss1.generate(rng);
     // // Truncate to (-6, 6)
     // do
     // {
@@ -29,12 +30,16 @@ void MyConditionalPrior::from_prior(RNG& rng)
     // //typical_flux = exp(typical_flux);
 
     // dev_log_flux = 3.0*rng.rand();
-    dev_log_flux = 2.0*rng.rand();
+    // const DNest4::Gaussian gauss2(0.5, 0.05);
+    const DNest4::Gaussian gauss2(1.00, 0.10);
+    dev_log_flux = gauss2.generate(rng);
 
     // Comment out because we use log of size
     //typical_radius = exp(2.0*rng.randn());
-    typical_radius = 2.0*rng.randn();
-    dev_log_radius = 3.0*rng.rand();
+    const DNest4::Gaussian gauss3(-2.0, 0.25);
+    typical_radius = gauss3.generate(rng);
+    const DNest4::Gaussian gauss4(1.00, 0.10);
+    dev_log_radius = gauss4.generate(rng);
 }
 
 double MyConditionalPrior::perturb_hyperparameters(RNG& rng)
@@ -47,10 +52,11 @@ double MyConditionalPrior::perturb_hyperparameters(RNG& rng)
     {
         // A Cauchy distribution
         // const DNest4::Cauchy cauchy(0.0, 1.0);
-        const DNest4::Cauchy cauchy(-2.0, 0.25);
+        // const DNest4::Cauchy cauchy(-2.0, 0.25);
+        const DNest4::Gaussian gauss1(0.0, 0.25);
 
         //typical_flux = log(typical_flux);
-        logH += cauchy.perturb(typical_flux, rng);
+        logH += gauss1.perturb(typical_flux, rng);
         // if(std::abs(typical_flux) >= 6.0)
         // {
         //     typical_flux = 1.0;
@@ -60,21 +66,25 @@ double MyConditionalPrior::perturb_hyperparameters(RNG& rng)
     }
     else if(which == 1)
     {
-        dev_log_flux += 2.0*rng.randh();
-        DNest4::wrap(dev_log_flux, 0.0, 2.0);
+        const DNest4::Gaussian gauss2(1.0, 0.10);
+        logH += gauss2.perturb(dev_log_flux, rng);
+        // dev_log_flux += 2.0*rng.randh();
+        // DNest4::wrap(dev_log_flux, 0.0, 2.0);
     }
     else if(which == 2)
     {
-        //typical_radius = log(typical_radius);
-        logH -= -0.5*pow(typical_radius/2.0, 2);
-        typical_radius += 2.0*rng.randh();
-        logH += -0.5*pow(typical_radius/2.0, 2);
-        //typical_radius = exp(typical_radius);
+        const DNest4::Gaussian gauss3(-2.0, 0.25);
+        logH += gauss3.perturb(typical_radius, rng);
+        // logH -= -0.5*pow(typical_radius/2.0, 2);
+        // typical_radius += 2.0*rng.randh();
+        // logH += -0.5*pow(typical_radius/2.0, 2);
     }
     else if(which == 3)
     {
-        dev_log_radius += 3.0*rng.randh();
-        DNest4::wrap(dev_log_radius, 0.0, 3.0);
+        const DNest4::Gaussian gauss4(1.00, 0.10);
+        logH += gauss4.perturb(dev_log_radius, rng);
+        // dev_log_radius += 3.0*rng.randh();
+        // DNest4::wrap(dev_log_radius, 0.0, 3.0);
     }
 
     return logH;
@@ -90,16 +100,16 @@ double MyConditionalPrior::log_pdf(const std::vector<double>& vec) const
         return -1E300;
 
     // Flux
-    //DNest4::Laplace laplace1(log(typical_flux), dev_log_flux);
-    DNest4::Laplace laplace1(typical_flux, dev_log_flux);
+    // DNest4::Laplace laplace1(typical_flux, dev_log_flux);
+    DNest4::Gaussian gauss1(typical_flux, dev_log_flux);
     //logp += -log(vec[2]) + laplace1.log_pdf(log(vec[2]));
-    logp += laplace1.log_pdf(vec[2]);
+    logp += gauss1.log_pdf(vec[2]);
 
     // Radius
-    //DNest4::Laplace laplace2(log(typical_radius), dev_log_radius);
-    DNest4::Laplace laplace2(typical_radius, dev_log_radius);
+    // DNest4::Laplace laplace2(typical_radius, dev_log_radius);
+    DNest4::Gaussian gauss2(typical_radius, dev_log_radius);
     //logp += -log(vec[3]) + laplace2.log_pdf(log(vec[3]));
-    logp += laplace2.log_pdf(vec[3]);
+    logp += gauss2.log_pdf(vec[3]);
 
     return logp;
 }
@@ -111,12 +121,14 @@ void MyConditionalPrior::from_uniform(std::vector<double>& vec) const
     vec[1] = y_min + (y_max - y_min)*vec[1];
 
     // Flux
-    DNest4::Laplace laplace1(typical_flux, dev_log_flux);
-    vec[2] = laplace1.cdf_inverse(vec[2]);
+    // DNest4::Laplace laplace1(typical_flux, dev_log_flux);
+    DNest4::Gaussian gauss1(typical_flux, dev_log_flux);
+    vec[2] = gauss1.cdf_inverse(vec[2]);
 
     // Radius
-    DNest4::Laplace laplace2(typical_radius, dev_log_radius);
-    vec[3] = laplace2.cdf_inverse(vec[3]);
+    // DNest4::Laplace laplace2(typical_radius, dev_log_radius);
+    DNest4::Gaussian gauss2(typical_radius, dev_log_radius);
+    vec[3] = gauss2.cdf_inverse(vec[3]);
 
 }
 
@@ -127,12 +139,14 @@ void MyConditionalPrior::to_uniform(std::vector<double>& vec) const
     vec[1] = (vec[1] - y_min)/(y_max - y_min);
 
     // Flux
-    DNest4::Laplace laplace1(typical_flux, dev_log_flux);
-    vec[2] = laplace1.cdf(vec[2]);
+    // DNest4::Laplace laplace1(typical_flux, dev_log_flux);
+    DNest4::Gaussian gauss1(typical_flux, dev_log_flux);
+    vec[2] = gauss1.cdf(vec[2]);
 
     // Radius
-    DNest4::Laplace laplace2(typical_radius, dev_log_radius);
-    vec[3] = laplace2.cdf(vec[3]);
+    // DNest4::Laplace laplace2(typical_radius, dev_log_radius);
+    DNest4::Gaussian gauss2(typical_radius, dev_log_radius);
+    vec[3] = gauss2.cdf(vec[3]);
 
 }
 

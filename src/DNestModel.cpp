@@ -6,8 +6,8 @@
 
 
 DNestModel::DNestModel() :
-logjitter(0.0),
-components(4, 10, false, MyConditionalPrior(-10, 10, -10, 10), DNest4::PriorType::log_uniform)
+// logjitter(0.0),
+components(4, 30, false, MyConditionalPrior(-10, 10, -10, 10), DNest4::PriorType::log_uniform)
 {
     gains = new Gains(Data::get_instance());
 }
@@ -19,7 +19,7 @@ DNestModel::~DNestModel() {
 
 
 
-DNestModel::DNestModel(const DNestModel& other) : components(4, 10, false, MyConditionalPrior(-10, 10, -10, 10), DNest4::PriorType::log_uniform)
+DNestModel::DNestModel(const DNestModel& other) : components(4, 30, false, MyConditionalPrior(-10, 10, -10, 10), DNest4::PriorType::log_uniform)
 {
     components = other.components;
     gains = new Gains(*other.gains);
@@ -96,7 +96,7 @@ double DNestModel::perturb(DNest4::RNG &rng) {
     }
 
     // Perturb SkyModel
-    if(rng.rand() <= 0.25) {
+    else if(rng.rand() <= 0.25) {
         logH += components.perturb(rng);
 
         // Pre-reject
@@ -263,15 +263,15 @@ std::string DNestModel::description() const
     descr += " num_components ";
 
     // Then it's all the components, padded with zeros
-    // max_num_components is 100 in this model, so that's how far the
+    // max_num_components is known in this model, so that's how far the
     // zero padding goes.
-    for(int i=0; i<10; ++i)
+    for(int i=0; i<30; ++i)
         descr += " x[" + std::to_string(i) + "] ";
-    for(int i=0; i<10; ++i)
+    for(int i=0; i<30; ++i)
         descr += " y[" + std::to_string(i) + "] ";
-    for(int i=0; i<10; ++i)
+    for(int i=0; i<30; ++i)
         descr += " logflux[" + std::to_string(i) + "] ";
-    for(int i=0; i<10; ++i)
+    for(int i=0; i<30; ++i)
         descr += " logbmaj[" + std::to_string(i) + "] ";
     return descr;
 }
