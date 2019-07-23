@@ -436,6 +436,8 @@ def plot_model_gains(gains_dict, IF, STOKES, savefn=None):
     axes[0, 1].set_title("Phases")
     axes[i, 0].set_xlabel("time, s")
     axes[i, 1].set_xlabel("time, s")
+    fig.suptitle("{}, IF {}".format({0: "RR", 1: "LL"}[STOKES], IF), fontsize=16)
+
     if savefn:
         fig.savefig(savefn, bbox_inches="tight", dpi=300)
     fig.show()
@@ -468,7 +470,10 @@ def plot_sampled_gains(posterior_sample, df, fig=None):
         i += 1
 
 
-def radplot(df, fig=None, color=None, label=None, style="ap"):
+def radplot(df, STOKES, IF=0, fig=None, color=None, label=None, style="ap"):
+
+    df = df.query("STOKES == @STOKES & IF == @IF")
+
     uv = df[["u", "v"]].values
     r = np.hypot(uv[:, 0], uv[:, 1])
 
@@ -499,9 +504,9 @@ def radplot(df, fig=None, color=None, label=None, style="ap"):
         axes[0].set_ylabel("Re, Jy")
         axes[1].set_ylabel("Im, Jy")
     axes[1].set_xlabel(r"$r_{\rm uv}$, $\lambda$")
+    axes[0].set_title("{}, IF {}".format({0: "RR", 1: "LL"}[STOKES], IF))
     if label is not None:
         axes[0].legend()
-    plt.tight_layout()
     fig.show()
     return fig
 
@@ -536,7 +541,7 @@ if __name__ == "__main__":
     df["vis_im"] += im
 
     # Plot
-    fig = radplot(df, label="Sky Model")
+    fig = radplot(df, STOKES=0, label="Sky Model")
 
     # Add gains
     fname_gains = "/home/ilya/github/bsc/test_gains.txt"
@@ -544,12 +549,19 @@ if __name__ == "__main__":
                                           scale_gpamp=np.exp(7),
                                           scale_gpphase=np.exp(5),
                                           amp_gpamp=np.exp(-3),
-                                          amp_gpphase=np.exp(-2))
+                                          amp_gpphase=np.exp(-2),
+                                          ant_number_to_skip=1)
     # # Add noise
     # df_updated = add_noise(df_updated, use_global_median_noise=True, use_per_baseline_median_noise=False)
     #
-    # fig = radplot(df_updated, color="#ff7f0e", fig=fig, label="With gains")
-    # fig = plot_model_gains(gains_dict)
+    fig = radplot(df_updated, STOKES=0, color="#ff7f0e", fig=fig, label="With gains")
+    import matplotlib
+    matplotlib.use('TkAgg')
+    import matplotlib.pyplot as plt
+
+    plt.show()
+    fig = plot_model_gains(gains_dict, STOKES=0, IF=0)
+    plt.show()
 
 
 
