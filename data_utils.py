@@ -3,8 +3,9 @@ import astropy.io.fits as pf
 from astropy.time import Time
 from astropy import units as u
 import pandas as pd
-# import sys
-# sys.path.insert(0, '../ve/vlbi_errors')
+import sys
+sys.path.insert(0, '../ve/vlbi_errors')
+from uv_data import UVData
 # sys.path.insert(0, '/home/ilya/github/ve/vlbi_errors')
 # from components import CGComponent
 
@@ -50,6 +51,7 @@ def gaussian_circ_ft(flux, dx, dy, bmaj, uv):
 
 
 # TODO: Do not need times_amp & times_phase
+# FIXME: Use Difmap first to set weights based on averaging
 def create_data_file(uvfits, outfile, step_amp=60, step_phase=None, use_scans_for_amplitudes=True):
     """
     :param uvfits:
@@ -68,44 +70,56 @@ def create_data_file(uvfits, outfile, step_amp=60, step_phase=None, use_scans_fo
         (default: ``True``)
     :return:
     """
-    hdus = pf.open(uvfits)
-    data = hdus[0].data
-    header = hdus[0].header
-    freq = header["CRVAL4"]
+    uvdata = UVData(uvfits)
 
-    df = pd.DataFrame(columns=["times", "ant1", "ant2", "u", "v", "vis_re", "vis_im",
-                               "error"])
+    df = pd.DataFrame(columns=["times", "ant1", "ant2", "u", "v", "STOKES",
+                               "IF", "vis_re", "vis_im", "error"])
 
-    for group in data:
-        time = Time(group['DATE'] + group['_DATE'], format='jd')
-        baseline = group["BASELINE"]
+    for ind, data in enumerate(uvdata.uvdata):
+        print(ind)
+
+        # FIXME: Debug stop
+        if ind == 1000:
+            break
+
+        time = uvdata.times[ind]
+        baseline = uvdata.hdu.data["BASELINE"][ind]
         ant1 = int(baseline//256)
         ant2 = int(baseline-ant1*256)
 
-        try:
-            u = group["UU"]
-            v = group["VV"]
-        except KeyError:
-            u = group["UU--"]
-            v = group["VV--"]
+        u = uvdata.uv[ind, 0]
+        v = uvdata.uv[ind, 1]
+
         if abs(u) < 1.:
-            u *= freq
-            v *= freq
-        data = group["DATA"].squeeze()
-        weights = data[:, 2]
+            u *= uvdata.frequency
+            v *= uvdata.frequency
+
+        # (#IF, #Stokes)
+        data = uvdata.uvdata[ind]
+        weights = uvdata.weights[ind]
+        # TODO: What consequences of masking negative weights? Are they skipped?
         mask = weights <= 0
         if np.alltrue(weights <= 0):
             continue
         weights = np.ma.array(weights, mask=mask)
-        weight = np.ma.sum(weights)
-        error = 1/np.sqrt(weight)
-        vis_re = np.ma.array(data[:, 0], mask=mask)
-        vis_im = np.ma.array(data[:, 1], mask=mask)
-        vis_re = np.ma.mean(vis_re)
-        vis_im = np.ma.mean(vis_im)
-        df_ = pd.Series({"times": time, "ant1": ant1, "ant2": ant2, "u": u, "v": v,
-                         "vis_re": vis_re, "vis_im": vis_im, "error": error})
-        df = df.append(df_, ignore_index=True)
+        errors = 1/np.sqrt(weights)
+        vis_re = np.ma.array(data, mask=mask).real
+        vis_im = np.ma.array(data, mask=mask).imag
+
+        for ij, _ in np.ndenumerate(data):
+
+            # Skip masked IF/Stokes
+            if mask[ij]:
+                continue
+
+            IF, stokes = ij
+            # Save only RR (0) and LL (1)
+            if stokes not in (0, 1,):
+                continue
+            df_ = pd.Series({"times": time, "ant1": ant1, "ant2": ant2, "u": u, "v": v,
+                             "STOKES": stokes, "IF": IF, "vis_re": vis_re[ij],
+                             "vis_im": vis_im[ij], "error": errors[ij]})
+            df = df.append(df_, ignore_index=True)
 
     df["times"] -= np.min(df["times"])
     df["times"] = [dt.sec for dt in df["times"]]
@@ -249,12 +263,15 @@ def create_data_file(uvfits, outfile, step_amp=60, step_phase=None, use_scans_fo
     df = df[["times",
              "ant1", "ant2",
              "u", "v",
+             "STOKES", "IF",
              "vis_re", "vis_im", "error",
              "times_amp", "idx_amp_ant1", "idx_amp_ant2",
              "times_phase", "idx_phase_ant1", "idx_phase_ant2"]]
 
     df["ant1"] = df["ant1"].astype(int)
     df["ant2"] = df["ant2"].astype(int)
+    df["IF"] = df["IF"].astype(int)
+    df["STOKES"] = df["STOKES"].astype(int)
     df.to_csv(outfile, sep=" ", index=False, header=True)
     return df
 
@@ -306,7 +323,8 @@ def add_noise(df, use_global_median_noise=False, use_per_baseline_median_noise=T
 
 def inject_gains(df_original, outfname=None,
                  amp_gpamp=np.exp(-3), amp_gpphase=np.exp(-3),
-                 scale_gpamp=np.exp(6), scale_gpphase=np.exp(5)):
+                 scale_gpamp=np.exp(6), scale_gpphase=np.exp(5),
+                 ant_number_to_skip=None):
     """
     Inject gains and create new DataFrame with updated visibilities ``df_updated`` and
     dictionary with gains.
@@ -319,64 +337,98 @@ def inject_gains(df_original, outfname=None,
     :param amp_gpamp: (optional)
         Amplitude of the GP that describes time dependence of the gain amplitudes.
         (default: ``np.exp(-3)``.
+    :param ant_number_to_skip: (optional)
+        Antenna number to skip.
 
     :return:
         Updated DataFrame and dictionary with gains for each antenna.
     """
     df = df_original.copy()
-
-    # All antennas numbers
-    antennas = sorted(set(df["ant1"].values.tolist() + df["ant2"].values.tolist()))
-
-    # Time of vis measurements at each antenna
-    antennas_times = dict()
-    for ant in antennas:
-        times = sorted(list(set(df.query("ant1 == @ant | ant2 == @ant")["times"])))
-        antennas_times.update({ant: times})
-
-    # For each antenna - create GP of amp and phase
-    antennas_gp = dict()
-    for ant in antennas:
-        ant_time = antennas_times[ant]
-        # Amplitude
-        v = np.random.normal(0, 1, size=len(ant_time))
-        amp = 1 + gp_pred(amp_gpamp, scale_gpamp, v, np.array(ant_time))
-        # Phase
-        v = np.random.normal(0, 1, size=len(ant_time))
-        phase = gp_pred(amp_gpphase, scale_gpphase, v, np.array(ant_time))
-        antennas_gp[ant] = {"amp": {t: a for (t, a) in zip(ant_time, amp)},
-                            "phase": {t: p for (t, p) in zip(ant_time, phase)}}
-
-    # Now calculate visibilities
-    vis_real_gained = list()
-    vis_imag_gained = list()
-    for t, ant1, ant2, vis_real, vis_imag in df[['times', 'ant1', 'ant2', 'vis_re', 'vis_im']].values:
-        amp1 = antennas_gp[ant1]["amp"][t]
-        amp2 = antennas_gp[ant2]["amp"][t]
-        phase1 = antennas_gp[ant1]["phase"][t]
-        phase2 = antennas_gp[ant2]["phase"][t]
-        vis_real_new = amp1*amp2*(np.cos(phase1-phase2)*vis_real-np.sin(phase1-phase2)*vis_imag)
-        vis_imag_new = amp1*amp2*(np.cos(phase1-phase2)*vis_imag+np.sin(phase1-phase2)*vis_real)
-        vis_real_gained.append(vis_real_new)
-        vis_imag_gained.append(vis_imag_new)
-
-    # Create updated df that can be used for inference
     df_updated = df_original.copy()
-    df_updated["vis_re"] = vis_real_gained
-    df_updated["vis_im"] = vis_imag_gained
+
+    antennas_gp_per_stokes_per_IF = dict()
+
+    for stokes in df["STOKES"].unique():
+
+        # Gains per each IF
+        antennas_gp_per_IF = dict()
+
+        for IF in df["IF"].unique():
+
+            df_STOKES_IF = df.query("IF == @IF & STOKES == @stokes")
+            # All antennas numbers for given IF
+            antennas = sorted(set(df_STOKES_IF["ant1"].values.tolist() + df_STOKES_IF["ant2"].values.tolist()))
+
+            # Time of vis measurements at each antenna
+            antennas_times = dict()
+            for ant in antennas:
+                times = sorted(list(set(df_STOKES_IF.query("ant1 == @ant | ant2 == @ant")["times"])))
+                antennas_times.update({ant: times})
+
+            # For each antenna - create GP of amp and phase
+            antennas_gp = dict()
+            for ant in antennas:
+                ant_time = antennas_times[ant]
+                # Amplitude
+                if ant_number_to_skip is not None and ant == ant_number_to_skip:
+                    v = np.zeros(len(ant_time))
+                else:
+                    v = np.random.normal(0, 1, size=len(ant_time))
+                amp = 1 + gp_pred(amp_gpamp, scale_gpamp, v, np.array(ant_time))
+                # Phase
+                if ant_number_to_skip is not None and ant == ant_number_to_skip:
+                    v = np.zeros(len(ant_time))
+                else:
+                    v = np.random.normal(0, 1, size=len(ant_time))
+                phase = gp_pred(amp_gpphase, scale_gpphase, v, np.array(ant_time))
+                antennas_gp[ant] = {"amp": {t: a for (t, a) in zip(ant_time, amp)},
+                                    "phase": {t: p for (t, p) in zip(ant_time, phase)}}
+
+            print(antennas_gp)
+            antennas_gp_per_IF[IF] = antennas_gp
+
+            # Now calculate visibilities
+            vis_real_gained = list()
+            vis_imag_gained = list()
+            for t, ant1, ant2, vis_real, vis_imag in df_STOKES_IF[['times', 'ant1', 'ant2', 'vis_re', 'vis_im']].values:
+                amp1 = antennas_gp[ant1]["amp"][t]
+                amp2 = antennas_gp[ant2]["amp"][t]
+                phase1 = antennas_gp[ant1]["phase"][t]
+                phase2 = antennas_gp[ant2]["phase"][t]
+                vis_real_new = amp1*amp2*(np.cos(phase1-phase2)*vis_real-np.sin(phase1-phase2)*vis_imag)
+                vis_imag_new = amp1*amp2*(np.cos(phase1-phase2)*vis_imag+np.sin(phase1-phase2)*vis_real)
+                vis_real_gained.append(vis_real_new)
+                vis_imag_gained.append(vis_imag_new)
+
+            # Create updated df that can be used for inference
+            df_updated.loc[(df_updated.IF == IF) & (df_updated.STOKES == stokes), "vis_re"] = vis_real_gained
+            df_updated.loc[(df_updated.IF == IF) & (df_updated.STOKES == stokes), "vis_im"] = vis_imag_gained
+
+        antennas_gp_per_stokes_per_IF[stokes] = antennas_gp_per_IF
 
     if outfname is not None:
         df_updated.to_csv(outfname, sep=" ", index=False, header=True)
 
-    return df_updated, antennas_gp
+    return df_updated, antennas_gp_per_stokes_per_IF
 
 
-def plot_model_gains(gains_dict, savefn=None):
+def plot_model_gains(gains_dict, IF, STOKES, savefn=None):
+    """
+    :param gains_dict:
+        Nested dictionary with keys [STOKES][IF][ant][amp/phase]
+    :param IF:
+        Integer. IF number.
+    :param STOKES:
+        Integer. Stokes number ("RR" - 0, "LL" - 1)
+    :param savefn: (optional)
+        Filename to save picture.
+    :return:
+    """
     import matplotlib.pyplot as plt
-    fig, axes = plt.subplots(len(gains_dict), 2, sharex=True, figsize=(8, 20))
-    for i, ant in enumerate(gains_dict):
-        amp = gains_dict[ant]["amp"]
-        phase = gains_dict[ant]["phase"]
+    fig, axes = plt.subplots(len(gains_dict[STOKES][IF]), 2, sharex=True, figsize=(8, 20))
+    for i, ant in enumerate(gains_dict[STOKES][IF]):
+        amp = gains_dict[STOKES][IF][ant]["amp"]
+        phase = gains_dict[STOKES][IF][ant]["phase"]
         axes[i, 0].plot(amp.keys(), amp.values(), '.')
         axes[i, 1].plot(phase.keys(), phase.values(), '.')
         axes[i, 1].yaxis.set_ticks_position("right")
@@ -456,10 +508,11 @@ def radplot(df, fig=None, color=None, label=None, style="ap"):
 
 if __name__ == "__main__":
     # uvfits_fname = "/home/ilya/github/DNest4/code/Examples/UV/J2001+2416_K_2006_06_11_yyk_vis.fits"
-    uvfits_fname = "/home/ilya/github/DNest4/code/Examples/UV/0716+714.u.2013_08_20.uvf"
+    # uvfits_fname = "/home/ilya/github/DNest4/code/Examples/UV/0716+714.u.2013_08_20.uvf"
+    uvfits_fname = "/home/ilya/Dropbox/papers/bsc/data/BLLac_10-11-2013_K_final.uvf"
     fname = "/home/ilya/github/bsc/test.txt"
 
-    df = create_data_file(uvfits_fname, fname, step_amp=120, step_phase=30, use_scans_for_amplitudes=True)
+    df = create_data_file(uvfits_fname, fname, step_amp=120, step_phase=60, use_scans_for_amplitudes=True)
 # # Load data frame
     # columns = ["times",
     #            "ant1", "ant2",
@@ -468,6 +521,8 @@ if __name__ == "__main__":
     #            "times_amp", "idx_amp_ant1", "idx_amp_ant2",
     #            "times_phase", "idx_phase_ant1", "idx_phase_ant2"]
     # df = pd.read_csv(fname, sep=" ", names=columns)
+
+
 
     # Zero observed data
     df["vis_re"] = 0
@@ -490,11 +545,14 @@ if __name__ == "__main__":
                                           scale_gpphase=np.exp(5),
                                           amp_gpamp=np.exp(-3),
                                           amp_gpphase=np.exp(-2))
-    # Add noise
-    df_updated = add_noise(df_updated, use_global_median_noise=True, use_per_baseline_median_noise=False)
+    # # Add noise
+    # df_updated = add_noise(df_updated, use_global_median_noise=True, use_per_baseline_median_noise=False)
+    #
+    # fig = radplot(df_updated, color="#ff7f0e", fig=fig, label="With gains")
+    # fig = plot_model_gains(gains_dict)
 
-    fig = radplot(df_updated, color="#ff7f0e", fig=fig, label="With gains")
-    fig = plot_model_gains(gains_dict)
+
+
 
     # import json
     # # Save gains
