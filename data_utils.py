@@ -3,9 +3,9 @@ import astropy.io.fits as pf
 from astropy.time import Time
 from astropy import units as u
 import pandas as pd
-# import sys
+import sys
 # sys.path.insert(0, '../ve/vlbi_errors')
-# sys.path.insert(0, '/home/ilya/github/ve/vlbi_errors')
+sys.path.insert(0, '/home/ilya/github/ve/vlbi_errors')
 # from components import CGComponent
 
 mas_to_rad = u.mas.to(u.rad)
@@ -259,6 +259,229 @@ def create_data_file(uvfits, outfile, step_amp=60, step_phase=None, use_scans_fo
     return df
 
 
+# TODO: Do not need times_amp & times_phase
+def create_data_file_bllac(uvfits, outfile, stokes, band, step_amp=60, step_phase=None, use_scans_for_amplitudes=True):
+    """
+    :param uvfits:
+        Path to UVFITS file.
+    :param outfile:
+        Path to output txt-file.
+    :stokes:
+        Stokes parameter (RR or LL).
+    :band:
+        IF (Integer number starting from 0).
+    :param step_amp: (optional)
+        Time interval for constant gain amplitudes [s]. If ``None`` and
+        ``use_scans_for_amplitudes`` is ``False`` - use different gain
+        amplitude for each time stamp. (default: ``60``)
+    :param step_phase:
+        Time interval for constant gain phases [s]. If ``None`` - use
+        different gain phase for each time stamp. (default: ``None``)
+    :param use_scans_for_amplitudes: (optional)
+        Boolean. Should we use constant gain amplitude over scan.
+        (default: ``True``)
+    :return:
+    """
+    hdus = pf.open(uvfits)
+    data = hdus[0].data
+    header = hdus[0].header
+    freq = header["CRVAL4"]
+
+    df = pd.DataFrame(columns=["times", "ant1", "ant2", "u", "v", "vis_re", "vis_im",
+                               "error"])
+    from uv_data import UVData
+    uvdata = UVData(uvfits)
+    noise = uvdata.noise()
+
+    for group in data:
+        time = Time(group['DATE'] + group['_DATE'], format='jd')
+        baseline = group["BASELINE"]
+        ant1 = int(baseline//256)
+        ant2 = int(baseline-ant1*256)
+
+        try:
+            u = group["UU"]
+            v = group["VV"]
+        except KeyError:
+            u = group["UU--"]
+            v = group["VV--"]
+        if abs(u) < 1.:
+            u *= freq
+            v *= freq
+        # IF, STOKES, COMPLEX
+        stokes_dict = {"RR": 0, "LL": 1}
+        stokes_index = stokes_dict[stokes]
+        # 1D array (re, im, weight)
+        data_ = group["DATA"][0, 0, band, 0, stokes_index, :]
+        weight = data_[2]
+        if weight <= 0:
+            continue
+        error = noise[baseline][band]
+
+        # print("Stokes RR or LL")
+        vis_re = data_[0]
+        vis_im = data_[1]
+
+        df_ = pd.Series({"times": time, "ant1": ant1, "ant2": ant2, "u": u, "v": v,
+                         "vis_re": vis_re, "vis_im": vis_im, "error": error})
+        df = df.append(df_, ignore_index=True)
+
+    mintime = np.min(df["times"])
+    for i in range(len(df)):
+        df["times"][i] = df["times"][i] - mintime
+    # df["times"] = df["times"] - mintime
+    df["times"] = [dt.sec for dt in df["times"]]
+
+    # All antennas numbers
+    antennas = sorted(set(df["ant1"].values.tolist() + df["ant2"].values.tolist()))
+
+    # Time of vis measurements at each antenna
+    antennas_times = dict()
+    for ant in antennas:
+        times = sorted(list(set(df.query("ant1 == @ant | ant2 == @ant")["times"])))
+        antennas_times.update({ant: times})
+        print("For antenna {} times are: ".format(ant))
+        print(times)
+
+    # Indexes of vis measurement at each antenna in unique time stamps
+    antennas_times_idx = dict()
+    unique_times = sorted(df["times"].unique())
+    for ant in antennas:
+        antennas_times_idx[ant] = list()
+        for t in antennas_times[ant]:
+            antennas_times_idx[ant].append(unique_times.index(t))
+
+    # Find scans for each antenna, their central time and indexes of time stamps
+    scans_borders = np.where(np.diff(unique_times) > 100)[0]
+    print("Data set has {} scans".format(len(scans_borders)+1))
+    # Array with scan numbers for each unique time stamp
+    scans_idx = np.zeros(len(unique_times), dtype=int)
+    scans_idx[: scans_borders[0]+1] = 0
+    last_border = scans_borders[0]+1
+    i = 1
+    for border in scans_borders[1:]:
+        scans_idx[last_border:border+1] = i
+        i += 1
+        last_border = border+1
+    scans_idx[last_border:] = i
+
+    # Dictionary with keys - antenna numbers and values - indexes of scans for each time stamp for given antenna
+    antennas_scans_idx = dict()
+    for ant in antennas:
+        antennas_scans_idx[ant] = scans_idx[antennas_times_idx[ant]]
+
+    # Dictionary with keys - scan numbers and values - time of corresponding scan center
+    scans = np.unique(scans_idx)
+    scans_times = dict()
+    for scan in scans:
+        scans_times[scan] = np.mean(np.array(unique_times)[scans_idx == scan])
+    print("Scan time centers : ", scans_times)
+
+    # Indexes of corresponding visibility measurements in time series for given
+    # antenna
+    df["id_ant1"] = [antennas_times[ant].index(t) for (ant, t) in
+                     df[["ant1", "times"]].values]
+    df["id_ant2"] = [antennas_times[ant].index(t) for (ant, t) in
+                     df[["ant2", "times"]].values]
+
+    antennas_times_lengths = dict()
+    for ant in antennas:
+        antennas_times_lengths.update({ant: len(antennas_times[ant])})
+        print("For antenna {} number of time measurements is: ".format(ant))
+        print(len(antennas_times[ant]))
+    # df["ant1_ntimes"] = [antennas_times_lengths[ant] for ant in df["ant1"]]
+    # df["ant2_ntimes"] = [antennas_times_lengths[ant] for ant in df["ant2"]]
+
+    # Here using common time grid for re-gridding
+    times = df["times"].unique()
+    tmin = np.min(times)
+    tmax = np.max(times)
+    dt = tmax-tmin
+
+    if use_scans_for_amplitudes:
+        df["idx_amp_ant1"] = [antennas_scans_idx[ant][idx] for (ant, idx) in
+                              df[["ant1", "id_ant1"]].values]
+        df["idx_amp_ant2"] = [antennas_scans_idx[ant][idx] for (ant, idx) in
+                              df[["ant2", "id_ant2"]].values]
+        df["times_amp"] = [scans_times[scan] for scan in df["idx_amp_ant1"].values]
+
+    elif step_amp is not None and not use_scans_for_amplitudes:
+        # Re-grid time measurements
+        new_idx_dict = {}
+        new_times_dict = {}
+
+        # Step size for amplitudes
+        step = step_amp
+        n = int(dt/step)
+        tsamples, step = np.linspace(tmin, tmax, n, retstep=True)
+        hist, bins_enges = np.histogram(times, tsamples)
+        non_empty = np.where(hist > 0)[0]
+        # New times of samples - for amplitudes
+        new_times = (tsamples + step/2)[:-1][non_empty]
+        new_idx = [a*[i] for i, a in enumerate(hist[non_empty])]
+        new_idx = np.array([item for sublist in new_idx for item in sublist], dtype=int)
+
+        # To keep old code working
+        for ant in antennas:
+            new_idx_dict[ant] = new_idx
+            new_times_dict[ant] = new_times
+        df["idx_amp_ant1"] = [new_idx_dict[ant][idx] for (ant, idx) in
+                              df[["ant1", "id_ant1"]].values]
+        df["idx_amp_ant2"] = [new_idx_dict[ant][idx] for (ant, idx) in
+                              df[["ant2", "id_ant2"]].values]
+        df["times_amp"] = [new_times_dict[ant][idx] for (ant, idx) in
+                           df[["ant1", "idx_amp_ant1"]].values]
+
+    else:
+        df["idx_amp_ant1"] = df["id_ant1"]
+        df["idx_amp_ant2"] = df["id_ant2"]
+        df["times_amp"] = df["times"]
+
+    if step_phase is not None:
+        # Re-grid time measurements
+        new_idx_dict = {}
+        new_times_dict = {}
+
+        # Step size for phases
+        step = step_phase
+        n = int(dt/step)
+        tsamples, step = np.linspace(tmin, tmax, n, retstep=True)
+        hist, bins_enges = np.histogram(times, tsamples)
+        non_empty = np.where(hist > 0)[0]
+        # New times of samples - for phases
+        new_times = (tsamples+step/2)[:-1][non_empty]
+        new_idx = [a*[i] for i, a in enumerate(hist[non_empty])]
+        new_idx = np.array([item for sublist in new_idx for item in sublist], dtype=int)
+
+        # To keep old code working
+        for ant in antennas:
+            new_idx_dict[ant] = new_idx
+            new_times_dict[ant] = new_times
+        df["idx_phase_ant1"] = [new_idx_dict[ant][idx] for (ant, idx) in
+                                df[["ant1", "id_ant1"]].values]
+        df["idx_phase_ant2"] = [new_idx_dict[ant][idx] for (ant, idx) in
+                                df[["ant2", "id_ant2"]].values]
+        df["times_phase"] = [new_times_dict[ant][idx] for (ant, idx) in
+                             df[["ant1", "idx_phase_ant1"]].values]
+    else:
+        df["idx_phase_ant1"] = df["id_ant1"]
+        df["idx_phase_ant2"] = df["id_ant2"]
+        df["times_phase"] = df["times"]
+
+    df = df[["times",
+             "ant1", "ant2",
+             "u", "v",
+             "vis_re", "vis_im", "error",
+             "times_amp", "idx_amp_ant1", "idx_amp_ant2",
+             "times_phase", "idx_phase_ant1", "idx_phase_ant2"]]
+
+    df["ant1"] = df["ant1"].astype(int)
+    df["ant2"] = df["ant2"].astype(int)
+    df.to_csv(outfile, sep=" ", index=False, header=True)
+    return df
+
+
+
 def add_noise(df, use_global_median_noise=False, use_per_baseline_median_noise=True):
     """
     Add noise as specified in ``error`` columns to ``vis_re`` and ``vis_im`` columns.
@@ -456,10 +679,11 @@ def radplot(df, fig=None, color=None, label=None, style="ap"):
 
 if __name__ == "__main__":
     # uvfits_fname = "/home/ilya/github/DNest4/code/Examples/UV/J2001+2416_K_2006_06_11_yyk_vis.fits"
-    uvfits_fname = "/home/ilya/github/DNest4/code/Examples/UV/0716+714.u.2013_08_20.uvf"
-    fname = "/home/ilya/github/bsc/test.txt"
+    uvfits_fname = "/home/ilya/github/bsc/data/BLLac_10-11-2013_K_final.uvf"
+    fname = "/home/ilya/github/bsc/bllac_120_60.txt"
 
-    df = create_data_file(uvfits_fname, fname, step_amp=120, step_phase=30, use_scans_for_amplitudes=True)
+    df = create_data_file_bllac(uvfits_fname, fname, stokes="RR", band=0, step_amp=120, step_phase=60,
+                                use_scans_for_amplitudes=True)
 # # Load data frame
     # columns = ["times",
     #            "ant1", "ant2",
@@ -469,32 +693,32 @@ if __name__ == "__main__":
     #            "times_phase", "idx_phase_ant1", "idx_phase_ant2"]
     # df = pd.read_csv(fname, sep=" ", names=columns)
 
-    # Zero observed data
-    df["vis_re"] = 0
-    df["vis_im"] = 0
-    # Add model
-    re, im = gaussian_circ_ft(flux=2.0, dx=0.0, dy=0.0, bmaj=0.1, uv=df[["u", "v"]].values)
-    df["vis_re"] += re
-    df["vis_im"] += im
-    re, im = gaussian_circ_ft(flux=1.0, dx=0.5, dy=0.0, bmaj=0.2, uv=df[["u", "v"]].values)
-    df["vis_re"] += re
-    df["vis_im"] += im
+    # # Zero observed data
+    # df["vis_re"] = 0
+    # df["vis_im"] = 0
+    # # Add model
+    # re, im = gaussian_circ_ft(flux=2.0, dx=0.0, dy=0.0, bmaj=0.1, uv=df[["u", "v"]].values)
+    # df["vis_re"] += re
+    # df["vis_im"] += im
+    # re, im = gaussian_circ_ft(flux=1.0, dx=0.5, dy=0.0, bmaj=0.2, uv=df[["u", "v"]].values)
+    # df["vis_re"] += re
+    # df["vis_im"] += im
 
     # Plot
     fig = radplot(df, label="Sky Model")
 
-    # Add gains
-    fname_gains = "/home/ilya/github/bsc/test_gains.txt"
-    df_updated, gains_dict = inject_gains(df, outfname=fname_gains,
-                                          scale_gpamp=np.exp(7),
-                                          scale_gpphase=np.exp(5),
-                                          amp_gpamp=np.exp(-3),
-                                          amp_gpphase=np.exp(-2))
-    # Add noise
-    df_updated = add_noise(df_updated, use_global_median_noise=True, use_per_baseline_median_noise=False)
-
-    fig = radplot(df_updated, color="#ff7f0e", fig=fig, label="With gains")
-    fig = plot_model_gains(gains_dict)
+    # # Add gains
+    # fname_gains = "/home/ilya/github/bsc/test_gains.txt"
+    # df_updated, gains_dict = inject_gains(df, outfname=fname_gains,
+    #                                       scale_gpamp=np.exp(7),
+    #                                       scale_gpphase=np.exp(5),
+    #                                       amp_gpamp=np.exp(-3),
+    #                                       amp_gpphase=np.exp(-2))
+    # # Add noise
+    # df_updated = add_noise(df_updated, use_global_median_noise=True, use_per_baseline_median_noise=False)
+    #
+    # fig = radplot(df_updated, color="#ff7f0e", fig=fig, label="With gains")
+    # fig = plot_model_gains(gains_dict)
 
     # import json
     # # Save gains
