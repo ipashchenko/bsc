@@ -57,23 +57,28 @@ void DNestModel::from_prior(DNest4::RNG &rng) {
     logjitter = -3.0 + 2.0*rng.randn();
     components.from_prior(rng);
     recenter();
-    gains->from_prior_hp_amp(rng);
-    gains->from_prior_hp_phase(rng);
-    gains->from_prior_v_amp();
-    gains->from_prior_v_phase();
+    gains->from_prior(rng);
+    //gains->from_prior_hp_amp(rng);
+    //gains->from_prior_hp_phase(rng);
+    //gains->from_prior_v_amp();
+    //gains->from_prior_v_phase();
     // Calculate C, L matrixes for rotation of v
-    gains->calculate_C_amp();
-    gains->calculate_C_phase();
-    gains->calculate_L_amp();
-    gains->calculate_L_phase();
+    //gains->calculate_C_amp();
+    //gains->calculate_C_phase();
+    //gains->calculate_L_amp();
+    //gains->calculate_L_phase();
     // Calculate latent v using calculated L and generated from prior v
-    gains->calculate_amplitudes();
-    gains->calculate_phases();
+    //gains->calculate_amplitudes();
+    //gains->calculate_phases();
     // Calculate SkyModel. ``update = false`` - means re-calculate from scratch, i.e. there is nothing to update
+    // I don't think I need here recenter because it already ran
     recenter();
+
     calculate_sky_mu(false);
+
     // Calculate full model (SkyModel + gains)
     calculate_mu();
+
 }
 
 
@@ -195,6 +200,9 @@ void DNestModel::calculate_mu() {
         phase_ant_i[k] += gains->operator[](antennas_map[ant_i[k]])->get_phases()[idx_phase_ant_i[k]];
         phase_ant_j[k] += gains->operator[](antennas_map[ant_j[k]])->get_phases()[idx_phase_ant_j[k]];
     }
+
+    std::cout << std::endl << "check" << std::endl;
+
 
     // SkyModel modified by gains
     // This implies g = amp*exp(+1j*phi) and V = amp*exp(+1j*phi) - note "+" sign

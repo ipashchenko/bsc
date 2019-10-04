@@ -79,93 +79,94 @@ Gain::Gain(std::set<double> new_times) :
     }
 
 
-//Gain::Gain(const Gain &other) {
-//    logamp_amp = other.logamp_amp;
-//    logamp_phase = other.logamp_phase;
-//    logscale_amp = other.logscale_amp;
-//    logscale_phase = other.logscale_phase;
-//    times_amp = other.times_amp;
-//    times_phase = other.times_phase;
-//    amplitudes =other.amplitudes;
-//    phases = other.phases;
-//    v_amp = other.v_amp;
-//    v_phase = other.v_phase;
-//    C_amp = other.C_amp;
-//    C_phase = other.C_phase;
-//    L_amp = other.L_amp;
-//    L_phase = other.L_phase;
+
+Gain::Gain(const Gain &other) {
+    logamp_amp = other.logamp_amp;
+    logamp_phase = other.logamp_phase;
+    logscale_amp = other.logscale_amp;
+    logscale_phase = other.logscale_phase;
+    times_amp = other.times_amp;
+    times_phase = other.times_phase;
+    amplitudes =other.amplitudes;
+    phases = other.phases;
+    v_amp = other.v_amp;
+    v_phase = other.v_phase;
+    C_amp = other.C_amp;
+    C_phase = other.C_phase;
+    L_amp = other.L_amp;
+    L_phase = other.L_phase;
+}
+
+
+//void Gain::print_times(std::ostream &out) const
+//{
+//    out << "times amp = " << std::endl;
+//    for (int i=0; i<times_amp.size(); i++) {
+//        out << times_amp[i] << ", ";
+//    }
+//    out << std::endl;
+//
+//    out << "times phase = " << std::endl;
+//    for (int i=0; i<times_phase.size(); i++) {
+//        out << times_phase[i] << ", ";
+//    }
+//    out << std::endl;
+//
 //}
 
 
-void Gain::print_times(std::ostream &out) const
-{
-    out << "times amp = " << std::endl;
-    for (int i=0; i<times_amp.size(); i++) {
-        out << times_amp[i] << ", ";
-    }
-    out << std::endl;
-
-    out << "times phase = " << std::endl;
-    for (int i=0; i<times_phase.size(); i++) {
-        out << times_phase[i] << ", ";
-    }
-    out << std::endl;
-
-}
+//void Gain::print_hp(std::ostream &out) const
+//{
+//    out << "For amplitude: logamplitude = " << logamp_amp << ", " << "logscale = " << logscale_amp << std::endl;
+//    out << "For phase: logamplitude = " << logamp_phase << ", " << "logscale = " << logscale_phase << std::endl;
+//
+//}
 
 
-void Gain::print_hp(std::ostream &out) const
-{
-    out << "For amplitude: logamplitude = " << logamp_amp << ", " << "logscale = " << logscale_amp << std::endl;
-    out << "For phase: logamplitude = " << logamp_phase << ", " << "logscale = " << logscale_phase << std::endl;
-
-}
-
-
-void Gain::print_v(std::ostream &out) const
-{
-    out << "v amp = " << std::endl;
-    for (int i=0; i<v_amp.size(); i++) {
-        out << v_amp[i] << ", ";
-    }
-    out << std::endl;
-
-    out << "v_phase = " << std::endl;
-    for (int i=0; i<v_phase.size(); i++) {
-        out << v_phase[i] << ", ";
-    }
-    out << std::endl;
-}
+//void Gain::print_v(std::ostream &out) const
+//{
+//    out << "v amp = " << std::endl;
+//    for (int i=0; i<v_amp.size(); i++) {
+//        out << v_amp[i] << ", ";
+//    }
+//    out << std::endl;
+//
+//    out << "v_phase = " << std::endl;
+//    for (int i=0; i<v_phase.size(); i++) {
+//        out << v_phase[i] << ", ";
+//    }
+//    out << std::endl;
+//}
 
 
-void Gain::print_C(std::ostream &out) const
-{
-    out << "C amp = " << std::endl;
-    out << C_amp << std::endl;
-    out << "C phase = " << std::endl;
-    out << C_phase << std::endl;
-}
+//void Gain::print_C(std::ostream &out) const
+//{
+//    out << "C amp = " << std::endl;
+//    out << C_amp << std::endl;
+//    out << "C phase = " << std::endl;
+//    out << C_phase << std::endl;
+//}
 
 
-void Gain::print_L(std::ostream &out) const
-{
-    out << "L amp = " << std::endl;
-    out << L_amp << std::endl;
-    out << "L phase= " << std::endl;
-    out << L_phase << std::endl;
-}
+//void Gain::print_L(std::ostream &out) const
+//{
+//    out << "L amp = " << std::endl;
+//    out << L_amp << std::endl;
+//    out << "L phase= " << std::endl;
+//    out << L_phase << std::endl;
+//}
 
 
-void Gain::set_hp_amp(std::valarray<double> params) {
-    logamp_amp = params[0];
-    logscale_amp = params[1];
-}
+//void Gain::set_hp_amp(std::valarray<double> params) {
+//    logamp_amp = params[0];
+//    logscale_amp = params[1];
+//}
 
 
-void Gain::set_hp_phase(std::valarray<double> params) {
-    logamp_phase = params[0];
-    logscale_phase = params[1];
-}
+//void Gain::set_hp_phase(std::valarray<double> params) {
+//    logamp_phase = params[0];
+//    logscale_phase = params[1];
+//}
 
 
 //void Gain::set_v_amp(std::valarray<double> params) {
@@ -176,6 +177,22 @@ void Gain::set_hp_phase(std::valarray<double> params) {
 //void Gain::set_v_phase(std::valarray<double> params) {
 //    v_phase = std::move(params);
 //}
+
+
+void Gain::from_prior(DNest4::RNG &rng) {
+    from_prior_hp_amp(rng);
+    from_prior_hp_phase(rng);
+    from_prior_v_amp();
+    from_prior_v_phase();
+    // Calculate C, L matrixes for rotation of v
+    calculate_C_amp();
+    calculate_C_phase();
+    calculate_L_amp();
+    calculate_L_phase();
+    // Calculate latent v using calculated L and generated from prior v
+    calculate_amplitudes();
+    calculate_phases();
+}
 
 
 void Gain::from_prior_v_amp() {
@@ -258,16 +275,6 @@ int Gain::size_phase() {
 }
 
 
-std::valarray<double>& Gain::get_amplitudes() {
-    return amplitudes;
-}
-
-
-std::valarray<double>& Gain::get_phases() {
-    return phases;
-}
-
-
 void Gain::calculate_amplitudes() {
     //std::cout << "Calculating amplitudes" << std::endl;
     // Convert std::valarray ``v_amp`` to Eigen::VectorXd
@@ -316,27 +323,10 @@ void Gain::calculate_phases() {
 }
 
 
-void Gain::print_amplitudes(std::ostream &out) const {
-    out << "amplitudes = " << std::endl;
-    for (int i=0; i < times_amp.size(); i++) {
-        out << amplitudes[i] << ", ";
-    }
-    out << std::endl;
-}
-
-
-void Gain::print_phases(std::ostream &out) const {
-    out << "phases = " << std::endl;
-    for (int i=0; i < times_phase.size(); i++) {
-        out << phases[i] << ", ";
-    }
-    out << std::endl;
-}
-
-
 double Gain::perturb(DNest4::RNG &rng) {
     double logH = 0.;
 
+    // TODO: Does it conflict with if-scope which?
     int which = rng.rand_int(2);
     // Amplitude GP
     if(which == 0) {
@@ -398,6 +388,17 @@ double Gain::perturb(DNest4::RNG &rng) {
 }
 
 
+void Gain::print(std::ostream &out) const {
+    for (int i = 0; i < times_amp.size(); i++) {
+        out << amplitudes[i] << '\t';
+    }
+    out << phase_mean << '\t';
+    for (int i = 0; i < times_phase.size(); i++) {
+        out << phases[i] << '\t';
+    }
+}
+
+
 std::string Gain::description() const {
     std::string descr;
     for (int i = 0; i < times_amp.size(); i++) {
@@ -409,17 +410,6 @@ std::string Gain::description() const {
     }
     descr.pop_back();
     return descr;
-}
-
-
-void Gain::print(std::ostream &out) const {
-    for (int i = 0; i < times_amp.size(); i++) {
-        out << amplitudes[i] << '\t';
-    }
-    out << phase_mean << '\t';
-    for (int i = 0; i < times_phase.size(); i++) {
-        out << phases[i] << '\t';
-    }
 }
 
 
@@ -435,3 +425,129 @@ std::valarray<double> make_normal_random(int number)
     }
     return randNums;
 }
+
+
+ConstantGain::ConstantGain(std::set<double> new_times_amp, std::set<double> new_times_phase) :
+    amplitude(1.0),
+    phase(0.0)
+{
+    // Get unique times of gain amplitudes
+    std::vector<double> times_amp_vec;
+    times_amp_vec.assign(new_times_amp.begin(), new_times_amp.end());
+    // Get unique times of gain phases
+    std::vector<double> times_phase_vec;
+    times_phase_vec.assign(new_times_phase.begin(), new_times_phase.end());
+    amplitudes_template = std::valarray<double>(1.0, times_amp_vec.size());
+    phases_template = std::valarray<double>(0.0, times_phase_vec.size());
+    amplitudes = std::valarray<double>(1.0, times_amp_vec.size());
+    phases = std::valarray<double>(0.0, times_phase_vec.size());
+    std::cout << "Done ctor ConstantGain" << std::endl;
+    std::cout << "amplitudes and phases at 0 = " << amplitudes[0] << " " << phases[0] << std::endl;
+    std::cout << "amplitude and phase = " << amplitude << " " << phase << std::endl;
+
+}
+
+
+ConstantGain::ConstantGain(std::set<double> new_times) :
+    amplitude(1.0),
+    phase(0.0)
+{
+    // Get unique times of gain amplitude & phase
+    std::vector<double> times_vec;
+    times_vec.assign(new_times.begin(), new_times.end());
+
+    amplitudes_template = std::valarray<double>(1.0, times_vec.size());
+    phases_template = std::valarray<double>(0.0, times_vec.size());
+    amplitudes = std::valarray<double>(1.0, times_vec.size());
+    phases = std::valarray<double>(0.0, times_vec.size());
+}
+
+
+ConstantGain::ConstantGain(const ConstantGain &other) {
+    amplitude = other.amplitude;
+    phase = other.phase;
+    amplitudes_template = other.amplitudes_template;
+    phases_template = other.phases_template;
+    amplitudes = other.amplitudes;
+    phases = other.phases;
+}
+
+
+void ConstantGain::from_prior(DNest4::RNG &rng) {
+    amplitude = 1.0 + 0.05*rng.randn();
+    phase = 0.0 + rng.randn();
+    amplitudes = amplitude*amplitudes_template;
+    phases = phase*phases_template;
+}
+
+
+double ConstantGain::perturb(DNest4::RNG &rng) {
+    double logH = 0.;
+
+    int which = rng.rand_int(2);
+    // Amplitude
+    if(which == 0) {
+
+        logH -= -0.5*pow(amplitude, 2.0);
+        amplitude += rng.randn();
+        logH += -0.5*pow(amplitude, 2.0);
+
+        // Pre-reject
+        if(rng.rand() >= exp(logH)) {
+            return -1E300;
+        }
+        else
+            logH = 0.0;
+
+        amplitudes = amplitude*amplitudes_template;
+    }
+    // Phase
+    else {
+        logH -= -0.5*pow(phase, 2.0);
+        phase += rng.randn();
+        logH += -0.5*pow(phase, 2.0);
+
+        // Pre-reject
+        if(rng.rand() >= exp(logH)) {
+            return -1E300;
+        }
+        else
+            logH = 0.0;
+
+        phases = phase*phases_template;
+    }
+
+    return logH;
+}
+
+
+//void BasicGain::print_amplitudes(std::ostream &out) const {
+//    out << "amplitudes = " << std::endl;
+//    for (int i=0; i < times_amp.size(); i++) {
+//        out << amplitudes[i] << ", ";
+//    }
+//    out << std::endl;
+//}
+
+
+//void BasicGain::print_phases(std::ostream &out) const {
+//    out << "phases = " << std::endl;
+//    for (int i=0; i < times_phase.size(); i++) {
+//        out << phases[i] << ", ";
+//    }
+//    out << std::endl;
+//}
+
+
+void ConstantGain::print(std::ostream &out) const {
+    out << amplitude << '\t' << phase << '\t';
+}
+
+
+std::string ConstantGain::description() const {
+    std::string descr;
+    descr += "amp phase";
+    return descr;
+}
+
+

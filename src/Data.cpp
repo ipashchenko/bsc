@@ -13,7 +13,7 @@ Data::Data() = default;
 
 // TODO: Do not need times_amp & times_phase
 // TODO: Use files with header
-void Data::load(const char* filename)
+void Data::load(const char* filename, int new_constant_gain_antenna)
 {
     std::vector<int> _antennas;
     // Vectors to hold the data
@@ -22,6 +22,8 @@ void Data::load(const char* filename)
     std::vector<double> _vis_real;
     std::vector<double> _vis_imag;
     std::vector<double> _sigma;
+
+    constant_gain_antenna = new_constant_gain_antenna;
 
     // Open the file
     fstream fin(filename, ios::in);

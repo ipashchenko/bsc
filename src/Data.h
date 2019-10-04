@@ -56,8 +56,11 @@ class Data
         int n_antennas() const
         { return antennas.size(); }
 
+        // ant_i for antenna with constant gain
+        int constant_gain_antenna;
+
         // Load data from a file
-        void load(const char* filename);
+        void load(const char* filename, int constant_gain_antenna=-1);
 
         // Access to the data points
         const std::vector<int>& get_ant_i() const

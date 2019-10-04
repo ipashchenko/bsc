@@ -299,6 +299,11 @@ def create_data_file_bllac(uvfits, outfile, stokes, band, step_amp=60, step_phas
         ant1 = int(baseline//256)
         ant2 = int(baseline-ant1*256)
 
+        if ant2 == 17:
+            print(17)
+
+        # if ant2 == 16:
+
         try:
             u = group["UU"]
             v = group["VV"]
