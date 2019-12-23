@@ -3,10 +3,18 @@ import astropy.io.fits as pf
 from astropy.time import Time
 from astropy import units as u
 import pandas as pd
-# import sys
-# sys.path.insert(0, '../ve/vlbi_errors')
-# sys.path.insert(0, '/home/ilya/github/ve/vlbi_errors')
-# from components import CGComponent
+import matplotlib
+import matplotlib.pyplot as plt
+
+label_size = 16
+matplotlib.rcParams['xtick.labelsize'] = label_size
+matplotlib.rcParams['ytick.labelsize'] = label_size
+matplotlib.rcParams['axes.titlesize'] = label_size
+matplotlib.rcParams['axes.labelsize'] = label_size
+matplotlib.rcParams['font.size'] = label_size
+matplotlib.rcParams['legend.fontsize'] = label_size
+matplotlib.rcParams['pdf.fonttype'] = 42
+matplotlib.rcParams['ps.fonttype'] = 42
 
 mas_to_rad = u.mas.to(u.rad)
 
@@ -92,23 +100,27 @@ def create_data_file(uvfits, outfile, step_amp=60, step_phase=None, use_scans_fo
             u *= freq
             v *= freq
         data = group["DATA"].squeeze()
-        weights = data[:, 2]
+        # IF, STOKES, COMPLEX
+        data = group["DATA"][0, 0, :, 0, :, :]
+        weights = data[..., 2]
         mask = weights <= 0
         if np.alltrue(weights <= 0):
             continue
         weights = np.ma.array(weights, mask=mask)
         weight = np.ma.sum(weights)
         error = 1/np.sqrt(weight)
-        vis_re = np.ma.array(data[:, 0], mask=mask)
-        vis_im = np.ma.array(data[:, 1], mask=mask)
+        vis_re = np.ma.array(data[..., 0], mask=mask)
+        vis_im = np.ma.array(data[..., 1], mask=mask)
         vis_re = np.ma.mean(vis_re)
         vis_im = np.ma.mean(vis_im)
         df_ = pd.Series({"times": time, "ant1": ant1, "ant2": ant2, "u": u, "v": v,
                          "vis_re": vis_re, "vis_im": vis_im, "error": error})
         df = df.append(df_, ignore_index=True)
 
-    df["times"] -= np.min(df["times"])
-    df["times"] = [dt.sec for dt in df["times"]]
+    mint = np.min(df["times"])
+    df["times"] = df["times"].apply(lambda x: x - mint)
+    df["times"] = df['times'].apply(lambda x: x.sec)
+    # df["times"] = [dt.sec for dt in df["times"]]
 
     # All antennas numbers
     antennas = sorted(set(df["ant1"].values.tolist() + df["ant2"].values.tolist()))
@@ -259,7 +271,7 @@ def create_data_file(uvfits, outfile, step_amp=60, step_phase=None, use_scans_fo
     return df
 
 
-def add_noise(df, use_global_median_noise=False, use_per_baseline_median_noise=True):
+def add_noise(df, use_global_median_noise=False, use_per_baseline_median_noise=True, outfname=None):
     """
     Add noise as specified in ``error`` columns to ``vis_re`` and ``vis_im`` columns.
 
@@ -301,6 +313,10 @@ def add_noise(df, use_global_median_noise=False, use_per_baseline_median_noise=T
     else:
         df_["vis_re"] += df_["error"].map(lambda x: np.random.normal(0, x, size=1)[0])
         df_["vis_im"] += df_["error"].map(lambda x: np.random.normal(0, x, size=1)[0])
+
+    if outfname is not None:
+        df_.to_csv(outfname, sep=" ", index=False, header=True)
+
     return df_
 
 
@@ -372,13 +388,12 @@ def inject_gains(df_original, outfname=None,
 
 
 def plot_model_gains(gains_dict, savefn=None):
-    import matplotlib.pyplot as plt
     fig, axes = plt.subplots(len(gains_dict), 2, sharex=True, figsize=(8, 20))
     for i, ant in enumerate(gains_dict):
         amp = gains_dict[ant]["amp"]
         phase = gains_dict[ant]["phase"]
-        axes[i, 0].plot(amp.keys(), amp.values(), '.')
-        axes[i, 1].plot(phase.keys(), phase.values(), '.')
+        axes[i, 0].plot(list(amp.keys()), list(amp.values()), '.')
+        axes[i, 1].plot(list(phase.keys()), list(phase.values()), '.')
         axes[i, 1].yaxis.set_ticks_position("right")
     axes[0, 0].set_title("Amplitudes")
     axes[0, 1].set_title("Phases")
@@ -391,29 +406,61 @@ def plot_model_gains(gains_dict, savefn=None):
 
 
 # TODO: Finish me
-def plot_sampled_gains(posterior_sample, df, fig=None):
+def process_sampled_gains(posterior_sample, df_fitted, jitter_first=True, n_comp=2, plotfn=None):
     """
     :param posterior_sample:
         DNest file with posterior.
-    :param df:
-        DataFrame with indexes of gains amplitudes and phases.
+    :param df_fitted:
+        Dataframe fitted (created by ``create_data_file`` and ``inject_gains``).
     :return:
-        Figure.
+        Dictionary with keys - antenna numbers (as in ``gains_dict``), times, ``amp``, ``phase``
+        and values - samples of the posterior distribution for amplitude and phase at given time
+        for given antenna.
     """
-    with open(posterior_sample, "r") as fo:
-        line = fo.readline()
-
-    line = line.split()[1:]
-    n_antennas = line.count("ant0")
+    samples = np.loadtxt(posterior_sample, skiprows=1)
+    first_gain_index = n_comp*4
+    if jitter_first:
+        first_gain_index += 1
     gains_len = dict()
-    i = 0
-    while i < n_antennas:
-        gains_len[i] = dict()
-        gains_len[i]["amp"] = line.index("phase0") - line.index("amp0")
-        line = line[line.index("phase0"):]
-        gains_len[i]["phase"] = line.index("amp0") - line.index("phase0")
-        line = line[line.index("amp0"):]
-        i += 1
+    gains_post = dict()
+    j = first_gain_index
+    antennas = set(list(df_fitted.ant1.unique()) + list(df_fitted.ant2.unique()))
+    for ant in antennas:
+        gains_len[ant] = dict()
+        gains_len[ant]["amp"] = len(set(df_fitted.query("ant1 == @ant or ant2 == @ant").times_amp.values))
+        gains_len[ant]["phase"] = len(set(df_fitted.query("ant1 == @ant or ant2 == @ant").times_phase.values))
+        gains_post[ant] = dict()
+        gains_post[ant]["amp"] = dict()
+        gains_post[ant]["phase"] = dict()
+        gains_post[ant]["mean_phase"] = dict()
+        gains_post[ant]["mean_phase"] = samples[:, j+gains_len[ant]["amp"]]
+        for i, t in enumerate(df_fitted.query("ant1 == @ant or ant2 == @ant").times_amp.unique()):
+            gains_post[ant]["amp"][t] = samples[:, j+i]
+            # +1 mean skip ``mean_phase``
+            gains_post[ant]["phase"][t] = samples[:, j+gains_len[ant]["amp"]+i+1]
+
+        j += gains_len[ant]["amp"] + gains_len[ant]["phase"] + 1
+
+    fig, axes = plt.subplots(len(gains_len), 2, sharex=True, figsize=(8, 20))
+    for i, ant in enumerate(gains_post):
+        print("Plotting antenna ", ant)
+        for t in gains_post[ant]["amp"].keys():
+            # Arry with posterior for given t
+            amp = gains_post[ant]["amp"][t]
+            axes[i, 0].plot([t]*len(amp), amp, '.', color="#1f77b4")
+        for t in gains_post[ant]["phase"].keys():
+            phase = gains_post[ant]["phase"][t]
+            axes[i, 1].plot([t]*len(phase), phase, '.', color="#1f77b4")
+        axes[i, 1].yaxis.set_ticks_position("right")
+    axes[0, 0].set_title("Amplitudes")
+    axes[0, 1].set_title("Phases")
+    axes[i, 0].set_xlabel("time, s")
+    axes[i, 1].set_xlabel("time, s")
+    if plotfn:
+        fig.savefig(plotfn, bbox_inches="tight", dpi=100)
+    fig.show()
+    return fig
+
 
 
 def radplot(df, fig=None, color=None, label=None, style="ap"):
@@ -455,11 +502,12 @@ def radplot(df, fig=None, color=None, label=None, style="ap"):
 
 
 if __name__ == "__main__":
-    # uvfits_fname = "/home/ilya/github/DNest4/code/Examples/UV/J2001+2416_K_2006_06_11_yyk_vis.fits"
-    uvfits_fname = "/home/ilya/github/DNest4/code/Examples/UV/0716+714.u.2013_08_20.uvf"
-    fname = "/home/ilya/github/bsc/test.txt"
+    # uvfits_fname = "/home/ilya/github/time_machine/bsc/0716+714.u.2013_08_20.uvf"
+    uvfits_fname = "/home/ilya/github/time_machine/bsc/0716_30s.uvf"
+    data_only_fname = "/home/ilya/github/time_machine/bsc/data_only.txt"
 
-    df = create_data_file(uvfits_fname, fname, step_amp=120, step_phase=30, use_scans_for_amplitudes=True)
+    df = create_data_file(uvfits_fname, data_only_fname, step_amp=60, step_phase=30,
+                          use_scans_for_amplitudes=False)
 # # Load data frame
     # columns = ["times",
     #            "ant1", "ant2",
@@ -484,22 +532,24 @@ if __name__ == "__main__":
     fig = radplot(df, label="Sky Model")
 
     # Add gains
-    fname_gains = "/home/ilya/github/bsc/test_gains.txt"
-    df_updated, gains_dict = inject_gains(df, outfname=fname_gains,
+    df_updated, gains_dict = inject_gains(df,
                                           scale_gpamp=np.exp(7),
                                           scale_gpphase=np.exp(5),
                                           amp_gpamp=np.exp(-3),
                                           amp_gpphase=np.exp(-2))
     # Add noise
-    df_updated = add_noise(df_updated, use_global_median_noise=True, use_per_baseline_median_noise=False)
+    # gains_noise_fname = "/home/ilya/github/time_machine/bsc/test.txt"
+    gains_noise_fname = "/home/ilya/github/time_machine/bsc/test_int30_amp30_phase30.txt"
+    df_updated = add_noise(df_updated, use_global_median_noise=True, use_per_baseline_median_noise=False,
+                           outfname=gains_noise_fname)
 
     fig = radplot(df_updated, color="#ff7f0e", fig=fig, label="With gains")
     fig = plot_model_gains(gains_dict)
 
-    # import json
-    # # Save gains
-    # with open("/home/ilya/github/bsc/gains.json", "w") as fo:
-    #     json.dump(str(gains_dict), fo)
+    import json
+    # Save gains
+    with open("/home/ilya/github/time_machine/bsc/gains.json", "w") as fo:
+        json.dump(str(gains_dict), fo)
     # # Load gains
     # with open("/home/ilya/github/bsc/gains_0716.json", "r") as fo:
     #     loaded_gains_dict = json.load(fo)

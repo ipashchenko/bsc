@@ -11,7 +11,7 @@
 #include "DNest4.h"
 
 
-void check_data();
+//void check_data();
 using namespace DNest4;
 
 
@@ -226,7 +226,7 @@ using namespace DNest4;
 
 int main(int argc, char** argv)
 {
-    Data::get_instance().load("/home/ilya/github/bsc/uvdata_gains.txt");
+    Data::get_instance().load("/home/ilya/github/time_machine/bsc/test_int30_amp30_phase30.txt");
     // set the sampler and run it!
     Sampler<DNestModel> sampler = setup<DNestModel>(argc, argv);
     sampler.run();
