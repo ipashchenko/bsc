@@ -15,6 +15,7 @@ class SkyModel {
 
         void add_component(Component* component);
         void ft(const std::valarray<double>& u, const std::valarray<double>& v);
+        void ft_from_all(const std::valarray<double>& u, const std::valarray<double>& v);
         std::pair<double,double> center_mass() const;
         void shift_xy(std::pair<double, double> xy);
         void recenter();

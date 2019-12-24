@@ -1,4 +1,5 @@
 #include "Component.h"
+#include "Data.h"
 #include <cmath>
 #include <Component.h>
 #include <iostream>
@@ -91,6 +92,27 @@ CGComponent::CGComponent() : EGComponent() {
 }
 
 
+void CGComponent::ft(std::valarray<double> u, std::valarray<double> v)
+{
+    std::valarray<double> theta;
+    double c;
+    //std::valarray<double> b;
+    std::valarray<double> ft;
+
+    // Phase shift due to not being in a phase center
+    theta = 2*M_PI*mas_to_rad*(u*dx_+v*dy_);
+    // Calculate FT of a Gaussian in a phase center
+    c = pow(M_PI*exp(logbmaj_)*mas_to_rad, 2)/(4.*log(2.));
+    //b = e_*e_*pow((u*cos(bpa_) - v*sin(bpa_)), 2) + pow((u*sin(bpa_)+v*cos(bpa_)), 2);
+    // TODO: Keep u*u and v*v already computed
+    ft = exp(logflux_-c*(u*u + v*v));
+
+    // Prediction of visibilities
+    mu_real = ft*cos(theta);
+    mu_imag = ft*sin(theta);
+}
+
+
 void CGComponent::set_param_vec(std::valarray<double> param) {
     dx_ = param[0];
     dy_ = param[1];
@@ -105,19 +127,25 @@ void CGComponent::print(std::ostream &out) const
 
 
 void CGComponent::from_prior(DNest4::RNG &rng) {
-     // Normal diffuse prior for x & y
-     dx_ = 0.25*rng.randn();
-     dy_ = 0.25*rng.randn();
-     // Log-normal prior for flux and bmaj
-     logflux_ = 0.0 + 1.0*rng.randn();
-     logbmaj_ = -2. + 1.0*rng.randn();
-     //std::cout << "Generating from prior CGComponent" << std::endl;
+    const std::valarray<double>& u = Data::get_instance().get_u();
+    std::valarray<double> zero (0.0, u.size());
+    mu_real = zero;
+    mu_imag = zero;
+    mu_real_old = zero;
+    mu_imag_old = zero;
+    // Normal diffuse prior for x & y
+    dx_ = 0.25*rng.randn();
+    dy_ = 0.25*rng.randn();
+    // Log-normal prior for flux and bmaj
+    logflux_ = 0.0 + 1.0*rng.randn();
+    logbmaj_ = -2. + 1.0*rng.randn();
+    //std::cout << "Generating from prior CGComponent" << std::endl;
 
-     //dx_ = dx_prior->generate(rng);
-     //dy_ = dy_prior->generate(rng);
-     //logflux_ = logflux_prior->generate(rng);
-     //logbmaj_ = logbmaj_prior->generate(rng);
-     //std::cout << "Generating from prior CGComponent" << std::endl;
+    //dx_ = dx_prior->generate(rng);
+    //dy_ = dy_prior->generate(rng);
+    //logflux_ = logflux_prior->generate(rng);
+    //logbmaj_ = logbmaj_prior->generate(rng);
+    //std::cout << "Generating from prior CGComponent" << std::endl;
 
 }
 
@@ -240,6 +268,8 @@ CGComponent::CGComponent(const CGComponent &other) {
     logbmaj_ = other.logbmaj_;
     mu_real = other.get_mu_real();
     mu_imag = other.get_mu_imag();
+    mu_real_old = other.get_mu_real_old();
+    mu_imag_old = other.get_mu_imag_old();
 }
 
 

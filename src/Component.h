@@ -25,6 +25,14 @@ class Component {
         std::valarray<double> get_mu_imag() const {
             return mu_imag;
         }
+
+        std::valarray<double> get_mu_real_old() const {
+            return mu_real_old;
+        }
+
+        std::valarray<double> get_mu_imag_old() const {
+            return mu_imag_old;
+        }
         virtual void print(std::ostream& out) const = 0;
         virtual std::string description() const = 0;
         virtual void from_prior(DNest4::RNG& rng) = 0;
@@ -36,11 +44,19 @@ class Component {
         virtual void set_x(double x) = 0;
         // See also https://softwareengineering.stackexchange.com/a/337565 for unique_ptr
         virtual Component* clone() = 0;
+        void update_old() {
+            mu_real_old = mu_real;
+            mu_imag_old = mu_imag;
+        }
+        bool is_updated;
 
     protected:
         // SkyModel prediction
         std::valarray<double> mu_real;
         std::valarray<double> mu_imag;
+        // Previous contribution
+        std::valarray<double> mu_real_old;
+        std::valarray<double> mu_imag_old;
 };
 
 
@@ -107,6 +123,7 @@ class CGComponent : public EGComponent {
     public:
         CGComponent();
         CGComponent(const CGComponent& other);
+        void ft(std::valarray<double> u, std::valarray<double> v) override;
         void set_param_vec(std::valarray<double> param) override;
         void set_x(double x) override;
         const size_t size() const override
