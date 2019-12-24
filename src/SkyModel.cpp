@@ -1,5 +1,6 @@
 #include <SkyModel.h>
 #include <iostream>
+#include <algorithm>
 
 
 SkyModel::SkyModel() = default;
@@ -189,6 +190,17 @@ void SkyModel::shift_xy(std::pair<double, double> xy) {
 void SkyModel::recenter() {
     auto xy = center_mass();
     shift_xy(xy);
+}
+
+
+bool SkyModel::are_sorted() {
+    std::vector<double> distances;
+    for (auto comp: components_) {
+        auto x = comp->get_x();
+        auto y = comp->get_y();
+        distances.push_back(x*x + y*y);
+    }
+    return std::is_sorted(distances.begin(), distances.end());
 }
 
 

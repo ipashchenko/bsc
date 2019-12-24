@@ -31,6 +31,7 @@ class SkyModel {
         int get_n_components();
         std::vector<int> get_components_sizes();
         void set_x(double x);
+        bool are_sorted();
 
     private:
         std::vector<Component*> components_;
