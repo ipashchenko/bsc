@@ -57,16 +57,20 @@ void SkyModel::add_component(Component *component) {
 void SkyModel::ft(const std::valarray<double>& u, const std::valarray<double>& v) {
     std::valarray<double> real (0.0, u.size());
     std::valarray<double> imag (0.0, u.size());
+    // Traverse components and sum differences of new and old predictions for updated components.
+    // TODO: Just choose updated component without cycle
     for (auto comp : components_) {
-        comp->ft(u, v);
-        real = real + comp->get_mu_real();
-        imag = imag + comp->get_mu_imag();
-        //std::cout << "Component real[0] = " << real[0] << std::endl;
+        if(comp->is_updated) {
+            comp->ft(u, v);
+            real = comp->get_mu_real() - comp->get_mu_real_old();
+            imag = comp->get_mu_imag() - comp->get_mu_imag_old();
+            comp->is_updated = false;
+            comp->update_old();
+            break;
+        }
     }
-    mu_real = real;
-    mu_imag = imag;
-    //std::cout << "SkuModel mu_real[0] = " << mu_real[0] << std::endl;
-
+    mu_real += real;
+    mu_imag += imag;
 }
 
 
