@@ -320,7 +320,7 @@ def add_noise(df, use_global_median_noise=False, use_per_baseline_median_noise=T
     return df_
 
 
-def inject_gains(df_original, outfname=None,
+def inject_gains(df_original, outfname=None, non_zero_mean_phase=False,
                  amp_gpamp=np.exp(-3), amp_gpphase=np.exp(-3),
                  scale_gpamp=np.exp(6), scale_gpphase=np.exp(5)):
     """
@@ -358,9 +358,14 @@ def inject_gains(df_original, outfname=None,
         v = np.random.normal(0, 1, size=len(ant_time))
         amp = 1 + gp_pred(amp_gpamp, scale_gpamp, v, np.array(ant_time))
         # Phase
+        if non_zero_mean_phase:
+            mean_phase = np.random.uniform(-np.pi, np.pi)
+        else:
+            mean_phase = 0
         v = np.random.normal(0, 1, size=len(ant_time))
-        phase = gp_pred(amp_gpphase, scale_gpphase, v, np.array(ant_time))
+        phase = gp_pred(amp_gpphase, scale_gpphase, v, np.array(ant_time)) + mean_phase
         antennas_gp[ant] = {"amp": {t: a for (t, a) in zip(ant_time, amp)},
+                            "mean_phase": mean_phase,
                             "phase": {t: p for (t, p) in zip(ant_time, phase)}}
 
     # Now calculate visibilities
@@ -406,7 +411,8 @@ def plot_model_gains(gains_dict, savefn=None):
 
 
 # TODO: Finish me
-def process_sampled_gains(posterior_sample, df_fitted, jitter_first=True, n_comp=2, plotfn=None):
+def process_sampled_gains(posterior_sample, df_fitted, jitter_first=True, n_comp=2, plotfn=None,
+                          add_mean_phase=False):
     """
     :param posterior_sample:
         DNest file with posterior.
@@ -437,7 +443,10 @@ def process_sampled_gains(posterior_sample, df_fitted, jitter_first=True, n_comp
         for i, t in enumerate(df_fitted.query("ant1 == @ant or ant2 == @ant").times_amp.unique()):
             gains_post[ant]["amp"][t] = samples[:, j+i]
             # +1 mean skip ``mean_phase``
-            gains_post[ant]["phase"][t] = samples[:, j+gains_len[ant]["amp"]+i+1]
+            if add_mean_phase:
+                gains_post[ant]["phase"][t] = samples[:, j+gains_len[ant]["amp"]+i+1] + gains_post[ant]["mean_phase"]
+            else:
+                gains_post[ant]["phase"][t] = samples[:, j+gains_len[ant]["amp"]+i+1]
 
         j += gains_len[ant]["amp"] + gains_len[ant]["phase"] + 1
 
@@ -503,10 +512,11 @@ def radplot(df, fig=None, color=None, label=None, style="ap"):
 
 if __name__ == "__main__":
     # uvfits_fname = "/home/ilya/github/time_machine/bsc/0716+714.u.2013_08_20.uvf"
-    uvfits_fname = "/home/ilya/github/time_machine/bsc/0716_30s.uvf"
+    # uvfits_fname = "/home/ilya/github/time_machine/bsc/0716_30s.uvf"
+    uvfits_fname = "/home/ilya/data/silke/1502+106.u.1997_08_18_30s.uvf"
     data_only_fname = "/home/ilya/github/time_machine/bsc/data_only.txt"
 
-    df = create_data_file(uvfits_fname, data_only_fname, step_amp=60, step_phase=30,
+    df = create_data_file(uvfits_fname, data_only_fname, step_amp=30, step_phase=30,
                           use_scans_for_amplitudes=False)
 # # Load data frame
     # columns = ["times",
@@ -539,7 +549,7 @@ if __name__ == "__main__":
                                           amp_gpphase=np.exp(-2))
     # Add noise
     # gains_noise_fname = "/home/ilya/github/time_machine/bsc/test.txt"
-    gains_noise_fname = "/home/ilya/github/time_machine/bsc/test_int30_amp30_phase30.txt"
+    gains_noise_fname = "/home/ilya/github/time_machine/bsc/1502_int30_amp30_phase30.txt"
     df_updated = add_noise(df_updated, use_global_median_noise=True, use_per_baseline_median_noise=False,
                            outfname=gains_noise_fname)
 
@@ -548,7 +558,7 @@ if __name__ == "__main__":
 
     import json
     # Save gains
-    with open("/home/ilya/github/time_machine/bsc/gains.json", "w") as fo:
+    with open("/home/ilya/github/time_machine/bsc/1502_gains.json", "w") as fo:
         json.dump(str(gains_dict), fo)
     # # Load gains
     # with open("/home/ilya/github/bsc/gains_0716.json", "r") as fo:
