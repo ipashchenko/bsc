@@ -125,8 +125,13 @@ void SkyModel::print(std::ostream &out) const
 
 void SkyModel::from_prior(DNest4::RNG &rng) {
     //std::cout << "Generating from prior SkyModel" << std::endl;
+    const std::valarray<double>& u = Data::get_instance().get_u();
+    std::valarray<double> zero (0.0, u.size());
+    mu_real = zero;
+    mu_imag = zero;
     for (auto comp: components_) {
         comp->from_prior(rng);
+        comp->is_updated = true;
     }
     // Move center of mass to the phase center
     auto xy = center_mass();
