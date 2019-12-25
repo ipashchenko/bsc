@@ -134,8 +134,8 @@ void CGComponent::from_prior(DNest4::RNG &rng) {
     mu_real_old = zero;
     mu_imag_old = zero;
     // Normal diffuse prior for x & y
-    dx_ = 0.25*rng.randn();
-    dy_ = 0.25*rng.randn();
+    dx_ = 5*rng.randn();
+    dy_ = 5*rng.randn();
     // Log-normal prior for flux and bmaj
     logflux_ = 0.0 + 1.0*rng.randn();
     logbmaj_ = -2. + 1.0*rng.randn();
@@ -161,10 +161,10 @@ double CGComponent::perturb(DNest4::RNG &rng) {
         //dx_prior->perturb(dx_, rng);
         //log_H += -dx_prior->log_pdf(dx_);
         //std::cout << "perturb x from " << dx_;
-        log_H -= -0.5*pow(dx_/0.25, 2);
-        dx_ += 0.25*rng.randh();
+        log_H -= -0.5*pow(dx_/5, 2);
+        dx_ += 5*rng.randh();
         //std::cout << " to " << dx_ << std::endl;
-        log_H += -0.5*pow(dx_/0.25, 2);
+        log_H += -0.5*pow(dx_/5, 2);
 
         //std::cout << "Perturbed dx_ with logH =" << log_H << std::endl;
 
@@ -188,10 +188,10 @@ double CGComponent::perturb(DNest4::RNG &rng) {
         //log_H += -dx_prior->log_pdf(dx_);
 
         //std::cout << "perturb y from " << dy_;
-        log_H -= -0.5*pow(dy_/0.25, 2);
-        dy_ += 0.25*rng.randh();
+        log_H -= -0.5*pow(dy_/5, 2);
+        dy_ += 5*rng.randh();
         //std::cout << " to " << dy_ << std::endl;
-        log_H += -0.5*pow(dy_/0.25, 2);
+        log_H += -0.5*pow(dy_/5, 2);
 
         //std::cout << "Perturbed dy_ with logH =" << log_H << std::endl;
 
