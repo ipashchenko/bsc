@@ -471,7 +471,6 @@ def process_sampled_gains(posterior_sample, df_fitted, jitter_first=True, n_comp
     return fig
 
 
-
 def radplot(df, fig=None, color=None, label=None, style="ap"):
     uv = df[["u", "v"]].values
     r = np.hypot(uv[:, 0], uv[:, 1])
@@ -513,7 +512,8 @@ def radplot(df, fig=None, color=None, label=None, style="ap"):
 if __name__ == "__main__":
     # uvfits_fname = "/home/ilya/github/time_machine/bsc/0716+714.u.2013_08_20.uvf"
     # uvfits_fname = "/home/ilya/github/time_machine/bsc/0716_30s.uvf"
-    uvfits_fname = "/home/ilya/data/silke/1502+106.u.1997_08_18_30s.uvf"
+    uvfits_fname = "/home/ilya/github/time_machine/bsc/J2001+2416_K_2006_06_11_yyk_vis_30s.fits"
+    # uvfits_fname = "/home/ilya/data/silke/1502+106.u.1997_08_18_30s.uvf"
     data_only_fname = "/home/ilya/github/time_machine/bsc/data_only.txt"
 
     df = create_data_file(uvfits_fname, data_only_fname, step_amp=30, step_phase=30,
@@ -537,6 +537,9 @@ if __name__ == "__main__":
     re, im = gaussian_circ_ft(flux=1.0, dx=0.5, dy=0.0, bmaj=0.2, uv=df[["u", "v"]].values)
     df["vis_re"] += re
     df["vis_im"] += im
+    re, im = gaussian_circ_ft(flux=0.5, dx=1.5, dy=0.5, bmaj=0.5, uv=df[["u", "v"]].values)
+    df["vis_re"] += re
+    df["vis_im"] += im
 
     # Plot
     fig = radplot(df, label="Sky Model")
@@ -548,8 +551,8 @@ if __name__ == "__main__":
                                           amp_gpamp=np.exp(-3),
                                           amp_gpphase=np.exp(-2))
     # Add noise
-    # gains_noise_fname = "/home/ilya/github/time_machine/bsc/test.txt"
-    gains_noise_fname = "/home/ilya/github/time_machine/bsc/1502_int30_amp30_phase30.txt"
+    gains_noise_fname = "/home/ilya/github/time_machine/bsc/J2001_30s.txt"
+    # gains_noise_fname = "/home/ilya/github/time_machine/bsc/1502_int30_amp30_phase30.txt"
     df_updated = add_noise(df_updated, use_global_median_noise=True, use_per_baseline_median_noise=False,
                            outfname=gains_noise_fname)
 
@@ -558,7 +561,7 @@ if __name__ == "__main__":
 
     import json
     # Save gains
-    with open("/home/ilya/github/time_machine/bsc/1502_gains.json", "w") as fo:
+    with open("/home/ilya/github/time_machine/bsc/J2001_gains_30s.json", "w") as fo:
         json.dump(str(gains_dict), fo)
     # # Load gains
     # with open("/home/ilya/github/bsc/gains_0716.json", "r") as fo:
