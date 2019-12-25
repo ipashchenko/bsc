@@ -70,7 +70,7 @@ void DNestModel::from_prior(DNest4::RNG &rng) {
     //gains->print_amplitudes(std::cout);
     //gains->print_phases(std::cout);
     // Calculate SkyModel
-    calculate_sky_mu();
+    calculate_sky_mu(false);
     // Calculate full model (SkyModel + gains)
     calculate_mu();
     //std::cout << "End of DNestModel::from_prior - mu_real_full[0] = " << mu_real_full[0] << std::endl;
@@ -111,7 +111,7 @@ double DNestModel::perturb(DNest4::RNG &rng) {
             logH = 0.0;
         // This shouldn't be called in case of pre-rejection
         sky_model->recenter();
-        calculate_sky_mu();
+        calculate_sky_mu(true);
     }
     // Perturb Gains
     else {
@@ -133,12 +133,11 @@ double DNestModel::perturb(DNest4::RNG &rng) {
 }
 
 
-void DNestModel::calculate_sky_mu() {
+void DNestModel::calculate_sky_mu(bool update) {
     const std::valarray<double>& u = Data::get_instance().get_u();
     const std::valarray<double>& v = Data::get_instance().get_v();
 
-    // FT (calculate SkyModel prediction)
-    if(ft_calc_counter < 30) {
+    if(update and ft_calc_counter < 30) {
         sky_model->ft(u, v);
         ft_calc_counter += 1;
     } else {
