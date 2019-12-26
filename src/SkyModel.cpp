@@ -141,6 +141,7 @@ void SkyModel::from_prior(DNest4::RNG &rng) {
 
 double SkyModel::perturb(DNest4::RNG &rng) {
     int which = rng.rand_int(get_n_components());
+    components_[which]->is_updated = true;
     return components_[which]->perturb(rng);
 }
 
