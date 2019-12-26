@@ -48,6 +48,10 @@ class Component {
             mu_real_old = mu_real;
             mu_imag_old = mu_imag;
         }
+        void phase_shift_old(std::valarray<double>& costheta, std::valarray<double>& sintheta) {
+            mu_real_old = mu_real_old*costheta - mu_imag_old*sintheta;
+            mu_imag_old = mu_imag_old*costheta + mu_real_old*sintheta;
+        }
         bool is_updated;
 
     protected:

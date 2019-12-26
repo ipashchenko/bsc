@@ -15,6 +15,8 @@ SkyModel::SkyModel(const SkyModel &other) {
     components_sizes_ = other.components_sizes_;
     mu_real = other.mu_real;
     mu_imag = other.mu_imag;
+    sin_theta = other.sin_theta;
+    cos_theta = other.cos_theta;
 }
 
 
@@ -36,6 +38,8 @@ SkyModel& SkyModel::operator=(const SkyModel& other) {
     components_sizes_ = other.components_sizes_;
     mu_real = other.mu_real;
     mu_imag = other.mu_imag;
+    sin_theta = other.sin_theta;
+    cos_theta = other.cos_theta;
     return *this;
 }
 
@@ -129,6 +133,8 @@ void SkyModel::from_prior(DNest4::RNG &rng) {
     std::valarray<double> zero (0.0, u.size());
     mu_real = zero;
     mu_imag = zero;
+    sin_theta = zero;
+    cos_theta = zero;
     for (auto comp: components_) {
         comp->from_prior(rng);
         comp->is_updated = true;
@@ -190,12 +196,21 @@ std::pair<double, double> SkyModel::center_mass() const {
 void SkyModel::shift_xy(std::pair<double, double> xy) {
     for (auto comp: components_) {
         comp->shift_xy(xy);
+        // Phase shifting old component prediction because position of component relative to the phase center changed
+        comp->phase_shift_old(cos_theta, sin_theta);
     }
 }
 
 
 void SkyModel::recenter() {
+    const std::valarray<double>& u = Data::get_instance().get_u();
+    const std::valarray<double>& v = Data::get_instance().get_v();
+
     auto xy = center_mass();
+    auto theta = 2*M_PI*mas_to_rad*(-u*xy.first-v*xy.second);
+    cos_theta = cos(theta);
+    sin_theta = sin(theta);
+
     shift_xy(xy);
 }
 
