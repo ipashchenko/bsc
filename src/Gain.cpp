@@ -191,7 +191,8 @@ void Gain::from_prior_v_phase() {
 
 
 void Gain::from_prior_phase_mean(DNest4::RNG& rng) {
-    phase_mean = -1.0*M_PI + 2.0*M_PI*rng.rand();
+    //phase_mean = -1.0*M_PI + 2.0*M_PI*rng.rand();
+    phase_mean = 0.0;
 }
 
 

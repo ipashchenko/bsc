@@ -55,6 +55,7 @@ void DNestModel::from_prior(DNest4::RNG &rng) {
     //sky_model->print(std::cout);
     gains->from_prior_hp_amp(rng);
     gains->from_prior_hp_phase(rng);
+    gains->from_prior_phase_mean(rng);
     //gains->print_hp(std::cout);
     gains->from_prior_v_amp();
     gains->from_prior_v_phase();

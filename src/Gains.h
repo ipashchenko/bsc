@@ -22,6 +22,7 @@ class Gains {
         // Generate HP for amplitudes and phases for all gains
         void from_prior_hp_amp(DNest4::RNG& rng);
         void from_prior_hp_phase(DNest4::RNG& rng);
+        void from_prior_phase_mean(DNest4::RNG& rng);
         // Generates latent variables from N(0, 1) for all gains
         void from_prior_v_amp();
         void from_prior_v_phase();

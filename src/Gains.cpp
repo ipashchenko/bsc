@@ -112,6 +112,12 @@ void Gains::from_prior_v_phase() {
 }
 
 
+void Gains::from_prior_phase_mean(DNest4::RNG &rng) {
+    for (auto gain: gains) {
+        gain->from_prior_phase_mean(rng);
+    }
+}
+
 void Gains::from_prior_hp_amp(DNest4::RNG &rng) {
     //std::cout << "Generating from prior Gains HP AMP" << std::endl;
     for (auto gain: gains) {
