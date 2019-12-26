@@ -410,14 +410,19 @@ def plot_model_gains(gains_dict, savefn=None):
     return fig
 
 
-# TODO: Finish me
-def process_sampled_gains(posterior_sample, df_fitted, jitter_first=True, n_comp=2, plotfn=None,
-                          add_mean_phase=False):
+def process_sampled_gains(posterior_sample, df_fitted, jitter_first=True, n_comp=1, plotfn=None,
+                          with_mean_phase=True, add_mean_phase=False):
     """
     :param posterior_sample:
         DNest file with posterior.
     :param df_fitted:
         Dataframe fitted (created by ``create_data_file`` and ``inject_gains``).
+    :param jitter_first: (optional)
+        Boolean. Is jitter samples go first? (default: ``True``)
+    :param n_comp: (optional)
+        Number of components in model. (default: ``1``)
+    :param plotfn: (optional)
+        File to save picture. If ``None`` than just return figure.
     :return:
         Dictionary with keys - antenna numbers (as in ``gains_dict``), times, ``amp``, ``phase``
         and values - samples of the posterior distribution for amplitude and phase at given time
@@ -438,28 +443,42 @@ def process_sampled_gains(posterior_sample, df_fitted, jitter_first=True, n_comp
         gains_post[ant] = dict()
         gains_post[ant]["amp"] = dict()
         gains_post[ant]["phase"] = dict()
-        gains_post[ant]["mean_phase"] = dict()
-        gains_post[ant]["mean_phase"] = samples[:, j+gains_len[ant]["amp"]]
+        if with_mean_phase:
+            gains_post[ant]["mean_phase"] = dict()
+            gains_post[ant]["mean_phase"] = samples[:, j+gains_len[ant]["amp"]]
+            h = 1
+        else:
+            h = 0
         for i, t in enumerate(df_fitted.query("ant1 == @ant or ant2 == @ant").times_amp.unique()):
             gains_post[ant]["amp"][t] = samples[:, j+i]
             # +1 mean skip ``mean_phase``
-            if add_mean_phase:
-                gains_post[ant]["phase"][t] = samples[:, j+gains_len[ant]["amp"]+i+1] + gains_post[ant]["mean_phase"]
+            if with_mean_phase:
+                if add_mean_phase:
+                    gains_post[ant]["phase"][t] = samples[:, j+gains_len[ant]["amp"]+i+1] + gains_post[ant]["mean_phase"]
+                else:
+                    gains_post[ant]["phase"][t] = samples[:, j+gains_len[ant]["amp"]+i+1]
             else:
-                gains_post[ant]["phase"][t] = samples[:, j+gains_len[ant]["amp"]+i+1]
+                gains_post[ant]["phase"][t] = samples[:, j+gains_len[ant]["amp"]+i]
 
-        j += gains_len[ant]["amp"] + gains_len[ant]["phase"] + 1
+
+        j += gains_len[ant]["amp"] + gains_len[ant]["phase"] + h
 
     fig, axes = plt.subplots(len(gains_len), 2, sharex=True, figsize=(8, 20))
     for i, ant in enumerate(gains_post):
         print("Plotting antenna ", ant)
         for t in gains_post[ant]["amp"].keys():
-            # Arry with posterior for given t
+            # Array with posterior for given t
             amp = gains_post[ant]["amp"][t]
-            axes[i, 0].plot([t]*len(amp), amp, '.', color="#1f77b4")
+            ts = np.array([t]*len(amp))
+            alpha = 1e-5*len(amp)
+            ts += np.random.normal(loc=0, scale=0.05, size=len(ts))
+            axes[i, 0].scatter(ts, amp, color="#1f77b4", alpha=alpha)
         for t in gains_post[ant]["phase"].keys():
             phase = gains_post[ant]["phase"][t]
-            axes[i, 1].plot([t]*len(phase), phase, '.', color="#1f77b4")
+            ts = np.array([t]*len(phase))
+            alpha = 1e-5*len(phase)
+            ts += np.random.normal(loc=0, scale=0.05, size=len(ts))
+            axes[i, 1].scatter(ts, phase, color="#1f77b4", alpha=alpha)
         axes[i, 1].yaxis.set_ticks_position("right")
     axes[0, 0].set_title("Amplitudes")
     axes[0, 1].set_title("Phases")
