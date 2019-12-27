@@ -82,8 +82,6 @@ class Gain {
         // Amplitudes and phases of the gains
         std::valarray<double> amplitudes;
         std::valarray<double> phases;
-        // Mean of the phase GP
-        double phase_mean;
         // Covariance matrix given times and HP
         MatrixXd C_amp;
         MatrixXd C_phase;
