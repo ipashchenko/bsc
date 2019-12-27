@@ -226,7 +226,7 @@ using namespace DNest4;
 
 int main(int argc, char** argv)
 {
-    Data::get_instance().load("/home/ilya/github/time_machine/bsc/test_int30_amp30_phase30.txt");
+    Data::get_instance().load("/home/ilya/github/time_machine/bsc/J2001_30s.txt");
     // set the sampler and run it!
     Sampler<DNestModel> sampler = setup<DNestModel>(argc, argv);
     sampler.run();
