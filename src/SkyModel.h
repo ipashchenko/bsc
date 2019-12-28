@@ -39,6 +39,9 @@ class SkyModel {
         // SkyModel prediction
         std::valarray<double> mu_real;
         std::valarray<double> mu_imag;
+        // This phase shift all components predictions after re-centering
+        std::valarray<double> cos_theta;
+        std::valarray<double> sin_theta;
 
 };
 
