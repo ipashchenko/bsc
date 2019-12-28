@@ -1,4 +1,5 @@
 #include "Component.h"
+#include "Data.h"
 #include <cmath>
 #include <Component.h>
 #include <iostream>
@@ -126,20 +127,18 @@ void CGComponent::print(std::ostream &out) const
 
 
 void CGComponent::from_prior(DNest4::RNG &rng) {
-     // Normal diffuse prior for x & y
-     dx_ = 5.0*rng.randn();
-     dy_ = 5.0*rng.randn();
-     // Log-normal prior for flux and bmaj
-     logflux_ = 0.0 + 1.0*rng.randn();
-     logbmaj_ = -2. + 1.0*rng.randn();
-     //std::cout << "Generating from prior CGComponent" << std::endl;
-
-     //dx_ = dx_prior->generate(rng);
-     //dy_ = dy_prior->generate(rng);
-     //logflux_ = logflux_prior->generate(rng);
-     //logbmaj_ = logbmaj_prior->generate(rng);
-     //std::cout << "Generating from prior CGComponent" << std::endl;
-
+    const std::valarray<double>& u = Data::get_instance().get_u();
+    std::valarray<double> zero (0.0, u.size());
+    mu_real = zero;
+    mu_imag = zero;
+    mu_real_old = zero;
+    mu_imag_old = zero;
+    // Normal diffuse prior for x & y
+    dx_ = 5.0*rng.randn();
+    dy_ = 5.0*rng.randn();
+    // Log-normal prior for flux and bmaj
+    logflux_ = 0.0 + 1.0*rng.randn();
+    logbmaj_ = -2. + 1.0*rng.randn();
 }
 
 
@@ -148,6 +147,7 @@ double CGComponent::perturb(DNest4::RNG &rng) {
     // Proposals explore the prior
     // For normal priors I usually use the hastings factor to do it
     int which = rng.rand_int(4);
+    updated_parameter = which;
     if(which%4 == 0)
     {
         //log_H -= dx_prior->log_pdf(dx_);
@@ -261,6 +261,8 @@ CGComponent::CGComponent(const CGComponent &other) {
     logbmaj_ = other.logbmaj_;
     mu_real = other.get_mu_real();
     mu_imag = other.get_mu_imag();
+    mu_real_old = other.get_mu_real_old();
+    mu_imag_old = other.get_mu_imag_old();
 }
 
 

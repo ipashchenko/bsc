@@ -36,11 +36,13 @@ class DNestModel {
         SkyModel* sky_model{};
         Gains* gains{};
         double logjitter;
+        size_t ft_calc_counter;
         // Prediction of SkyModel + Gains
         std::valarray<double> mu_real_full;
         std::valarray<double> mu_imag_full;
         // This runs ``ft`` method of SkyModel with (u, v) from Data and updates SkyModel predictions
-        void calculate_sky_mu();
+        // ``update = true`` means use only changed component in calculating FT, ``false`` means use all them
+        void calculate_sky_mu(bool update);
         // This calculates full model (SkyModel with gains) and updates ``mu_real/imag_full``
         void calculate_mu();
 
