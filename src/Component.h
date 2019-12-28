@@ -107,6 +107,7 @@ class CGComponent : public EGComponent {
     public:
         CGComponent();
         CGComponent(const CGComponent& other);
+        void ft(std::valarray<double> u, std::valarray<double> v) override;
         void set_param_vec(std::valarray<double> param) override;
         void set_x(double x) override;
         const size_t size() const override
