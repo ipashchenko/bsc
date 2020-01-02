@@ -77,14 +77,14 @@ def create_data_file(uvfits, outfile, step_amp=60, step_phase=None, use_scans_fo
     :return:
     """
     hdus = pf.open(uvfits)
-    data = hdus[0].data
+    data_all = hdus[0].data
     header = hdus[0].header
     freq = header["CRVAL4"]
 
     df = pd.DataFrame(columns=["times", "ant1", "ant2", "u", "v", "vis_re", "vis_im",
                                "error"])
 
-    for group in data:
+    for group in data_all:
         time = Time(group['DATE'] + group['_DATE'], format='jd')
         baseline = group["BASELINE"]
         ant1 = int(baseline//256)
@@ -99,9 +99,11 @@ def create_data_file(uvfits, outfile, step_amp=60, step_phase=None, use_scans_fo
         if abs(u) < 1.:
             u *= freq
             v *= freq
-        data = group["DATA"].squeeze()
+        # data = group["DATA"].squeeze()
         # IF, STOKES, COMPLEX
-        data = group["DATA"][0, 0, :, 0, :, :]
+        IF = 0
+        STOKES = 0
+        data = group["DATA"][0, 0, IF, 0, STOKES, :]
         weights = data[..., 2]
         mask = weights <= 0
         if np.alltrue(weights <= 0):
@@ -320,7 +322,7 @@ def add_noise(df, use_global_median_noise=False, use_per_baseline_median_noise=T
     return df_
 
 
-def inject_gains(df_original, outfname=None,
+def inject_gains(df_original, outfname=None, non_zero_mean_phase=False,
                  amp_gpamp=np.exp(-3), amp_gpphase=np.exp(-3),
                  scale_gpamp=np.exp(6), scale_gpphase=np.exp(5)):
     """
@@ -358,9 +360,14 @@ def inject_gains(df_original, outfname=None,
         v = np.random.normal(0, 1, size=len(ant_time))
         amp = 1 + gp_pred(amp_gpamp, scale_gpamp, v, np.array(ant_time))
         # Phase
+        if non_zero_mean_phase:
+            mean_phase = np.random.uniform(-np.pi, np.pi)
+        else:
+            mean_phase = 0
         v = np.random.normal(0, 1, size=len(ant_time))
-        phase = gp_pred(amp_gpphase, scale_gpphase, v, np.array(ant_time))
+        phase = gp_pred(amp_gpphase, scale_gpphase, v, np.array(ant_time)) + mean_phase
         antennas_gp[ant] = {"amp": {t: a for (t, a) in zip(ant_time, amp)},
+                            "mean_phase": mean_phase,
                             "phase": {t: p for (t, p) in zip(ant_time, phase)}}
 
     # Now calculate visibilities
@@ -406,7 +413,8 @@ def plot_model_gains(gains_dict, savefn=None):
 
 
 # TODO: Finish me
-def process_sampled_gains(posterior_sample, df_fitted, jitter_first=True, n_comp=2, plotfn=None):
+def process_sampled_gains(posterior_sample, df_fitted, jitter_first=True, n_comp=2, plotfn=None,
+                          add_mean_phase=False):
     """
     :param posterior_sample:
         DNest file with posterior.
@@ -437,7 +445,10 @@ def process_sampled_gains(posterior_sample, df_fitted, jitter_first=True, n_comp
         for i, t in enumerate(df_fitted.query("ant1 == @ant or ant2 == @ant").times_amp.unique()):
             gains_post[ant]["amp"][t] = samples[:, j+i]
             # +1 mean skip ``mean_phase``
-            gains_post[ant]["phase"][t] = samples[:, j+gains_len[ant]["amp"]+i+1]
+            if add_mean_phase:
+                gains_post[ant]["phase"][t] = samples[:, j+gains_len[ant]["amp"]+i+1] + gains_post[ant]["mean_phase"]
+            else:
+                gains_post[ant]["phase"][t] = samples[:, j+gains_len[ant]["amp"]+i+1]
 
         j += gains_len[ant]["amp"] + gains_len[ant]["phase"] + 1
 
@@ -460,7 +471,6 @@ def process_sampled_gains(posterior_sample, df_fitted, jitter_first=True, n_comp
         fig.savefig(plotfn, bbox_inches="tight", dpi=100)
     fig.show()
     return fig
-
 
 
 def radplot(df, fig=None, color=None, label=None, style="ap"):
@@ -503,10 +513,12 @@ def radplot(df, fig=None, color=None, label=None, style="ap"):
 
 if __name__ == "__main__":
     # uvfits_fname = "/home/ilya/github/time_machine/bsc/0716+714.u.2013_08_20.uvf"
-    uvfits_fname = "/home/ilya/github/time_machine/bsc/0716_30s.uvf"
+    # uvfits_fname = "/home/ilya/github/time_machine/bsc/0716_30s.uvf"
+    uvfits_fname = "/home/ilya/github/time_machine/bsc/J2001+2416_K_2006_06_11_yyk_vis_30s.fits"
+    # uvfits_fname = "/home/ilya/data/silke/1502+106.u.1997_08_18_30s.uvf"
     data_only_fname = "/home/ilya/github/time_machine/bsc/data_only.txt"
 
-    df = create_data_file(uvfits_fname, data_only_fname, step_amp=60, step_phase=30,
+    df = create_data_file(uvfits_fname, data_only_fname, step_amp=30, step_phase=30,
                           use_scans_for_amplitudes=False)
 # # Load data frame
     # columns = ["times",
@@ -527,6 +539,9 @@ if __name__ == "__main__":
     re, im = gaussian_circ_ft(flux=1.0, dx=0.5, dy=0.0, bmaj=0.2, uv=df[["u", "v"]].values)
     df["vis_re"] += re
     df["vis_im"] += im
+    re, im = gaussian_circ_ft(flux=0.5, dx=1.5, dy=0.5, bmaj=0.5, uv=df[["u", "v"]].values)
+    df["vis_re"] += re
+    df["vis_im"] += im
 
     # Plot
     fig = radplot(df, label="Sky Model")
@@ -544,11 +559,13 @@ if __name__ == "__main__":
                            outfname=gains_noise_fname)
 
     fig = radplot(df_updated, color="#ff7f0e", fig=fig, label="With gains")
+    fig.savefig("J2001_check_models.png")
     fig = plot_model_gains(gains_dict)
+    fig.savefig("J2001_check_gains.png")
 
     import json
     # Save gains
-    with open("/home/ilya/github/time_machine/bsc/gains.json", "w") as fo:
+    with open("/home/ilya/github/time_machine/bsc/J2001_check_gains_30s.json", "w") as fo:
         json.dump(str(gains_dict), fo)
     # # Load gains
     # with open("/home/ilya/github/bsc/gains_0716.json", "r") as fo:
