@@ -25,7 +25,6 @@ class SkyModel {
         void print(std::ostream& out) const;
         std::string description() const;
         void from_prior(DNest4::RNG& rng);
-        // MH proposal for SkyModel. Returns logH
         double perturb(DNest4::RNG& rng);
         int get_n_components();
         std::vector<int> get_components_sizes();

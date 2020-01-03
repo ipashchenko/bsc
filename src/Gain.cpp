@@ -14,7 +14,7 @@ using Eigen::VectorXd;
 using Eigen::MatrixXd;
 
 
-Gain::Gain(std::set<double> new_times_amp, std::set<double> new_times_phase) :
+Gain::Gain(const std::set<double>& new_times_amp, const std::set<double>& new_times_phase) :
     logamp_amp(-3.0),
     logamp_phase(-2.0),
     logscale_amp(7.0),
@@ -48,7 +48,7 @@ Gain::Gain(std::set<double> new_times_amp, std::set<double> new_times_phase) :
     }
 
 
-Gain::Gain(std::set<double> new_times) :
+Gain::Gain(const std::set<double>& new_times) :
     logamp_amp(-3.0),
     logamp_phase(-2.0),
     logscale_amp(7.0),
@@ -286,8 +286,6 @@ void Gain::calculate_amplitudes() {
     VectorXd amp = L_amp*v_amp_vec;
     // Convert Eigen::VectorXd to std::valarray
     amplitudes = 1.0 + std::valarray<double>(amp.data(), amp.size());
-    //std::cout << "Calculated amplitudes: " << std::endl;
-    //print_amplitudes(std::cout);
 
 }
 
@@ -310,8 +308,6 @@ void Gain::calculate_phases() {
 
     // Convert Eigen::VectorXd to std::valarray
     phases = phase_mean + std::valarray<double>(phase.data(), phase.size());
-    //std::cout << "Calculated phases: " << std::endl;
-    //print_phases(std::cout);
 
 }
 
@@ -340,7 +336,6 @@ double Gain::perturb(DNest4::RNG &rng) {
     int which = rng.rand_int(2);
     // Amplitude GP
     if(which == 0) {
-
         // Choose what value to perturb
         int which = rng.rand_int(amplitudes.size());
 
@@ -359,10 +354,8 @@ double Gain::perturb(DNest4::RNG &rng) {
     }
     // Phase GP
     else {
-
         // More often perturb phase latent variables
         if(rng.rand() <= 0.9) {
-
             // Choose what value to perturb
             int which = rng.rand_int(phases.size());
 

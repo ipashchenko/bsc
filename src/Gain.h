@@ -17,9 +17,9 @@ std::valarray<double> make_normal_random(int number);
 class Gain {
     public:
         // Different times for amplitudes and phases of the gains ctor
-        Gain(std::set<double> times_amp, std::set<double> times_phase);
+        Gain(const std::set<double>& times_amp, const std::set<double>& times_phase);
         // The same times for amplitudes and phases ctor
-        explicit Gain(std::set<double> times);
+        explicit Gain(const std::set<double>& times);
 
         //Gain(const Gain& other);
 

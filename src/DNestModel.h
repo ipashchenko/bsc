@@ -29,8 +29,6 @@ class DNestModel {
         // Return string with column information
         std::string description() const;
 
-        void set_x_skymodel(double x);
-
     private:
 
         SkyModel* sky_model{};
