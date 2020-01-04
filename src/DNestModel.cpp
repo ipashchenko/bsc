@@ -5,7 +5,7 @@
 #include "Utils.h"
 
 
-DNestModel::DNestModel() : logjitter(0.0) {
+DNestModel::DNestModel() {
 
     sky_model = new SkyModel();
     int ncomp = 3;
@@ -47,7 +47,9 @@ DNestModel& DNestModel::operator=(const DNestModel& other) {
 
 
 void DNestModel::from_prior(DNest4::RNG &rng) {
-    logjitter = -3.0 + 2.0*rng.randn();
+    for (int i=0;i<Data::get_instance().n_IF();i++) {
+        logjitter.push_back(-3.0 + 2.0*rng.randn());
+    }
     sky_model->from_prior(rng);
     //sky_model->print(std::cout);
     gains->from_prior_hp_amp(rng);
@@ -79,9 +81,10 @@ double DNestModel::perturb(DNest4::RNG &rng) {
 
     // Perturb jitter
     if(rng.rand() <= 0.1) {
-        logH -= -0.5*pow((logjitter+3)/2.0, 2.0);
-        logjitter += rng.randh();
-        logH += -0.5*pow((logjitter+3)/2.0, 2.0);
+        int which_jitter = rng.rand_int(Data::get_instance().n_IF());
+        logH -= -0.5*pow((logjitter[which_jitter]+3)/2.0, 2.0);
+        logjitter[which_jitter] += rng.randh();
+        logH += -0.5*pow((logjitter[which_jitter]+3)/2.0, 2.0);
 
         // Pre-reject
         if(rng.rand() >= exp(logH)) {
@@ -181,11 +184,18 @@ double DNestModel::log_likelihood() const {
     const std::valarray<double>& vis_imag = Data::get_instance().get_vis_imag();
     const std::valarray<double>& sigma = Data::get_instance().get_sigma();
 
+    int n_IF = Data::get_instance().n_IF();
+    const std::vector<int>& IF = Data::get_instance().get_IF();
+    std::valarray<double> logjitter_array (0.0, vis_real.size());
+    for (int i=0; i<vis_real.size(); i++) {
+        logjitter_array[i] = logjitter[IF[i]];
+    }
+
     // Variance
     const std::valarray<double> var = sigma*sigma;
     // Complex Gaussian sampling distribution
-    std::valarray<double> result = -log(2*M_PI*(var+exp(2.0*logjitter))) - 0.5*(pow(vis_real - mu_real_full, 2) +
-        pow(vis_imag - mu_imag_full, 2))/(var+exp(2.0*logjitter))   ;
+    std::valarray<double> result = -log(2*M_PI*(var+exp(2.0*logjitter_array))) - 0.5*(pow(vis_real - mu_real_full, 2) +
+        pow(vis_imag - mu_imag_full, 2))/(var+exp(2.0*logjitter_array))   ;
     double loglik = result.sum();
     return loglik;
 
@@ -193,7 +203,9 @@ double DNestModel::log_likelihood() const {
 
 
 void DNestModel::print(std::ostream &out) const {
-    out << logjitter << '\t';
+    for (int i = 0; i < logjitter.size(); i++) {
+        out << logjitter[i] << '\t';
+    }
     sky_model->print(out);
     gains->print(out);
 }
@@ -201,7 +213,9 @@ void DNestModel::print(std::ostream &out) const {
 
 std::string DNestModel::description() const {
     std::string descr;
-    descr += "logjitter ";
+    for (int i = 0; i < logjitter.size(); i++) {
+        descr += ("logjitter" + std::to_string(i) + " ");
+    }
     descr += sky_model->description();
     descr += " ";
     descr += gains->description();
