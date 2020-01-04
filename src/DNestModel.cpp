@@ -78,9 +78,10 @@ void DNestModel::from_prior(DNest4::RNG &rng) {
 double DNestModel::perturb(DNest4::RNG &rng) {
     double logH = 0.;
 
+    double u = rng.rand();
 
     // Perturb jitter
-    if(rng.rand() <= 0.1) {
+    if(u <= 0.05) {
         int which_jitter = rng.rand_int(Data::get_instance().n_IF());
         logH -= -0.5*pow((logjitter[which_jitter]+3)/2.0, 2.0);
         logjitter[which_jitter] += rng.randh();
@@ -92,11 +93,12 @@ double DNestModel::perturb(DNest4::RNG &rng) {
         }
         else
             logH = 0.0;
-        // No need to re-calculate sky_model or full model. Just calculate loglike.
+        // No need to re-calculate sky_model or full model. Just calculate re-calculate loglike with new jitter.
+        return logH;
     }
 
     // Perturb SkyModel
-    if(rng.rand() <= 0.25) {
+    else if(0.05 < u <= 0.25) {
         logH += sky_model->perturb(rng);
 
         // Pre-reject
@@ -123,7 +125,7 @@ double DNestModel::perturb(DNest4::RNG &rng) {
         else
             logH = 0.0;
     }
-    // It shouldn't be called in case of pre-rejection (if -1E300 is returned from sky_model or gains perturb
+    // It shouldn't be called in case of pre-rejection (if -1E300 is returned from SkyModel or Gains perturb)
     calculate_mu();
     return logH;
 }
