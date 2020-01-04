@@ -84,7 +84,7 @@ double DNestModel::perturb(DNest4::RNG &rng) {
     if(u <= 0.05) {
         int which_jitter = rng.rand_int(Data::get_instance().n_IF());
         logH -= -0.5*pow((logjitter[which_jitter]+3)/2.0, 2.0);
-        logjitter[which_jitter] += rng.randh();
+        logjitter[which_jitter] += 2.0*rng.randh();
         logH += -0.5*pow((logjitter[which_jitter]+3)/2.0, 2.0);
 
         // Pre-reject
