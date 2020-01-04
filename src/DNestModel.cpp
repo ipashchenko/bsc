@@ -47,8 +47,8 @@ DNestModel& DNestModel::operator=(const DNestModel& other) {
 
 
 void DNestModel::from_prior(DNest4::RNG &rng) {
-    for (int i=0;i<Data::get_instance().n_IF();i++) {
-        logjitter.push_back(-3.0 + 2.0*rng.randn());
+    for (int i=0;i<Data::get_instance().n_antennas();i++) {
+        logjitter.push_back(-1.5 + 1.0*rng.randn());
     }
     sky_model->from_prior(rng);
     //sky_model->print(std::cout);
@@ -82,10 +82,10 @@ double DNestModel::perturb(DNest4::RNG &rng) {
 
     // Perturb jitter
     if(u <= 0.05) {
-        int which_jitter = rng.rand_int(Data::get_instance().n_IF());
-        logH -= -0.5*pow((logjitter[which_jitter]+3)/2.0, 2.0);
-        logjitter[which_jitter] += 2.0*rng.randh();
-        logH += -0.5*pow((logjitter[which_jitter]+3)/2.0, 2.0);
+        int which_jitter = rng.rand_int(Data::get_instance().n_antennas());
+        logH -= -0.5*pow((logjitter[which_jitter]+1.5)/1.0, 2.0);
+        logjitter[which_jitter] += 1.0*rng.randh();
+        logH += -0.5*pow((logjitter[which_jitter]+1.5)/2.0, 2.0);
 
         // Pre-reject
         if(rng.rand() >= exp(logH)) {
@@ -186,11 +186,11 @@ double DNestModel::log_likelihood() const {
     const std::valarray<double>& vis_imag = Data::get_instance().get_vis_imag();
     const std::valarray<double>& sigma = Data::get_instance().get_sigma();
 
-    int n_IF = Data::get_instance().n_IF();
-    const std::vector<int>& IF = Data::get_instance().get_IF();
+    const std::vector<int>& ant_i = Data::get_instance().get_ant_i();
+    const std::vector<int>& ant_j = Data::get_instance().get_ant_j();
     std::valarray<double> logjitter_array (0.0, vis_real.size());
     for (int i=0; i<vis_real.size(); i++) {
-        logjitter_array[i] = logjitter[IF[i]];
+        logjitter_array[i] = logjitter[ant_i[i]]+logjitter[ant_j[i]];
     }
 
     // Variance
