@@ -98,7 +98,7 @@ double DNestModel::perturb(DNest4::RNG &rng) {
     }
 
     // Perturb SkyModel
-    else if(0.05 < u <= 0.25) {
+    else if(0.05 < u && u <= 0.25) {
         logH += sky_model->perturb(rng);
 
         // Pre-reject
