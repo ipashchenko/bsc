@@ -57,23 +57,27 @@ def gaussian_circ_ft(flux, dx, dy, bmaj, uv):
     return result.real, result.imag
 
 
-# TODO: Do not need times_amp & times_phase
-def create_data_file(uvfits, outfile, step_amp=60, step_phase=None, use_scans_for_amplitudes=True):
+# TODO: Check STOKES/IF
+def create_data_file(uvfits, outfile, STOKES, IF, step_amp=30, step_phase=30, use_scans_for_amplitudes=False):
     """
     :param uvfits:
         Path to UVFITS file.
     :param outfile:
         Path to output txt-file.
+    :param STOKES:
+        Stokes number (RR = 0, etc.)
+    :param IF:
+        IF number.
     :param step_amp: (optional)
         Time interval for constant gain amplitudes [s]. If ``None`` and
         ``use_scans_for_amplitudes`` is ``False`` - use different gain
-        amplitude for each time stamp. (default: ``60``)
+        amplitude for each time stamp. (default: ``30``)
     :param step_phase:
         Time interval for constant gain phases [s]. If ``None`` - use
-        different gain phase for each time stamp. (default: ``None``)
+        different gain phase for each time stamp. (default: ``30``)
     :param use_scans_for_amplitudes: (optional)
         Boolean. Should we use constant gain amplitude over scan.
-        (default: ``True``)
+        (default: ``False``)
     :return:
     """
     hdus = pf.open(uvfits)
@@ -101,8 +105,6 @@ def create_data_file(uvfits, outfile, step_amp=60, step_phase=None, use_scans_fo
             v *= freq
         # data = group["DATA"].squeeze()
         # IF, STOKES, COMPLEX
-        IF = 0
-        STOKES = 0
         data = group["DATA"][0, 0, IF, 0, STOKES, :]
         weights = data[..., 2]
         mask = weights <= 0
@@ -512,14 +514,16 @@ def radplot(df, fig=None, color=None, label=None, style="ap"):
 
 
 if __name__ == "__main__":
-    # uvfits_fname = "/home/ilya/github/time_machine/bsc/0716+714.u.2013_08_20.uvf"
-    # uvfits_fname = "/home/ilya/github/time_machine/bsc/0716_30s.uvf"
-    uvfits_fname = "/home/ilya/github/time_machine/bsc/J2001+2416_K_2006_06_11_yyk_vis_30s.fits"
-    # uvfits_fname = "/home/ilya/data/silke/1502+106.u.1997_08_18_30s.uvf"
-    data_only_fname = "/home/ilya/github/time_machine/bsc/data_only.txt"
+    # uvfits_fname = "/home/ilya/github/time_machine/bsc/reals/uvfs/J2038+5119_S_2005_07_20_yyk_uve.fits"
+    uvfits_fname = "/home/ilya/github/bsc/data/BLLAC_RA_times.uvf"
 
-    df = create_data_file(uvfits_fname, data_only_fname, step_amp=30, step_phase=30,
-                          use_scans_for_amplitudes=False)
+    for STOKES in range(2):
+        for IF in range(2):
+            data_only_fname = "/home/ilya/github/time_machine/bsc/reals/RA/BLLAC_STOKES_{}_IF_{}.txt".format(STOKES, IF)
+            df = create_data_file(uvfits_fname, data_only_fname, STOKES=STOKES, IF=IF, step_amp=60, step_phase=60,
+                                  use_scans_for_amplitudes=False)
+    import sys
+    sys.exit(0)
 # # Load data frame
     # columns = ["times",
     #            "ant1", "ant2",
@@ -533,13 +537,13 @@ if __name__ == "__main__":
     df["vis_re"] = 0
     df["vis_im"] = 0
     # Add model
-    re, im = gaussian_circ_ft(flux=2.0, dx=0.0, dy=0.0, bmaj=0.1, uv=df[["u", "v"]].values)
+    re, im = gaussian_circ_ft(flux=2.0, dx=0.0, dy=0.0, bmaj=0.03, uv=df[["u", "v"]].values)
     df["vis_re"] += re
     df["vis_im"] += im
-    re, im = gaussian_circ_ft(flux=1.0, dx=0.5, dy=0.0, bmaj=0.2, uv=df[["u", "v"]].values)
+    re, im = gaussian_circ_ft(flux=1.0, dx=0.2, dy=0.0, bmaj=0.06, uv=df[["u", "v"]].values)
     df["vis_re"] += re
     df["vis_im"] += im
-    re, im = gaussian_circ_ft(flux=0.5, dx=1.5, dy=0.5, bmaj=0.5, uv=df[["u", "v"]].values)
+    re, im = gaussian_circ_ft(flux=0.5, dx=0.5, dy=0.25, bmaj=0.2, uv=df[["u", "v"]].values)
     df["vis_re"] += re
     df["vis_im"] += im
 
