@@ -1,14 +1,27 @@
 #include <iostream>
 #include "Gains.h"
 #include "Gain.h"
+#include "MyExceptions.h"
 
 
 
-//Gains::Gains() = default;
+Gains::Gains(Data data, int refant_) {
+    // ant_i of the reference antenna
+    refant = refant_;
 
+    // Map between ant_i and its position in antennas vector.
+    auto antennas_map = data.get_antennas_map();
+    if(!antennas_map.count(refant)) {
+        throw BadReferenceAntenna();
+    }
 
-Gains::Gains(Data data) {
-    // This map from antenna numbers to antenna indexes.
+    for (int i=0; i<data.n_antennas(); i++) {
+        if (i != antennas_map[refant]) {
+            antennas_changing_gain.push_back(i);
+        }
+    }
+
+    // Map between antenna position in antennas vector and ant_i.
     auto antennas_map_inv = data.get_antennas_map_inv();
     for (int i=0; i<data.n_antennas(); i++) {
         gains.emplace_back(new Gain(data.get_times_amp()[antennas_map_inv[i]], data.get_times_phase()[antennas_map_inv[i]]));
@@ -17,8 +30,9 @@ Gains::Gains(Data data) {
 
 
 Gains::Gains(Gains &other) {
-    //std::cout << "In Gains copy ctor" << std::endl;
     gains = std::vector<Gain*>();
+    antennas_changing_gain = other.antennas_changing_gain;
+    refant = other.refant;
     for (auto gain : other.gains) {
         gains.emplace_back(new Gain(*gain));
     }
@@ -26,8 +40,6 @@ Gains::Gains(Gains &other) {
 
 
 Gains& Gains::operator=(const Gains& other) {
-    //std::cout << "In Gains =" << std::endl;
-
     if (&other == this)
         return *this;
 
@@ -39,12 +51,13 @@ Gains& Gains::operator=(const Gains& other) {
     for (auto gain : other.gains) {
         gains.emplace_back(new Gain(*gain));
     }
+    antennas_changing_gain = other.antennas_changing_gain;
+    refant = other.refant;
     return *this;
 }
 
 
 Gains::~Gains() {
-    //std::cout << "in Gains ~ " << std::endl;
     for (auto gain : gains) {
         delete gain;
     }
@@ -220,10 +233,8 @@ void Gains::print_L(std::ostream &out) const {
 
 double Gains::perturb(DNest4::RNG& rng) {
     double logH = 0;
-    // Leaving first gains as it is (amplitudes = 1s, phases = 0s)
-    int which = rng.rand_int(gains.size()-1);
-    //std::cout << "Perturbing gain # " << which+1 << std::endl;
-    logH += gains[which+1]->perturb(rng);
+    int which = rng.rand_int(antennas_changing_gain.size());
+    logH += gains[antennas_changing_gain[which]]->perturb(rng);
     return logH;
 }
 
