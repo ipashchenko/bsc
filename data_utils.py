@@ -6,6 +6,10 @@ import pandas as pd
 import matplotlib
 import matplotlib.pyplot as plt
 
+import sys
+sys.path.insert(0, '/home/ilya/github/ve/vlbi_errors')
+from uv_data import UVData
+
 label_size = 16
 matplotlib.rcParams['xtick.labelsize'] = label_size
 matplotlib.rcParams['ytick.labelsize'] = label_size
@@ -58,7 +62,8 @@ def gaussian_circ_ft(flux, dx, dy, bmaj, uv):
 
 
 # TODO: Check STOKES/IF
-def create_data_file(uvfits, outfile, STOKES, IF, step_amp=30, step_phase=30, use_scans_for_amplitudes=False):
+def create_data_file(uvfits, outfile, STOKES, IF, step_amp=30, step_phase=30, use_scans_for_amplitudes=False,
+                     calculate_noise=False, antennas_to_skip=None):
     """
     :param uvfits:
         Path to UVFITS file.
@@ -85,6 +90,9 @@ def create_data_file(uvfits, outfile, STOKES, IF, step_amp=30, step_phase=30, us
     header = hdus[0].header
     freq = header["CRVAL4"]
 
+    uvdata = UVData(uvfits)
+    noise = uvdata.noise(use_V=False)
+
     df = pd.DataFrame(columns=["times", "ant1", "ant2", "u", "v", "vis_re", "vis_im",
                                "error"])
 
@@ -93,6 +101,11 @@ def create_data_file(uvfits, outfile, STOKES, IF, step_amp=30, step_phase=30, us
         baseline = group["BASELINE"]
         ant1 = int(baseline//256)
         ant2 = int(baseline-ant1*256)
+        if antennas_to_skip is not None:
+            if ant1 in antennas_to_skip or ant2 in antennas_to_skip:
+                print("Skipping baseline {} - {}".format(ant1, ant2))
+                continue
+        bl_noise = noise[float(baseline)]/np.sqrt(2.)
 
         try:
             u = group["UU"]
@@ -112,7 +125,10 @@ def create_data_file(uvfits, outfile, STOKES, IF, step_amp=30, step_phase=30, us
             continue
         weights = np.ma.array(weights, mask=mask)
         weight = np.ma.sum(weights)
-        error = 1/np.sqrt(weight)
+        if calculate_noise:
+            error = bl_noise[IF, STOKES]
+        else:
+            error = 1/np.sqrt(weight)
         vis_re = np.ma.array(data[..., 0], mask=mask)
         vis_im = np.ma.array(data[..., 1], mask=mask)
         vis_re = np.ma.mean(vis_re)
@@ -515,13 +531,16 @@ def radplot(df, fig=None, color=None, label=None, style="ap"):
 
 if __name__ == "__main__":
     # uvfits_fname = "/home/ilya/github/time_machine/bsc/reals/uvfs/J2038+5119_S_2005_07_20_yyk_uve.fits"
-    uvfits_fname = "/home/ilya/github/bsc/data/BLLAC_RA_times.uvf"
+    uvfits_fname = "/home/ilya/github/time_machine/bsc/reals/uvfs/BLLAC_RA_times.uvf"
 
-    for STOKES in range(2):
-        for IF in range(2):
-            data_only_fname = "/home/ilya/github/time_machine/bsc/reals/RA/BLLAC_STOKES_{}_IF_{}.txt".format(STOKES, IF)
-            df = create_data_file(uvfits_fname, data_only_fname, STOKES=STOKES, IF=IF, step_amp=60, step_phase=60,
-                                  use_scans_for_amplitudes=False)
+    # for STOKES in range(2):
+    #     for IF in range(2):
+    STOKES = 0
+    IF = 0
+    data_only_fname = "/home/ilya/github/time_machine/bsc/reals/RA/tests/BLLAC_STOKES_{}_IF_{}_amp120_phase60.txt".format(STOKES, IF)
+    df = create_data_file(uvfits_fname, data_only_fname, STOKES=STOKES, IF=IF, step_amp=120, step_phase=60,
+                          use_scans_for_amplitudes=False, calculate_noise=True,
+                          antennas_to_skip=(3, 8, 12, 13, 14, 16, 17))
     import sys
     sys.exit(0)
 # # Load data frame

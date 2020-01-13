@@ -8,7 +8,7 @@
 DNestModel::DNestModel() : logjitter(0.0) {
 
     sky_model = new SkyModel();
-    int ncomp = 3;
+    int ncomp = 5;
     for (int i=0; i<ncomp; i++) {
         auto* comp = new CGComponent();
         sky_model->add_component(comp);
@@ -161,10 +161,14 @@ void DNestModel::calculate_mu() {
     std::valarray<double> phase_ant_j (0.0, ant_i.size());
 
     for (int k=0; k<ant_i.size(); k++) {
-        amp_ant_i[k] += gains->operator[](antennas_map[ant_i[k]])->get_amplitudes()[idx_amp_ant_i[k]];
-        amp_ant_j[k] += gains->operator[](antennas_map[ant_j[k]])->get_amplitudes()[idx_amp_ant_j[k]];
-        phase_ant_i[k] += gains->operator[](antennas_map[ant_i[k]])->get_phases()[idx_phase_ant_i[k]];
-        phase_ant_j[k] += gains->operator[](antennas_map[ant_j[k]])->get_phases()[idx_phase_ant_j[k]];
+        auto ant_ik = antennas_map[ant_i[k]];
+        auto ant_jk = antennas_map[ant_j[k]];
+        auto idx_ik = idx_amp_ant_i[k];
+        auto idx_jk = idx_amp_ant_j[k];
+        amp_ant_i[k] += gains->operator[](ant_ik)->get_amplitudes()[idx_ik];
+        amp_ant_j[k] += gains->operator[](ant_jk)->get_amplitudes()[idx_jk];
+        phase_ant_i[k] += gains->operator[](ant_ik)->get_phases()[idx_ik];
+        phase_ant_j[k] += gains->operator[](ant_jk)->get_phases()[idx_jk];
         //std::cout << "Amplitudes of gains in DNEstModel::calculate_mu : " << amp_ant_i[k] << ", " << amp_ant_j[k] << std::endl;
     }
 
