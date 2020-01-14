@@ -1,14 +1,12 @@
 #include <iostream>
-#include <Distributions/ContinuousDistribution.h>
 #include "DNestModel.h"
 #include "RNG.h"
-#include "Utils.h"
 
 
 DNestModel::DNestModel() : logjitter(0.0) {
 
     sky_model = new SkyModel();
-    int ncomp = 3;
+    int ncomp = 5;
     for (int i=0; i<ncomp; i++) {
         auto* comp = new CGComponent();
         sky_model->add_component(comp);
@@ -76,11 +74,12 @@ void DNestModel::from_prior(DNest4::RNG &rng) {
 double DNestModel::perturb(DNest4::RNG &rng) {
     double logH = 0.;
 
+    double u = rng.rand();
 
     // Perturb jitter
-    if(rng.rand() <= 0.1) {
+    if(u <= 0.05) {
         logH -= -0.5*pow((logjitter+3)/2.0, 2.0);
-        logjitter += rng.randh();
+        logjitter += 2.0*rng.randh();
         logH += -0.5*pow((logjitter+3)/2.0, 2.0);
 
         // Pre-reject
@@ -90,10 +89,11 @@ double DNestModel::perturb(DNest4::RNG &rng) {
         else
             logH = 0.0;
         // No need to re-calculate sky_model or full model. Just calculate loglike.
+        return logH;
     }
 
     // Perturb SkyModel
-    if(rng.rand() <= 0.25) {
+    else if(0.05 < u && u <= 0.25)  {
         logH += sky_model->perturb(rng);
 
         // Pre-reject
@@ -160,18 +160,25 @@ void DNestModel::calculate_mu() {
     std::valarray<double> phase_ant_j (0.0, ant_i.size());
 
     for (int k=0; k<ant_i.size(); k++) {
-        amp_ant_i[k] += gains->operator[](antennas_map[ant_i[k]])[IF[k]]->get_amplitudes()[idx_amp_ant_i[k]];
-        amp_ant_j[k] += gains->operator[](antennas_map[ant_j[k]])[IF[k]]->get_amplitudes()[idx_amp_ant_j[k]];
-        phase_ant_i[k] += gains->operator[](antennas_map[ant_i[k]])[IF[k]]->get_phases()[idx_phase_ant_i[k]];
-        phase_ant_j[k] += gains->operator[](antennas_map[ant_j[k]])[IF[k]]->get_phases()[idx_phase_ant_j[k]];
+        auto ant_ik = antennas_map[ant_i[k]];
+        auto ant_jk = antennas_map[ant_j[k]];
+        auto idx_ik = idx_amp_ant_i[k];
+        auto idx_jk = idx_amp_ant_j[k];
+        auto ifk = IF[k];
+        amp_ant_i[k] += gains->operator[](ant_ik)[ifk]->get_amplitudes()[idx_ik];
+        amp_ant_j[k] += gains->operator[](ant_jk)[ifk]->get_amplitudes()[idx_jk];
+        phase_ant_i[k] += gains->operator[](ant_ik)[ifk]->get_phases()[idx_ik];
+        phase_ant_j[k] += gains->operator[](ant_jk)[ifk]->get_phases()[idx_jk];
     }
 
     // SkyModel modified by gains
     // This implies g = amp*exp(+1j*phi) and V = amp*exp(+1j*phi) - note "+" sign
-    mu_real_full = amp_ant_i*amp_ant_j*(cos(phase_ant_i-phase_ant_j)*sky_model_mu_real-
-                                        sin(phase_ant_i-phase_ant_j)*sky_model_mu_imag);
-    mu_imag_full = amp_ant_i*amp_ant_j*(cos(phase_ant_i-phase_ant_j)*sky_model_mu_imag+
-                                        sin(phase_ant_i-phase_ant_j)*sky_model_mu_real);
+    auto diff = phase_ant_i-phase_ant_j;
+    auto cos_diff = cos(diff);
+    auto sin_diff = sin(diff);
+    auto amp_amp = amp_ant_i*amp_ant_j;
+    mu_real_full = amp_amp*(cos_diff*sky_model_mu_real - sin_diff*sky_model_mu_imag);
+    mu_imag_full = amp_amp*(cos_diff*sky_model_mu_imag + sin_diff*sky_model_mu_real);
 }
 
 
