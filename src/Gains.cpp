@@ -1,9 +1,25 @@
 #include <iostream>
 #include "Gains.h"
 #include "Gain.h"
+#include "MyExceptions.h"
 
 
-Gains::Gains(Data data) {
+Gains::Gains(Data data, int refant_) {
+    // ant_i of the reference antenna
+    refant = refant_;
+
+    // Map between ant_i and its position in antennas vector.
+    auto antennas_map = data.get_antennas_map();
+    if(!antennas_map.count(refant)) {
+        throw BadReferenceAntenna();
+    }
+
+    for (int i=0; i<data.n_antennas(); i++) {
+        if (i != antennas_map[refant]) {
+            antennas_changing_gain.push_back(i);
+        }
+    }
+
     gains = std::vector<std::vector<Gain*>>(data.n_antennas());
     // This map from antenna numbers to antenna indexes.
     auto antennas_map_inv = data.get_antennas_map_inv();
@@ -15,6 +31,8 @@ Gains::Gains(Data data) {
 
 
 Gains::Gains(Gains &other) {
+    antennas_changing_gain = other.antennas_changing_gain;
+    refant = other.refant;
     gains = std::vector<std::vector<Gain*>>(other.gains.size());
     for (int i=0; i < other.gains.size(); i++) {
         for (auto gain: other.gains[i]) {
@@ -40,7 +58,8 @@ Gains& Gains::operator=(const Gains& other) {
             gains[i][j] = new Gain(*other.gains[i][j]);
         }
     }
-
+    antennas_changing_gain = other.antennas_changing_gain;
+    refant = other.refant;
     return *this;
 }
 
@@ -156,10 +175,10 @@ void Gains::calculate_phases() {
 
 double Gains::perturb(DNest4::RNG& rng) {
     double logH = 0;
-    // Leaving first gains as it is (amplitudes = 1s, phases = 0s)
-    int which_antenna = rng.rand_int(gains.size()-1);
+    int which_antenna = rng.rand_int(antennas_changing_gain.size());
     int which_IF = rng.rand_int(gains[which_antenna].size());
-    logH += gains[which_antenna+1][which_IF]->perturb(rng);
+    logH += gains[antennas_changing_gain[which_antenna]][which_IF]->perturb(rng);
+
     return logH;
 }
 

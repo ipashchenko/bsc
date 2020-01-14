@@ -12,7 +12,8 @@ DNestModel::DNestModel() : logjitter(0.0) {
         sky_model->add_component(comp);
     }
 
-    gains = new Gains(Data::get_instance());
+    int refant_ant_i = 1;
+    gains = new Gains(Data::get_instance(), refant_ant_i);
 }
 
 

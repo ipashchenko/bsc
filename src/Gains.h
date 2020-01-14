@@ -8,8 +8,7 @@
 
 class Gains {
     public:
-        //Gains();
-        explicit Gains(Data data);
+        Gains(Data data, int refant);
         Gains(Gains& other);
         Gains& operator=(const Gains& other);
         ~Gains();
@@ -39,6 +38,8 @@ class Gains {
     private:
         // Vector length ``n_ant`` of vectors length ``n_IF`` each
         std::vector<std::vector<Gain*>> gains;
+        int refant{};
+        std::vector<int> antennas_changing_gain;
 };
 
 #endif //BSC__GAINS_H_

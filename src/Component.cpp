@@ -1,15 +1,7 @@
 #include "Component.h"
 #include <cmath>
-#include <Component.h>
 #include <iostream>
-//#include <DNest4.h>
 #include <RNG.h>
-
-
-//extern DNest4::ContinuousDistribution *dx_prior;
-//extern DNest4::ContinuousDistribution *dy_prior;
-//extern DNest4::ContinuousDistribution *logflux_prior;
-//extern DNest4::ContinuousDistribution *logbmaj_prior;
 
 
 DFComponent::DFComponent() : dx_(0.0), dy_(0.0), logflux_(0.0)
@@ -48,12 +40,10 @@ EGComponent::EGComponent() : dx_(0.0), dy_(0.0), logflux_(0.0), logbmaj_(0.0), e
 
 void EGComponent::ft(std::valarray<double> u, std::valarray<double> v)
 {
-    //std::cout << "In EGComponent ft " << std::endl;
     std::valarray<double> theta;
     double c;
     std::valarray<double> b;
     std::valarray<double> ft;
-    //std::cout << "x=" << dx_ << ", " << "y=" << dy_ << ", " << "logflux=" << logflux_ << ", "<< "logsize=" << logbmaj_ << "\n";
 
     // Phase shift due to not being in a phase center
     theta = 2*M_PI*mas_to_rad*(u*dx_+v*dy_);
@@ -66,8 +56,6 @@ void EGComponent::ft(std::valarray<double> u, std::valarray<double> v)
     // Prediction of visibilities
     mu_real = ft*cos(theta);
     mu_imag = ft*sin(theta);
-    //std::cout << "EGComponent.ft mu_real[0] = " << mu_real[0] << std::endl;
-
 }
 
 void EGComponent::set_param_vec(std::valarray<double> param)
@@ -83,7 +71,6 @@ void EGComponent::set_param_vec(std::valarray<double> param)
 void EGComponent::print(std::ostream &out) const
 {
     out << "x=" << dx_ << ", " << "y=" << dy_ << ", " << "logflux=" << logflux_ << ", "<< "logsize=" << logbmaj_ << ", "<< "e=" << e_ << ", "<< "bpa=" << bpa_ << "\n";
-
 }
 
 
@@ -132,21 +119,11 @@ void CGComponent::from_prior(DNest4::RNG &rng) {
      // Log-normal prior for flux and bmaj
      logflux_ = -1.0 + 3.0*rng.randn();
      logbmaj_ = -2.0 + 3.0*rng.randn();
-     //std::cout << "Generating from prior CGComponent" << std::endl;
-
-     //dx_ = dx_prior->generate(rng);
-     //dy_ = dy_prior->generate(rng);
-     //logflux_ = logflux_prior->generate(rng);
-     //logbmaj_ = logbmaj_prior->generate(rng);
-     //std::cout << "Generating from prior CGComponent" << std::endl;
-
 }
 
 
 double CGComponent::perturb(DNest4::RNG &rng) {
     double log_H = 0.;
-    // Proposals explore the prior
-    // For normal priors I usually use the hastings factor to do it
     int which = rng.rand_int(4);
     if(which%4 == 0)
     {
