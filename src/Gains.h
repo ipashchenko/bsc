@@ -9,11 +9,10 @@
 class Gains {
     public:
         Gains(Data data, int refant);
-        Gains(Gains& other);
-        Gains& operator=(const Gains& other);
-        ~Gains();
+        //Gains(Gains& other);
+        //Gains& operator=(const Gains& other);
+        //~Gains();
         //// Setting hyperparameters fo the amplitude and phase GP for all gains
-        void set_hp_amp(std::valarray<double> params);
         //void set_hp_phase(std::valarray<double> params);
         //// Setting latent variables for all gains
         //void set_v_amp(std::valarray<double> params);
@@ -28,7 +27,7 @@ class Gains {
         double perturb(DNest4::RNG& rng);
         int size() const;
         // Getting i-th gain
-        Gain* operator[](int i);
+        Gain& operator[](int i);
 
         // Calculate covariance matrixes using current hyperparameters for all gains
         void calculate_C_amp();
@@ -50,7 +49,7 @@ class Gains {
         std::string description() const;
         void print(std::ostream &out) const;
     private:
-        std::vector<Gain*> gains;
+        std::vector<Gain> gains;
         int refant{};
         std::vector<int> antennas_changing_gain;
 };

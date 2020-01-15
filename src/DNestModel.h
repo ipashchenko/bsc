@@ -10,9 +10,6 @@ class DNestModel {
     public:
 
         DNestModel();
-        ~DNestModel();
-        DNestModel(const DNestModel& other);
-        DNestModel& operator=(const DNestModel& other);
 
         // Generate the point from the prior
         void from_prior(DNest4::RNG& rng);
@@ -29,12 +26,10 @@ class DNestModel {
         // Return string with column information
         std::string description() const;
 
-        void set_x_skymodel(double x);
-
     private:
 
-        SkyModel* sky_model{};
-        Gains* gains{};
+        SkyModel sky_model;
+        Gains gains;
         double logjitter;
         // Prediction of SkyModel + Gains
         std::valarray<double> mu_real_full;

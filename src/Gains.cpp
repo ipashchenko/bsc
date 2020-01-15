@@ -24,52 +24,52 @@ Gains::Gains(Data data, int refant_) {
     // Map between antenna position in antennas vector and ant_i.
     auto antennas_map_inv = data.get_antennas_map_inv();
     for (int i=0; i<data.n_antennas(); i++) {
-        gains.emplace_back(new Gain(data.get_times_amp()[antennas_map_inv[i]], data.get_times_phase()[antennas_map_inv[i]]));
+        gains.emplace_back(Gain(data.get_times_amp()[antennas_map_inv[i]], data.get_times_phase()[antennas_map_inv[i]]));
     }
 }
 
 
-Gains::Gains(Gains &other) {
-    gains = std::vector<Gain*>();
-    antennas_changing_gain = other.antennas_changing_gain;
-    refant = other.refant;
-    for (auto gain : other.gains) {
-        gains.emplace_back(new Gain(*gain));
-    }
-}
+//Gains::Gains(Gains &other) {
+//    gains = std::vector<Gain*>();
+//    antennas_changing_gain = other.antennas_changing_gain;
+//    refant = other.refant;
+//    for (auto gain : other.gains) {
+//        gains.emplace_back(new Gain(*gain));
+//    }
+//}
+//
+//
+//Gains& Gains::operator=(const Gains& other) {
+//    if (&other == this)
+//        return *this;
+//
+//    for (auto gain : gains) {
+//        delete gain;
+//    }
+//
+//    gains = std::vector<Gain*>();
+//    for (auto gain : other.gains) {
+//        gains.emplace_back(new Gain(*gain));
+//    }
+//    antennas_changing_gain = other.antennas_changing_gain;
+//    refant = other.refant;
+//    return *this;
+//}
 
 
-Gains& Gains::operator=(const Gains& other) {
-    if (&other == this)
-        return *this;
+//Gains::~Gains() {
+//    for (auto gain : gains) {
+//        delete gain;
+//    }
+//}
 
-    for (auto gain : gains) {
-        delete gain;
-    }
-
-    gains = std::vector<Gain*>();
-    for (auto gain : other.gains) {
-        gains.emplace_back(new Gain(*gain));
-    }
-    antennas_changing_gain = other.antennas_changing_gain;
-    refant = other.refant;
-    return *this;
-}
-
-
-Gains::~Gains() {
-    for (auto gain : gains) {
-        delete gain;
-    }
-}
-
-void Gains::set_hp_amp(std::valarray<double> params) {
-    size_t size_used = 0;
-    for (auto gain : gains) {
-        gain->set_hp_amp(params[std::slice(size_used, 2, 1)]);
-        size_used += 2;
-    }
-}
+//void Gains::set_hp_amp(std::valarray<double> params) {
+//    size_t size_used = 0;
+//    for (auto gain : gains) {
+//        gain->set_hp_amp(params[std::slice(size_used, 2, 1)]);
+//        size_used += 2;
+//    }
+//}
 
 
 //void Gains::set_hp_phase(std::valarray<double> params) {
@@ -104,7 +104,7 @@ int Gains::size() const {
 }
 
 
-Gain* Gains::operator[](int i) {
+Gain& Gains::operator[](int i) {
     return gains[i];
 
 
@@ -113,14 +113,14 @@ Gain* Gains::operator[](int i) {
 
 void Gains::from_prior_v_amp() {
     for (auto gain: gains) {
-        gain->from_prior_v_amp();
+        gain.from_prior_v_amp();
     }
 }
 
 
 void Gains::from_prior_v_phase() {
     for (auto gain: gains) {
-        gain->from_prior_v_phase();
+        gain.from_prior_v_phase();
     }
 }
 
@@ -128,105 +128,105 @@ void Gains::from_prior_v_phase() {
 void Gains::from_prior_hp_amp(DNest4::RNG &rng) {
     //std::cout << "Generating from prior Gains HP AMP" << std::endl;
     for (auto gain: gains) {
-        gain->from_prior_hp_amp(rng);
+        gain.from_prior_hp_amp(rng);
     }
 }
 
 
 void Gains::from_prior_hp_phase(DNest4::RNG &rng) {
     for (auto gain: gains) {
-        gain->from_prior_hp_phase(rng);
+        gain.from_prior_hp_phase(rng);
     }
 }
 
 
 void Gains::calculate_C_amp() {
     for (auto gain: gains) {
-        gain->calculate_C_amp();
+        gain.calculate_C_amp();
     }
 }
 
 
 void Gains::calculate_C_phase() {
     for (auto gain: gains) {
-        gain->calculate_C_phase();
+        gain.calculate_C_phase();
     }
 }
 
 
 void Gains::calculate_L_amp() {
     for (auto gain: gains) {
-        gain->calculate_L_amp();
+        gain.calculate_L_amp();
     }
 }
 
 
 void Gains::calculate_L_phase() {
     for (auto gain: gains) {
-        gain->calculate_L_phase();
+        gain.calculate_L_phase();
     }
 }
 
 
 void Gains::calculate_amplitudes() {
     for (auto gain: gains) {
-        gain->calculate_amplitudes();
+        gain.calculate_amplitudes();
     }
 }
 
 
 void Gains::calculate_phases() {
     for (auto gain: gains) {
-        gain->calculate_phases();
+        gain.calculate_phases();
     }
 }
 
 
 void Gains::print_amplitudes(std::ostream &out) const {
     for (auto gain: gains) {
-        gain->print_amplitudes(out);
+        gain.print_amplitudes(out);
     }
 }
 
 
 void Gains::print_phases(std::ostream &out) const {
     for (auto gain: gains) {
-        gain->print_phases(out);
+        gain.print_phases(out);
     }
 }
 
 
 void Gains::print_times(std::ostream &out) const {
     for (auto gain: gains) {
-        gain->print_times(out);
+        gain.print_times(out);
     }
 }
 
 
 void Gains::print_hp(std::ostream &out) const {
     for (auto gain: gains) {
-        gain->print_hp(out);
+        gain.print_hp(out);
     }
 }
 
 
 void Gains::print_v(std::ostream &out) const {
     for (auto gain: gains) {
-        gain->print_v(out);
+        gain.print_v(out);
     }
 }
 
 
 void Gains::print_C(std::ostream &out) const {
     for (auto gain: gains) {
-        gain->print_C(out);
+        gain.print_C(out);
     }
 }
 
 
 void Gains::print_L(std::ostream &out) const {
     for (auto gain: gains) {
-        gain->print_L(out);
+        gain.print_L(out);
     }
 }
 
@@ -234,15 +234,15 @@ void Gains::print_L(std::ostream &out) const {
 double Gains::perturb(DNest4::RNG& rng) {
     double logH = 0;
     int which = rng.rand_int(antennas_changing_gain.size());
-    logH += gains[antennas_changing_gain[which]]->perturb(rng);
+    logH += gains[antennas_changing_gain[which]].perturb(rng);
     return logH;
 }
 
 
 std::string Gains::description() const {
     std::string descr;
-    for (auto gain : gains) {
-        descr += gain->description();
+    for (const auto& gain : gains) {
+        descr += gain.description();
         descr += " ";
     }
     descr.pop_back();
@@ -251,8 +251,8 @@ std::string Gains::description() const {
 
 
 void Gains::print(std::ostream &out) const {
-    for (auto gain : gains) {
-        gain->print(out);
+    for (const auto& gain : gains) {
+        gain.print(out);
     }
 }
 

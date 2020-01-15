@@ -2,7 +2,12 @@
 #include <iostream>
 
 
-SkyModel::SkyModel() = default;
+SkyModel::SkyModel(int n_comp) {
+    for (int i=0; i<n_comp; i++) {
+        auto* comp = new CGComponent();
+        add_component(comp);
+    }
+}
 
 
 SkyModel::SkyModel(const SkyModel &other) {

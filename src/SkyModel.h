@@ -8,7 +8,7 @@
 
 class SkyModel {
     public:
-        SkyModel();
+        explicit SkyModel(int n_comp);
         SkyModel(const SkyModel& other);
         ~SkyModel();
         SkyModel&operator=(const SkyModel& other);
