@@ -8,7 +8,7 @@
 DNestModel::DNestModel() : logjitter(0.0) {
 
     sky_model = new SkyModel();
-    int ncomp = 5;
+    int ncomp = 3;
     for (int i=0; i<ncomp; i++) {
         auto* comp = new CGComponent();
         sky_model->add_component(comp);
@@ -49,14 +49,16 @@ DNestModel& DNestModel::operator=(const DNestModel& other) {
 
 void DNestModel::from_prior(DNest4::RNG &rng) {
     //std::cout << "Generating from prior DNestModel" << std::endl;
-    logjitter = -3.0 + 2.0*rng.randn();
+    logjitter = -4.0 + 1.0*rng.randn();
     sky_model->from_prior(rng);
     //sky_model->print(std::cout);
     gains->from_prior_hp_amp(rng);
     gains->from_prior_hp_phase(rng);
     //gains->print_hp(std::cout);
-    gains->from_prior_v_amp();
-    gains->from_prior_v_phase();
+    gains->from_prior_amp_mean(rng);
+    gains->from_prior_phase_mean(rng);
+    gains->from_prior_v_amp(rng);
+    gains->from_prior_v_phase(rng);
     //gains->print_v(std::cout);
     // Calculate C, L matrixes for rotation of v
     gains->calculate_C_amp();
@@ -82,9 +84,9 @@ double DNestModel::perturb(DNest4::RNG &rng) {
 
     // Perturb jitter
     if(u <= 0.05) {
-        logH -= -0.5*pow((logjitter+3)/2.0, 2.0);
-        logjitter += 2.0*rng.randh();
-        logH += -0.5*pow((logjitter+3)/2.0, 2.0);
+        logH -= -0.5*pow((logjitter+4)/1.0, 2.0);
+        logjitter += 1.0*rng.randh();
+        logH += -0.5*pow((logjitter+4)/1.0, 2.0);
 
         // Pre-reject
         if(rng.rand() >= exp(logH)) {
@@ -103,9 +105,9 @@ double DNestModel::perturb(DNest4::RNG &rng) {
         // Pre-reject
         if(rng.rand() >= exp(logH)) {
             return -1E300;
-        }
-        else
+        } else {
             logH = 0.0;
+        }
         // This shouldn't be called in case of pre-rejection
         sky_model->recenter();
         calculate_sky_mu();
@@ -117,9 +119,9 @@ double DNestModel::perturb(DNest4::RNG &rng) {
         // Gains pre-reject also in individual Gain instances
         if(rng.rand() >= exp(logH)) {
             return -1E300;
-        }
-        else
+        } else {
             logH = 0.0;
+        }
     }
     // It shouldn't be called in case of pre-rejection (if -1E300 is returned from sky_model or gains perturb
     calculate_mu();

@@ -111,31 +111,45 @@ Gain* Gains::operator[](int i) {
 }
 
 
-void Gains::from_prior_v_amp() {
-    for (auto gain: gains) {
-        gain->from_prior_v_amp();
+void Gains::from_prior_amp_mean(DNest4::RNG &rng) {
+    for (auto i : antennas_changing_gain) {
+        gains[i]->from_prior_amp_mean(rng);
     }
 }
 
 
-void Gains::from_prior_v_phase() {
-    for (auto gain: gains) {
-        gain->from_prior_v_phase();
+void Gains::from_prior_phase_mean(DNest4::RNG &rng) {
+    for (auto i : antennas_changing_gain) {
+        gains[i]->from_prior_phase_mean(rng);
+    }
+}
+
+
+void Gains::from_prior_v_amp(DNest4::RNG &rng) {
+    for (auto i : antennas_changing_gain) {
+        gains[i]->from_prior_v_amp(rng);
+    }
+}
+
+
+void Gains::from_prior_v_phase(DNest4::RNG &rng) {
+    for (auto i : antennas_changing_gain) {
+        gains[i]->from_prior_v_phase(rng);
     }
 }
 
 
 void Gains::from_prior_hp_amp(DNest4::RNG &rng) {
     //std::cout << "Generating from prior Gains HP AMP" << std::endl;
-    for (auto gain: gains) {
-        gain->from_prior_hp_amp(rng);
+    for (auto i : antennas_changing_gain) {
+        gains[i]->from_prior_hp_amp(rng);
     }
 }
 
 
 void Gains::from_prior_hp_phase(DNest4::RNG &rng) {
-    for (auto gain: gains) {
-        gain->from_prior_hp_phase(rng);
+    for (auto i : antennas_changing_gain) {
+        gains[i]->from_prior_hp_phase(rng);
     }
 }
 

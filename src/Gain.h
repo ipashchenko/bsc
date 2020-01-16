@@ -12,6 +12,7 @@ using Eigen::MatrixXd;
 
 
 std::valarray<double> make_normal_random(int number);
+std::valarray<double> make_normal_random(int number, DNest4::RNG& rng);
 
 
 class Gain {
@@ -41,10 +42,11 @@ class Gain {
         void from_prior_hp_amp(DNest4::RNG& rng);
         void from_prior_hp_phase(DNest4::RNG& rng);
         // Generate from prior latent variables of amplitude and phase GP
-        void from_prior_v_amp();
-        void from_prior_v_phase();
+        void from_prior_v_amp(DNest4::RNG &rng);
+        void from_prior_v_phase(DNest4::RNG &rng);
         // Generate from prior mean of the GP phase
         void from_prior_phase_mean(DNest4::RNG& rng);
+        void from_prior_amp_mean(DNest4::RNG& rng);
         // MH proposals returning logH
         double perturb(DNest4::RNG& rng);
         // Calculate covariance matrixes using current hyperparameters of the gain amplitude and phase
@@ -82,6 +84,8 @@ class Gain {
         // Amplitudes and phases of the gains
         std::valarray<double> amplitudes;
         std::valarray<double> phases;
+        // Mean of the amplitude GP
+        double amp_mean;
         // Mean of the phase GP
         double phase_mean;
         // Covariance matrix given times and HP
