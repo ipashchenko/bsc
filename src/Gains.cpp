@@ -63,41 +63,6 @@ Gains::~Gains() {
     }
 }
 
-void Gains::set_hp_amp(std::valarray<double> params) {
-    size_t size_used = 0;
-    for (auto gain : gains) {
-        gain->set_hp_amp(params[std::slice(size_used, 2, 1)]);
-        size_used += 2;
-    }
-}
-
-
-//void Gains::set_hp_phase(std::valarray<double> params) {
-//    size_t size_used = 0;
-//    for (auto gain : gains) {
-//        gain->set_hp_phase(params[std::slice(size_used, 2, 1)]);
-//        size_used += 2;
-//    }
-//}
-//
-//
-//void Gains::set_v_amp(std::valarray<double> params) {
-//    size_t size_used = 0;
-//    for (auto gain : gains) {
-//        gain->set_v_amp(params[std::slice(size_used, gain->size_amp(), 1)]);
-//        size_used += gain->size_amp();
-//    }
-//}
-//
-//
-//void Gains::set_v_phase(std::valarray<double> params) {
-//    size_t size_used = 0;
-//    for (auto gain : gains) {
-//        gain->set_v_phase(params[std::slice(size_used, gain->size_phase(), 1)]);
-//        size_used += gain->size_phase();
-//    }
-//}
-
 
 int Gains::size() const {
     return gains.size();
@@ -106,8 +71,6 @@ int Gains::size() const {
 
 Gain* Gains::operator[](int i) {
     return gains[i];
-
-
 }
 
 
@@ -140,7 +103,6 @@ void Gains::from_prior_v_phase(DNest4::RNG &rng) {
 
 
 void Gains::from_prior_hp_amp(DNest4::RNG &rng) {
-    //std::cout << "Generating from prior Gains HP AMP" << std::endl;
     for (auto i : antennas_changing_gain) {
         gains[i]->from_prior_hp_amp(rng);
     }

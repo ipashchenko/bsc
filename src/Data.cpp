@@ -45,9 +45,7 @@ void Data::load(const char* filename)
         _vis_imag.push_back(temp5);
         _sigma.push_back(temp6);
         times_amp.push_back(temp7);
-        //std::cout << "Adding to ant=" << temp9 << " amp time=" << temp7 << std::endl;
         antennas_amp_times_map[temp9].emplace(temp7);
-        //std::cout << "Adding to ant=" << temp10 << " amp time=" << temp7 << std::endl;
         antennas_amp_times_map[temp10].emplace(temp7);
         idx_amp_ant_i.push_back(temp11);
         idx_amp_ant_j.push_back(temp12);
@@ -72,17 +70,11 @@ void Data::load(const char* filename)
     for (int i=0; i<antennas.size();i++) {
         antennas_map[antennas[i]] = i;
     }
-    //for (auto x : antennas_map) {
-    //    std::cout << x.first << " -- " << x.second << std::endl;
-    //}
 
     // Generate the map between antenna position in antennas vector and ant_i
     for (int i=0; i<antennas.size();i++) {
         antennas_map_inv[i] = antennas[i];
     }
-    //for (auto x : antennas_map_inv) {
-    //    std::cout << x.first << " -- " << x.second << std::endl;
-    //}
 
     // Copy the data to the valarrays
     u = valarray<double>(&_u[0], _u.size());

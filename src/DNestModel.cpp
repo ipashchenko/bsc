@@ -1,8 +1,6 @@
 #include <iostream>
-#include <Distributions/ContinuousDistribution.h>
 #include "DNestModel.h"
 #include "RNG.h"
-#include "Utils.h"
 
 
 DNestModel::DNestModel() : logjitter(0.0) {
@@ -48,18 +46,14 @@ DNestModel& DNestModel::operator=(const DNestModel& other) {
 
 
 void DNestModel::from_prior(DNest4::RNG &rng) {
-    //std::cout << "Generating from prior DNestModel" << std::endl;
     logjitter = -4.0 + 1.0*rng.randn();
     sky_model->from_prior(rng);
-    //sky_model->print(std::cout);
     gains->from_prior_hp_amp(rng);
     gains->from_prior_hp_phase(rng);
-    //gains->print_hp(std::cout);
     gains->from_prior_amp_mean(rng);
     gains->from_prior_phase_mean(rng);
     gains->from_prior_v_amp(rng);
     gains->from_prior_v_phase(rng);
-    //gains->print_v(std::cout);
     // Calculate C, L matrixes for rotation of v
     gains->calculate_C_amp();
     gains->calculate_C_phase();
@@ -68,8 +62,6 @@ void DNestModel::from_prior(DNest4::RNG &rng) {
     // Calculate latent v using calculated L and generated from prior v
     gains->calculate_amplitudes();
     gains->calculate_phases();
-    //gains->print_amplitudes(std::cout);
-    //gains->print_phases(std::cout);
     // Calculate SkyModel
     calculate_sky_mu();
     // Calculate full model (SkyModel + gains)
@@ -171,7 +163,6 @@ void DNestModel::calculate_mu() {
         amp_ant_j[k] += gains->operator[](ant_jk)->get_amplitudes()[idx_jk];
         phase_ant_i[k] += gains->operator[](ant_ik)->get_phases()[idx_ik];
         phase_ant_j[k] += gains->operator[](ant_jk)->get_phases()[idx_jk];
-        //std::cout << "Amplitudes of gains in DNEstModel::calculate_mu : " << amp_ant_i[k] << ", " << amp_ant_j[k] << std::endl;
     }
 
     // SkyModel modified by gains
@@ -215,10 +206,5 @@ std::string DNestModel::description() const {
     descr += gains->description();
 
     return descr;
-}
-
-
-void DNestModel::set_x_skymodel(double x) {
-    sky_model->set_x(x);
 }
 

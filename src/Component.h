@@ -10,14 +10,12 @@
 #include "Utils.h"
 
 const double mas_to_rad = 4.84813681109536e-09;
-//const double PI = 3.1415926;
 
 
 class Component {
     public:
         virtual void ft(std::valarray<double> u, std::valarray<double> v) = 0;
         virtual const size_t size() const = 0;
-        virtual void set_param_vec(std::valarray<double> param) = 0;
         std::valarray<double> get_mu_real() const {
             return mu_real;
         }
@@ -33,7 +31,6 @@ class Component {
         virtual double get_x() const = 0;
         virtual double get_y() const = 0;
         virtual void shift_xy(std::pair<double, double>) = 0;
-        virtual void set_x(double x) = 0;
         // See also https://softwareengineering.stackexchange.com/a/337565 for unique_ptr
         virtual Component* clone() = 0;
 
@@ -48,7 +45,6 @@ class DFComponent : public  Component {
     public:
         DFComponent();
         void ft(std::valarray<double> u, std::valarray<double> v) override;
-        void set_param_vec(std::valarray<double> param) override;
         const size_t size() const override
         {
             return 3;
@@ -68,7 +64,6 @@ class EGComponent : public Component {
     public:
         EGComponent();
         void ft(std::valarray<double> u, std::valarray<double> v) override;
-        void set_param_vec(std::valarray<double> param) override;
         const size_t size() const override
         {
             return 6;
@@ -79,7 +74,7 @@ class EGComponent : public Component {
             std::cout << "Hope this is not called" << std::endl;
             return 0.0; }
 
-        // Getters for caclulating center of mass
+        // Getters for calculating center of mass
         double get_x() const override {
             return dx_;
         }
@@ -108,8 +103,6 @@ class CGComponent : public EGComponent {
         CGComponent();
         CGComponent(const CGComponent& other);
         void ft(std::valarray<double> u, std::valarray<double> v) override;
-        void set_param_vec(std::valarray<double> param) override;
-        void set_x(double x) override;
         const size_t size() const override
         {
             return 4;
@@ -119,10 +112,6 @@ class CGComponent : public EGComponent {
         void from_prior(DNest4::RNG& rng) override;
         double perturb(DNest4::RNG& rng) override;
         CGComponent* clone() override;
-
-    //private:
-        // Parameters of a single Gaussian
-        //double dx_, dy_, flux_, bmaj_;
 };
 
 

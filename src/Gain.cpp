@@ -83,24 +83,6 @@ Gain::Gain(std::set<double> new_times) :
     }
 
 
-//Gain::Gain(const Gain &other) {
-//    logamp_amp = other.logamp_amp;
-//    logamp_phase = other.logamp_phase;
-//    logscale_amp = other.logscale_amp;
-//    logscale_phase = other.logscale_phase;
-//    times_amp = other.times_amp;
-//    times_phase = other.times_phase;
-//    amplitudes =other.amplitudes;
-//    phases = other.phases;
-//    v_amp = other.v_amp;
-//    v_phase = other.v_phase;
-//    C_amp = other.C_amp;
-//    C_phase = other.C_phase;
-//    L_amp = other.L_amp;
-//    L_phase = other.L_phase;
-//}
-
-
 void Gain::print_times(std::ostream &out) const
 {
     out << "times amp = " << std::endl;
@@ -160,37 +142,13 @@ void Gain::print_L(std::ostream &out) const
 }
 
 
-void Gain::set_hp_amp(std::valarray<double> params) {
-    logamp_amp = params[0];
-    logscale_amp = params[1];
-}
-
-
-void Gain::set_hp_phase(std::valarray<double> params) {
-    logamp_phase = params[0];
-    logscale_phase = params[1];
-}
-
-
-//void Gain::set_v_amp(std::valarray<double> params) {
-//    v_amp = std::move(params);
-//}
-//
-//
-//void Gain::set_v_phase(std::valarray<double> params) {
-//    v_phase = std::move(params);
-//}
-
-
 void Gain::from_prior_v_amp(DNest4::RNG &rng) {
     v_amp = make_normal_random(size_amp(), rng);
-    //v_amp = std::valarray<double> (0.0, size_amp());
 }
 
 
 void Gain::from_prior_v_phase(DNest4::RNG &rng) {
     v_phase = make_normal_random(size_phase(), rng);
-    //v_phase = std::valarray<double> (0.0, size_phase());
 }
 
 
@@ -206,7 +164,6 @@ void Gain::from_prior_phase_mean(DNest4::RNG& rng) {
 
 
 void Gain::from_prior_hp_amp(DNest4::RNG& rng) {
-    //std::cout << "Generating from prior Gain HP AMP" << std::endl;
     //logamp_amp = -3.0 + 1.0*rng.randn();
     //logscale_amp = 7.0 + 1.0*rng.randn();
     logamp_amp = -3.0;
@@ -223,7 +180,6 @@ void Gain::from_prior_hp_phase(DNest4::RNG& rng) {
 
 
 void Gain::calculate_C_amp() {
-    //std::cout << "Calculating C of amp GP" << std::endl;
     Eigen::MatrixXd sqdist = - 2*times_amp*times_amp.transpose();
     sqdist.rowwise() += times_amp.array().square().transpose().matrix();
     sqdist.colwise() += times_amp.array().square().matrix();
@@ -242,7 +198,6 @@ void Gain::calculate_C_phase() {
 
 
 void Gain::calculate_L_amp() {
-    //std::cout << "Calculating L of amp GP" << std::endl;
     // perform the Cholesky decomposition of covariance matrix
     Eigen::LLT<Eigen::MatrixXd> cholesky = C_amp.llt();
     // get the lower triangular matrix L
@@ -279,50 +234,20 @@ std::valarray<double>& Gain::get_phases() {
 
 
 void Gain::calculate_amplitudes() {
-    //std::cout << "Calculating amplitudes" << std::endl;
     // Convert std::valarray ``v_amp`` to Eigen::VectorXd
     VectorXd v_amp_vec = Eigen::Map<Eigen::VectorXd, Eigen::Unaligned>(&v_amp[0], v_amp.size());
-
-
-    //// Debug print out v
-    //std::valarray<double> v_amp = std::valarray<double>(v_amp_vec.data(), v_amp_vec.size());
-    ////std::cout << "V amplitudes = " << std::endl;
-    //for (int i=0; i < times_amp.size(); i++) {
-    //    std::cout << v_amp[i] << ", ";
-    //}
-    //std::cout << std::endl;
-
-
     VectorXd amp = L_amp*v_amp_vec;
     // Convert Eigen::VectorXd to std::valarray
     amplitudes = amp_mean + std::valarray<double>(amp.data(), amp.size());
-    //std::cout << "Calculated amplitudes: " << std::endl;
-    //print_amplitudes(std::cout);
-
 }
 
 
 void Gain::calculate_phases() {
     // Convert std::valarray ``v_amp`` to Eigen::VectorXd
     VectorXd v_phase_vec = Eigen::Map<Eigen::VectorXd, Eigen::Unaligned>(&v_phase[0], v_phase.size());
-
     VectorXd phase = L_phase*v_phase_vec;
-
-
-    //// Debug print out v
-    //std::valarray<double> v_phases = std::valarray<double>(v_phase_vec.data(), v_phase_vec.size());
-    //std::cout << "V phases = " << std::endl;
-    //for (int i=0; i < times_phase.size(); i++) {
-    //    std::cout << v_phases[i] << ", ";
-    //}
-    //std::cout << std::endl;
-
-
     // Convert Eigen::VectorXd to std::valarray
     phases = phase_mean + std::valarray<double>(phase.data(), phase.size());
-    //std::cout << "Calculated phases: " << std::endl;
-    //print_phases(std::cout);
-
 }
 
 

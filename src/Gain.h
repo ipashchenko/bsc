@@ -32,12 +32,6 @@ class Gain {
         void print_v(std::ostream &out) const;
         void print_C(std::ostream &out) const;
         void print_L(std::ostream &out) const;
-        //// Set hyperparameters of amplitude and phase GP.
-        void set_hp_amp(std::valarray<double> params);
-        void set_hp_phase(std::valarray<double> params);
-        //// Set latent variables of amplitude and phase GP
-        //void set_v_amp(std::valarray<double> params);
-        //void set_v_phase(std::valarray<double> params);
         // Generate from prior HP for amplitude and phase
         void from_prior_hp_amp(DNest4::RNG& rng);
         void from_prior_hp_phase(DNest4::RNG& rng);

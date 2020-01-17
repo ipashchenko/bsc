@@ -18,7 +18,6 @@ class SkyModel {
         std::pair<double,double> center_mass() const;
         void shift_xy(std::pair<double, double> xy);
         void recenter();
-        void set_param_vec(std::valarray<double> param);
         std::valarray<double> get_mu_real() const { return mu_real; }
         std::valarray<double> get_mu_imag() const { return mu_imag; }
         size_t size() const;
@@ -28,8 +27,6 @@ class SkyModel {
         // MH proposal for SkyModel. Returns logH
         double perturb(DNest4::RNG& rng);
         int get_n_components();
-        std::vector<int> get_components_sizes();
-        void set_x(double x);
 
     private:
         std::vector<Component*> components_;
