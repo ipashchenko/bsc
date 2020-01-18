@@ -1,6 +1,6 @@
 #include <SkyModel.h>
 #include <iostream>
-
+#include "Data.h"
 
 SkyModel::SkyModel() = default;
 
@@ -53,16 +53,16 @@ void SkyModel::add_component(Component *component) {
 
 
 void SkyModel::ft(const std::valarray<double>& u, const std::valarray<double>& v) {
-    std::valarray<double> real (0.0, u.size());
-    std::valarray<double> imag (0.0, u.size());
+    // Zero prediction. However ``mu_real/imag`` must be already initialized. They are initialized to zeros in
+    // ``SkyModel.from_prior`` and (in future) first ``ft_from_all`` should fill them with predictions.
+    mu_real *= 0.0;
+    mu_imag *= 0.0;
     for (auto comp : components_) {
         comp->ft(u, v);
-        real = real + comp->get_mu_real();
-        imag = imag + comp->get_mu_imag();
+        // TODO: Here I can add to ``mu_real``, ``mu_imag`` w/o declaring new arrays.
+        mu_real += comp->get_mu_real();
+        mu_imag += comp->get_mu_imag();
     }
-    mu_real = real;
-    mu_imag = imag;
-
 }
 
 
@@ -89,6 +89,11 @@ void SkyModel::print(std::ostream &out) const
 
 
 void SkyModel::from_prior(DNest4::RNG &rng) {
+    const std::valarray<double>& u = Data::get_instance().get_u();
+    std::valarray<double> zero (0.0, u.size());
+    mu_real = zero;
+    mu_imag = zero;
+
     for (auto comp: components_) {
         comp->from_prior(rng);
     }
