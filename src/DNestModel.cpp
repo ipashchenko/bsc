@@ -130,6 +130,7 @@ double DNestModel::perturb(DNest4::RNG &rng) {
 void DNestModel::calculate_sky_mu() {
     const std::valarray<double>& u = Data::get_instance().get_u();
     const std::valarray<double>& v = Data::get_instance().get_v();
+    // TODO: Need array of frequencies as argument to ft
     sky_model->ft(u, v);
 }
 

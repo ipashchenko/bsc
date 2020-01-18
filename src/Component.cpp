@@ -77,7 +77,7 @@ void EGComponent::print(std::ostream &out) const
 CGComponent::CGComponent() : EGComponent() {
 }
 
-
+// TODO: Need argument - array of frequencies
 void CGComponent::ft(std::valarray<double> u, std::valarray<double> v)
 {
     std::valarray<double> theta;
@@ -180,3 +180,57 @@ std::string CGComponent::description() const {
     return descr;
 }
 
+
+
+
+
+MFCGComponent::MFCGComponent() : CGComponent(), alpha_(0.0) {
+}
+
+
+void MFCGComponent::ft(const std::valarray<double>& u, const std::valarray<double>& v, const std::valarray<double>& nu)
+{
+    CGComponent::ft(u, v);
+    auto coeff = pow(nu, alpha_);
+    mu_real *= coeff;
+    mu_imag *= coeff;
+}
+
+
+void MFCGComponent::print(std::ostream &out) const
+{
+    CGComponent::print(out);
+    out << alpha_ << '\t';
+}
+
+
+void MFCGComponent::from_prior(DNest4::RNG &rng) {
+    CGComponent::from_prior(rng);
+    alpha_ = -0.5 + 0.3*rng.randn();
+}
+
+
+double MFCGComponent::perturb(DNest4::RNG &rng) {
+    double log_H = 0.;
+    double u = rng.rand();
+    if (u<0.8) {
+        log_H += CGComponent::perturb(rng);
+    } else {
+        log_H -= -0.5*pow((alpha_+0.5)/0.3, 2);
+        alpha_ += 0.3*rng.randh();
+        log_H += -0.5*pow((alpha_+0.5)/0.3, 2);
+    }
+    return log_H;
+}
+
+
+MFCGComponent *MFCGComponent::clone() {
+    return new MFCGComponent(*this);
+}
+
+
+std::string MFCGComponent::description() const {
+    auto descr = CGComponent::description();
+    descr += " alpha";
+    return descr;
+}

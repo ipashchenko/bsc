@@ -126,4 +126,22 @@ class CGComponent : public EGComponent {
 };
 
 
+class MFCGComponent : public CGComponent {
+        MFCGComponent();
+        MFCGComponent(const MFCGComponent& other);
+        void ft(const std::valarray<double>& u, const std::valarray<double>& v, const std::valarray<double>& nu);
+        const size_t size() const override
+        {
+            return 5;
+        }
+        void print(std::ostream& out) const override;
+        std::string description() const override;
+        void from_prior(DNest4::RNG& rng) override;
+        double perturb(DNest4::RNG& rng) override;
+        MFCGComponent* clone() override;
+    private:
+        double alpha_;
+};
+
+
 #endif //BSC_COMPONENT_H
