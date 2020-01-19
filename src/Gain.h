@@ -12,6 +12,7 @@ using Eigen::MatrixXd;
 
 
 std::valarray<double> make_normal_random(int number);
+std::valarray<double> make_normal_random(int number, DNest4::RNG& rng);
 
 
 class Gain {
@@ -20,30 +21,15 @@ class Gain {
         Gain(std::set<double> times_amp, std::set<double> times_phase);
         // The same times for amplitudes and phases ctor
         explicit Gain(std::set<double> times);
-
-        //Gain(const Gain& other);
-
-        //Gain&operator=(const Gain& other);
-
         void print(std::ostream &out) const;
-        void print_times(std::ostream &out) const;
-        void print_hp(std::ostream &out) const;
-        void print_v(std::ostream &out) const;
-        void print_C(std::ostream &out) const;
-        void print_L(std::ostream &out) const;
-        //// Set hyperparameters of amplitude and phase GP.
-        void set_hp_amp(std::valarray<double> params);
-        void set_hp_phase(std::valarray<double> params);
-        //// Set latent variables of amplitude and phase GP
-        //void set_v_amp(std::valarray<double> params);
-        //void set_v_phase(std::valarray<double> params);
         // Generate from prior HP for amplitude and phase
         void from_prior_hp_amp(DNest4::RNG& rng);
         void from_prior_hp_phase(DNest4::RNG& rng);
         // Generate from prior latent variables of amplitude and phase GP
-        void from_prior_v_amp();
-        void from_prior_v_phase();
-        // Generate from prior mean of the GP phase
+        void from_prior_v_amp(DNest4::RNG& rng);
+        void from_prior_v_phase(DNest4::RNG& rng);
+        // Generate from prior means of the GP
+        void from_prior_amp_mean(DNest4::RNG& rng);
         void from_prior_phase_mean(DNest4::RNG& rng);
         // MH proposals returning logH
         double perturb(DNest4::RNG& rng);
@@ -61,9 +47,6 @@ class Gain {
         void calculate_phases();
         std::valarray<double>& get_amplitudes();
         std::valarray<double>& get_phases();
-
-        void print_amplitudes(std::ostream& out) const;
-        void print_phases(std::ostream& out) const;
         std::string description() const;
 
 
@@ -82,6 +65,8 @@ class Gain {
         // Amplitudes and phases of the gains
         std::valarray<double> amplitudes;
         std::valarray<double> phases;
+        // Mean of the amplitude GP
+        double amp_mean;
         // Mean of the phase GP
         double phase_mean;
         // Covariance matrix given times and HP
@@ -90,7 +75,6 @@ class Gain {
         // Choleski-decomposed C that rotates coefficients
         MatrixXd L_amp;
         MatrixXd L_phase;
-
 };
 
 #endif //BSC__GAIN_H_

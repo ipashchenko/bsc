@@ -1,8 +1,7 @@
 #include <iostream>
-#include <Distributions/ContinuousDistribution.h>
 #include "DNestModel.h"
 #include "RNG.h"
-#include "Utils.h"
+#include "Data.h"
 
 
 DNestModel::DNestModel() : logjitter(0.0), sky_model(5), gains(Data::get_instance(), 1) {
@@ -10,16 +9,14 @@ DNestModel::DNestModel() : logjitter(0.0), sky_model(5), gains(Data::get_instanc
 
 
 void DNestModel::from_prior(DNest4::RNG &rng) {
-    //std::cout << "Generating from prior DNestModel" << std::endl;
-    logjitter = -3.0 + 2.0*rng.randn();
+    logjitter = -4.0 + 2.0*rng.randn();
     sky_model.from_prior(rng);
-    //sky_model->print(std::cout);
     gains.from_prior_hp_amp(rng);
     gains.from_prior_hp_phase(rng);
-    //gains->print_hp(std::cout);
-    gains.from_prior_v_amp();
-    gains.from_prior_v_phase();
-    //gains->print_v(std::cout);
+    gains.from_prior_amp_mean(rng);
+    gains.from_prior_phase_mean(rng);
+    gains.from_prior_v_amp(rng);
+    gains.from_prior_v_phase(rng);
     // Calculate C, L matrixes for rotation of v
     gains.calculate_C_amp();
     gains.calculate_C_phase();
@@ -28,8 +25,6 @@ void DNestModel::from_prior(DNest4::RNG &rng) {
     // Calculate latent v using calculated L and generated from prior v
     gains.calculate_amplitudes();
     gains.calculate_phases();
-    //gains->print_amplitudes(std::cout);
-    //gains->print_phases(std::cout);
     // Calculate SkyModel
     calculate_sky_mu();
     // Calculate full model (SkyModel + gains)
@@ -44,16 +39,17 @@ double DNestModel::perturb(DNest4::RNG &rng) {
 
     // Perturb jitter
     if(u <= 0.05) {
-        logH -= -0.5*pow((logjitter+3)/2.0, 2.0);
+        logH -= -0.5*pow((logjitter+4)/2.0, 2.0);
         logjitter += 2.0*rng.randh();
-        logH += -0.5*pow((logjitter+3)/2.0, 2.0);
+        logH += -0.5*pow((logjitter+4)/2.0, 2.0);
 
         // Pre-reject
         if(rng.rand() >= exp(logH)) {
             return -1E300;
         }
-        else
+        else {
             logH = 0.0;
+        }
         // No need to re-calculate sky_model or full model. Just calculate loglike.
         return logH;
     }
@@ -66,8 +62,9 @@ double DNestModel::perturb(DNest4::RNG &rng) {
         if(rng.rand() >= exp(logH)) {
             return -1E300;
         }
-        else
+        else {
             logH = 0.0;
+        }
         // This shouldn't be called in case of pre-rejection
         sky_model.recenter();
         calculate_sky_mu();
@@ -80,8 +77,9 @@ double DNestModel::perturb(DNest4::RNG &rng) {
         if(rng.rand() >= exp(logH)) {
             return -1E300;
         }
-        else
+        else {
             logH = 0.0;
+        }
     }
     // It shouldn't be called in case of pre-rejection (if -1E300 is returned from sky_model or gains perturb
     calculate_mu();
@@ -131,15 +129,16 @@ void DNestModel::calculate_mu() {
         amp_ant_j[k] += gains.operator[](ant_jk).get_amplitudes()[idx_jk];
         phase_ant_i[k] += gains.operator[](ant_ik).get_phases()[idx_ik];
         phase_ant_j[k] += gains.operator[](ant_jk).get_phases()[idx_jk];
-        //std::cout << "Amplitudes of gains in DNEstModel::calculate_mu : " << amp_ant_i[k] << ", " << amp_ant_j[k] << std::endl;
     }
 
     // SkyModel modified by gains
     // This implies g = amp*exp(+1j*phi) and V = amp*exp(+1j*phi) - note "+" sign
-    mu_real_full = amp_ant_i*amp_ant_j*(cos(phase_ant_i-phase_ant_j)*sky_model_mu_real-
-                                        sin(phase_ant_i-phase_ant_j)*sky_model_mu_imag);
-    mu_imag_full = amp_ant_i*amp_ant_j*(cos(phase_ant_i-phase_ant_j)*sky_model_mu_imag+
-                                        sin(phase_ant_i-phase_ant_j)*sky_model_mu_real);
+    auto diff = phase_ant_i-phase_ant_j;
+    auto cos_diff = cos(diff);
+    auto sin_diff = sin(diff);
+    auto amp_amp = amp_ant_i*amp_ant_j;
+    mu_real_full = amp_amp*(cos_diff*sky_model_mu_real - sin_diff*sky_model_mu_imag);
+    mu_imag_full = amp_amp*(cos_diff*sky_model_mu_imag + sin_diff*sky_model_mu_real);
 }
 
 

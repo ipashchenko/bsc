@@ -2,10 +2,11 @@
 #include "Gains.h"
 #include "Gain.h"
 #include "MyExceptions.h"
+#include "Data.h"
 
 
 
-Gains::Gains(Data data, int refant_) {
+Gains::Gains(Data& data, int refant_) {
     // ant_i of the reference antenna
     refant = refant_;
 
@@ -23,80 +24,13 @@ Gains::Gains(Data data, int refant_) {
 
     // Map between antenna position in antennas vector and ant_i.
     auto antennas_map_inv = data.get_antennas_map_inv();
+    // FIXME
+    gains.reserve(data.n_antennas());
     for (int i=0; i<data.n_antennas(); i++) {
-        gains.emplace_back(Gain(data.get_times_amp()[antennas_map_inv[i]], data.get_times_phase()[antennas_map_inv[i]]));
+        // FIXME
+        gains.emplace_back(data.get_times_amp()[antennas_map_inv[i]], data.get_times_phase()[antennas_map_inv[i]]);
     }
 }
-
-
-//Gains::Gains(Gains &other) {
-//    gains = std::vector<Gain*>();
-//    antennas_changing_gain = other.antennas_changing_gain;
-//    refant = other.refant;
-//    for (auto gain : other.gains) {
-//        gains.emplace_back(new Gain(*gain));
-//    }
-//}
-//
-//
-//Gains& Gains::operator=(const Gains& other) {
-//    if (&other == this)
-//        return *this;
-//
-//    for (auto gain : gains) {
-//        delete gain;
-//    }
-//
-//    gains = std::vector<Gain*>();
-//    for (auto gain : other.gains) {
-//        gains.emplace_back(new Gain(*gain));
-//    }
-//    antennas_changing_gain = other.antennas_changing_gain;
-//    refant = other.refant;
-//    return *this;
-//}
-
-
-//Gains::~Gains() {
-//    for (auto gain : gains) {
-//        delete gain;
-//    }
-//}
-
-//void Gains::set_hp_amp(std::valarray<double> params) {
-//    size_t size_used = 0;
-//    for (auto gain : gains) {
-//        gain->set_hp_amp(params[std::slice(size_used, 2, 1)]);
-//        size_used += 2;
-//    }
-//}
-
-
-//void Gains::set_hp_phase(std::valarray<double> params) {
-//    size_t size_used = 0;
-//    for (auto gain : gains) {
-//        gain->set_hp_phase(params[std::slice(size_used, 2, 1)]);
-//        size_used += 2;
-//    }
-//}
-//
-//
-//void Gains::set_v_amp(std::valarray<double> params) {
-//    size_t size_used = 0;
-//    for (auto gain : gains) {
-//        gain->set_v_amp(params[std::slice(size_used, gain->size_amp(), 1)]);
-//        size_used += gain->size_amp();
-//    }
-//}
-//
-//
-//void Gains::set_v_phase(std::valarray<double> params) {
-//    size_t size_used = 0;
-//    for (auto gain : gains) {
-//        gain->set_v_phase(params[std::slice(size_used, gain->size_phase(), 1)]);
-//        size_used += gain->size_phase();
-//    }
-//}
 
 
 int Gains::size() const {
@@ -106,127 +40,89 @@ int Gains::size() const {
 
 Gain& Gains::operator[](int i) {
     return gains[i];
-
-
 }
 
 
-void Gains::from_prior_v_amp() {
-    for (auto gain: gains) {
-        gain.from_prior_v_amp();
+void Gains::from_prior_amp_mean(DNest4::RNG &rng) {
+    for (auto i : antennas_changing_gain) {
+        gains[i].from_prior_amp_mean(rng);
     }
 }
 
 
-void Gains::from_prior_v_phase() {
-    for (auto gain: gains) {
-        gain.from_prior_v_phase();
+void Gains::from_prior_phase_mean(DNest4::RNG &rng) {
+    for (auto i : antennas_changing_gain) {
+        gains[i].from_prior_phase_mean(rng);
+    }
+}
+
+
+void Gains::from_prior_v_amp(DNest4::RNG &rng) {
+    for (auto i : antennas_changing_gain) {
+        gains[i].from_prior_v_amp(rng);
+    }
+}
+
+
+void Gains::from_prior_v_phase(DNest4::RNG &rng) {
+    for (auto i : antennas_changing_gain) {
+        gains[i].from_prior_v_phase(rng);
     }
 }
 
 
 void Gains::from_prior_hp_amp(DNest4::RNG &rng) {
-    //std::cout << "Generating from prior Gains HP AMP" << std::endl;
-    for (auto gain: gains) {
-        gain.from_prior_hp_amp(rng);
+    for (auto i : antennas_changing_gain) {
+        gains[i].from_prior_hp_amp(rng);
     }
 }
 
 
 void Gains::from_prior_hp_phase(DNest4::RNG &rng) {
-    for (auto gain: gains) {
-        gain.from_prior_hp_phase(rng);
+    for (auto i : antennas_changing_gain) {
+        gains[i].from_prior_hp_phase(rng);
     }
 }
 
 
 void Gains::calculate_C_amp() {
-    for (auto gain: gains) {
+    for (auto& gain: gains) {
         gain.calculate_C_amp();
     }
 }
 
 
 void Gains::calculate_C_phase() {
-    for (auto gain: gains) {
+    for (auto& gain: gains) {
         gain.calculate_C_phase();
     }
 }
 
 
 void Gains::calculate_L_amp() {
-    for (auto gain: gains) {
+    for (auto& gain: gains) {
         gain.calculate_L_amp();
     }
 }
 
 
 void Gains::calculate_L_phase() {
-    for (auto gain: gains) {
+    for (auto& gain: gains) {
         gain.calculate_L_phase();
     }
 }
 
 
 void Gains::calculate_amplitudes() {
-    for (auto gain: gains) {
+    for (auto& gain: gains) {
         gain.calculate_amplitudes();
     }
 }
 
 
 void Gains::calculate_phases() {
-    for (auto gain: gains) {
+    for (auto& gain: gains) {
         gain.calculate_phases();
-    }
-}
-
-
-void Gains::print_amplitudes(std::ostream &out) const {
-    for (auto gain: gains) {
-        gain.print_amplitudes(out);
-    }
-}
-
-
-void Gains::print_phases(std::ostream &out) const {
-    for (auto gain: gains) {
-        gain.print_phases(out);
-    }
-}
-
-
-void Gains::print_times(std::ostream &out) const {
-    for (auto gain: gains) {
-        gain.print_times(out);
-    }
-}
-
-
-void Gains::print_hp(std::ostream &out) const {
-    for (auto gain: gains) {
-        gain.print_hp(out);
-    }
-}
-
-
-void Gains::print_v(std::ostream &out) const {
-    for (auto gain: gains) {
-        gain.print_v(out);
-    }
-}
-
-
-void Gains::print_C(std::ostream &out) const {
-    for (auto gain: gains) {
-        gain.print_C(out);
-    }
-}
-
-
-void Gains::print_L(std::ostream &out) const {
-    for (auto gain: gains) {
-        gain.print_L(out);
     }
 }
 
@@ -255,5 +151,3 @@ void Gains::print(std::ostream &out) const {
         gain.print(out);
     }
 }
-
-

@@ -7,6 +7,8 @@
 #include <valarray>
 #include <set>
 #include <iostream>
+#include <Distributions/Uniform.h>
+#include <Distributions/Gaussian.h>
 #include "RNG.h"
 #include "Utils.h"
 
@@ -19,6 +21,7 @@ Gain::Gain(std::set<double> new_times_amp, std::set<double> new_times_phase) :
     logamp_phase(-2.0),
     logscale_amp(7.0),
     logscale_phase(5.0),
+    amp_mean(1.0),
     phase_mean(0.0)
 
     {
@@ -53,6 +56,7 @@ Gain::Gain(std::set<double> new_times) :
     logamp_phase(-2.0),
     logscale_amp(7.0),
     logscale_phase(5.0),
+    amp_mean(1.0),
     phase_mean(0.0)
 
     {
@@ -79,141 +83,41 @@ Gain::Gain(std::set<double> new_times) :
     }
 
 
-//Gain::Gain(const Gain &other) {
-//    logamp_amp = other.logamp_amp;
-//    logamp_phase = other.logamp_phase;
-//    logscale_amp = other.logscale_amp;
-//    logscale_phase = other.logscale_phase;
-//    times_amp = other.times_amp;
-//    times_phase = other.times_phase;
-//    amplitudes =other.amplitudes;
-//    phases = other.phases;
-//    v_amp = other.v_amp;
-//    v_phase = other.v_phase;
-//    C_amp = other.C_amp;
-//    C_phase = other.C_phase;
-//    L_amp = other.L_amp;
-//    L_phase = other.L_phase;
-//}
+void Gain::from_prior_v_amp(DNest4::RNG& rng) {
+    v_amp = make_normal_random(size_amp(), rng);
+}
 
 
-void Gain::print_times(std::ostream &out) const
-{
-    out << "times amp = " << std::endl;
-    for (int i=0; i<times_amp.size(); i++) {
-        out << times_amp[i] << ", ";
-    }
-    out << std::endl;
-
-    out << "times phase = " << std::endl;
-    for (int i=0; i<times_phase.size(); i++) {
-        out << times_phase[i] << ", ";
-    }
-    out << std::endl;
+void Gain::from_prior_v_phase(DNest4::RNG& rng) {
+    v_phase = make_normal_random(size_phase(), rng);
 
 }
 
 
-void Gain::print_hp(std::ostream &out) const
-{
-    out << "For amplitude: logamplitude = " << logamp_amp << ", " << "logscale = " << logscale_amp << std::endl;
-    out << "For phase: logamplitude = " << logamp_phase << ", " << "logscale = " << logscale_phase << std::endl;
-
-}
-
-
-void Gain::print_v(std::ostream &out) const
-{
-    out << "v amp = " << std::endl;
-    for (int i=0; i<v_amp.size(); i++) {
-        out << v_amp[i] << ", ";
-    }
-    out << std::endl;
-
-    out << "v_phase = " << std::endl;
-    for (int i=0; i<v_phase.size(); i++) {
-        out << v_phase[i] << ", ";
-    }
-    out << std::endl;
-}
-
-
-void Gain::print_C(std::ostream &out) const
-{
-    out << "C amp = " << std::endl;
-    out << C_amp << std::endl;
-    out << "C phase = " << std::endl;
-    out << C_phase << std::endl;
-}
-
-
-void Gain::print_L(std::ostream &out) const
-{
-    out << "L amp = " << std::endl;
-    out << L_amp << std::endl;
-    out << "L phase= " << std::endl;
-    out << L_phase << std::endl;
-}
-
-
-void Gain::set_hp_amp(std::valarray<double> params) {
-    logamp_amp = params[0];
-    logscale_amp = params[1];
-}
-
-
-void Gain::set_hp_phase(std::valarray<double> params) {
-    logamp_phase = params[0];
-    logscale_phase = params[1];
-}
-
-
-//void Gain::set_v_amp(std::valarray<double> params) {
-//    v_amp = std::move(params);
-//}
-//
-//
-//void Gain::set_v_phase(std::valarray<double> params) {
-//    v_phase = std::move(params);
-//}
-
-
-void Gain::from_prior_v_amp() {
-    //v_amp = make_normal_random(size_amp());
-    v_amp = std::valarray<double> (0.0, size_amp());
-}
-
-
-void Gain::from_prior_v_phase() {
-    //v_phase = make_normal_random(size_phase());
-    v_phase = std::valarray<double> (0.0, size_phase());
+void Gain::from_prior_amp_mean(DNest4::RNG& rng) {
+    amp_mean = 1.0 + 0.1*rng.rand();
 }
 
 
 void Gain::from_prior_phase_mean(DNest4::RNG& rng) {
-    phase_mean = -1.0*M_PI + 2.0*M_PI*rng.rand();
+    const DNest4::Uniform unif(-1.0*M_PI, 1.0*M_PI);
+    phase_mean = unif.generate(rng);
 }
 
 
 void Gain::from_prior_hp_amp(DNest4::RNG& rng) {
-    //std::cout << "Generating from prior Gain HP AMP" << std::endl;
-    //logamp_amp = -3.0 + 1.0*rng.randn();
-    //logscale_amp = 7.0 + 1.0*rng.randn();
     logamp_amp = -3.0;
     logscale_amp = 7.0;
 }
 
 
 void Gain::from_prior_hp_phase(DNest4::RNG& rng) {
-    //logamp_phase = -3.0 + 1.0*rng.randn();
-    //logscale_phase = 5.0 + 1.0*rng.randn();
     logamp_phase = -2.0;
     logscale_phase = 5.0;
 }
 
 
 void Gain::calculate_C_amp() {
-    //std::cout << "Calculating C of amp GP" << std::endl;
     Eigen::MatrixXd sqdist = - 2*times_amp*times_amp.transpose();
     sqdist.rowwise() += times_amp.array().square().transpose().matrix();
     sqdist.colwise() += times_amp.array().square().matrix();
@@ -232,7 +136,6 @@ void Gain::calculate_C_phase() {
 
 
 void Gain::calculate_L_amp() {
-    //std::cout << "Calculating L of amp GP" << std::endl;
     // perform the Cholesky decomposition of covariance matrix
     Eigen::LLT<Eigen::MatrixXd> cholesky = C_amp.llt();
     // get the lower triangular matrix L
@@ -269,68 +172,20 @@ std::valarray<double>& Gain::get_phases() {
 
 
 void Gain::calculate_amplitudes() {
-    //std::cout << "Calculating amplitudes" << std::endl;
     // Convert std::valarray ``v_amp`` to Eigen::VectorXd
     VectorXd v_amp_vec = Eigen::Map<Eigen::VectorXd, Eigen::Unaligned>(&v_amp[0], v_amp.size());
-
-
-    //// Debug print out v
-    //std::valarray<double> v_amp = std::valarray<double>(v_amp_vec.data(), v_amp_vec.size());
-    ////std::cout << "V amplitudes = " << std::endl;
-    //for (int i=0; i < times_amp.size(); i++) {
-    //    std::cout << v_amp[i] << ", ";
-    //}
-    //std::cout << std::endl;
-
-
     VectorXd amp = L_amp*v_amp_vec;
     // Convert Eigen::VectorXd to std::valarray
-    amplitudes = 1.0 + std::valarray<double>(amp.data(), amp.size());
-    //std::cout << "Calculated amplitudes: " << std::endl;
-    //print_amplitudes(std::cout);
-
+    amplitudes = amp_mean + std::valarray<double>(amp.data(), amp.size());
 }
 
 
 void Gain::calculate_phases() {
     // Convert std::valarray ``v_amp`` to Eigen::VectorXd
     VectorXd v_phase_vec = Eigen::Map<Eigen::VectorXd, Eigen::Unaligned>(&v_phase[0], v_phase.size());
-
     VectorXd phase = L_phase*v_phase_vec;
-
-
-    //// Debug print out v
-    //std::valarray<double> v_phases = std::valarray<double>(v_phase_vec.data(), v_phase_vec.size());
-    //std::cout << "V phases = " << std::endl;
-    //for (int i=0; i < times_phase.size(); i++) {
-    //    std::cout << v_phases[i] << ", ";
-    //}
-    //std::cout << std::endl;
-
-
     // Convert Eigen::VectorXd to std::valarray
     phases = phase_mean + std::valarray<double>(phase.data(), phase.size());
-    //std::cout << "Calculated phases: " << std::endl;
-    //print_phases(std::cout);
-
-}
-
-
-void Gain::print_amplitudes(std::ostream &out) const {
-    out << "amplitudes = " << std::endl;
-    for (int i=0; i < times_amp.size(); i++) {
-        out << amplitudes[i] << ", ";
-    }
-    out << std::endl;
-}
-
-
-void Gain::print_phases(std::ostream &out) const {
-    out << "phases = " << std::endl;
-    for (int i=0; i < times_phase.size(); i++) {
-        out << phases[i] << ", ";
-    }
-    out << std::endl;
 }
 
 
@@ -341,23 +196,37 @@ double Gain::perturb(DNest4::RNG &rng) {
     // Amplitude GP
     if(which == 0) {
 
-        // Choose what value to perturb
-        int which = rng.rand_int(amplitudes.size());
+        // More often perturb phase latent variables
+        if(rng.rand() <= 0.9) {
+            // Choose what value to perturb
+            int which = rng.rand_int(amplitudes.size());
 
-        logH -= -0.5*pow(v_amp[which], 2.0);
-        v_amp[which] += rng.randn();
-        logH += -0.5*pow(v_amp[which], 2.0);
+            logH -= -0.5*pow(v_amp[which], 2.0);
+            v_amp[which] += rng.randn();
+            logH += -0.5*pow(v_amp[which], 2.0);
 
-        // Pre-reject
-        if(rng.rand() >= exp(logH)) {
-            return -1E300;
+            // Pre-reject
+            if(rng.rand() >= exp(logH)) {
+                return -1E300;
+            } else {
+                logH = 0.0;
+            }
+        } else {
+            logH -= -0.5*pow((amp_mean-1.0)/0.1, 2.0);
+            amp_mean += 0.1*rng.randh();
+            logH += -0.5*pow((amp_mean-1.0)/0.1, 2.0);
+
+            // Pre-reject
+            if (rng.rand() >= exp(logH)) {
+                return -1E300;
+            } else {
+                logH = 0.0;
+            }
         }
-        else
-            logH = 0.0;
 
         calculate_amplitudes();
     }
-    // Phase GP
+        // Phase GP
     else {
 
         // More often perturb phase latent variables
@@ -373,33 +242,30 @@ double Gain::perturb(DNest4::RNG &rng) {
             // Pre-reject
             if (rng.rand() >= exp(logH)) {
                 return -1E300;
-            } else
+            } else {
                 logH = 0.0;
+            }
 
-        }
-        else {
-            //logH -= -0.5*pow(phase_mean/1.5, 2.0);
+        } else {
             phase_mean += 2.0*M_PI*rng.randh();
-            //logH += -0.5*pow(phase_mean/1.5, 2.0);
             DNest4::wrap(phase_mean, -1.0*M_PI, M_PI);
 
-            //// Pre-reject
-            //if (rng.rand() >= exp(logH)) {
-            //    return -1E300;
-            //} else
-            //    logH = 0.0;
+            // Pre-reject
+            if (rng.rand() >= exp(logH)) {
+                return -1E300;
+            } else {
+                logH = 0.0;
+            }
         }
-
         calculate_phases();
-
     }
-
     return logH;
 }
 
 
 std::string Gain::description() const {
     std::string descr;
+    descr += "amp_mean ";
     for (int i = 0; i < times_amp.size(); i++) {
         descr += ("amp" + std::to_string(i) + " ");
     }
@@ -413,6 +279,7 @@ std::string Gain::description() const {
 
 
 void Gain::print(std::ostream &out) const {
+    out << amp_mean << '\t';
     for (int i = 0; i < times_amp.size(); i++) {
         out << amplitudes[i] << '\t';
     }
@@ -432,6 +299,17 @@ std::valarray<double> make_normal_random(int number)
 
     for (int i=0; i<number; i++) {
         randNums[i] = normalDistr(generator);
+    }
+    return randNums;
+}
+
+
+std::valarray<double> make_normal_random(int number, DNest4::RNG& rng)
+{
+    const DNest4::Gaussian gauss(0.0, 1.0);
+    std::valarray<double> randNums(number);
+    for (int i=0; i<number; i++) {
+        randNums[i] = gauss.generate(rng);
     }
     return randNums;
 }
