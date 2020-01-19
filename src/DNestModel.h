@@ -4,7 +4,7 @@
 #include "SkyModel.h"
 #include "Gains.h"
 #include "RNG.h"
-
+#include "MyConditionalPrior.h"
 
 class DNestModel {
     public:
@@ -29,16 +29,23 @@ class DNestModel {
         // Return string with column information
         std::string description() const;
 
+        std::pair<double,double> center_mass() const;
+        void shift_xy(std::pair<double, double> xy);
+        void recenter();
+
     private:
 
-        SkyModel* sky_model{};
+        DNest4::RJObject<MyConditionalPrior> components;
         Gains* gains{};
         double logjitter;
+        // Prediction of SkyModel only
+        std::valarray<double> mu_real;
+        std::valarray<double> mu_imag;
         // Prediction of SkyModel + Gains
         std::valarray<double> mu_real_full;
         std::valarray<double> mu_imag_full;
         // This runs ``ft`` method of SkyModel with (u, v) from Data and updates SkyModel predictions
-        void calculate_sky_mu();
+        void calculate_sky_mu(bool update);
         // This calculates full model (SkyModel with gains) and updates ``mu_real/imag_full``
         void calculate_mu();
 
