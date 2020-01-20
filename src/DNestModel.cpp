@@ -93,7 +93,7 @@ double DNestModel::perturb(DNest4::RNG &rng) {
     }
 
     // Perturb SkyModel
-    else if(0.05 < u && u <= 0.25) {
+    else if(0.05 < u && u <= 0.3) {
         logH += components.perturb(rng);
 
         // Pre-reject
@@ -265,8 +265,8 @@ std::pair<double, double> DNestModel::center_mass() const {
     double flux_b = -100;
     for (auto comp : components.get_components()) {
         if(comp[2] > flux_b) {
-            x_b = comp[1];
-            y_b = comp[2];
+            x_b = comp[0];
+            y_b = comp[1];
             flux_b = comp[2];
         }
     }
