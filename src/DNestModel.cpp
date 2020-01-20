@@ -3,7 +3,7 @@
 #include "RNG.h"
 
 
-DNestModel::DNestModel() : logjitter(0.0), components(4, 30, false, MyConditionalPrior(-10, 10, -10, 10), DNest4::PriorType::log_uniform) {
+DNestModel::DNestModel() : logjitter(0.0), components(4, 30, false, MyConditionalPrior(30), DNest4::PriorType::log_uniform) {
     int refant_ant_i = 1;
     gains = new Gains(Data::get_instance(), refant_ant_i);
 }
@@ -14,7 +14,7 @@ DNestModel::~DNestModel() {
 }
 
 
-DNestModel::DNestModel(const DNestModel& other) : components(4, 30, false, MyConditionalPrior(-10, 10, -10, 10), DNest4::PriorType::log_uniform) {
+DNestModel::DNestModel(const DNestModel& other) : components(4, 30, false, MyConditionalPrior(30), DNest4::PriorType::log_uniform) {
     components = other.components;
     gains = new Gains(*other.gains);
     logjitter = other.logjitter;
@@ -86,8 +86,9 @@ double DNestModel::perturb(DNest4::RNG &rng) {
         if(rng.rand() >= exp(logH)) {
             return -1E300;
         }
-        else
+        else {
             logH = 0.0;
+        }
         // No need to re-calculate sky_model or full model. Just calculate loglike.
         return logH;
     }
