@@ -2,43 +2,22 @@
 
 
 using namespace DNest4;
-
-MyConditionalPrior::MyConditionalPrior(double x_min, double x_max,
-                                       double y_min, double y_max)
-    :x_min(x_min)
-    ,x_max(x_max)
-    ,y_min(y_min)
-    ,y_max(y_max)
+MyConditionalPrior::MyConditionalPrior(double std)
+    :std(std)
 {
 
 }
 
 void MyConditionalPrior::from_prior(RNG& rng)
 {
-    // A Cauchy distribution
-    // const DNest4::Cauchy cauchy(0.0, 1.0);
-    // const DNest4::Gaussian gauss1(0.0, 0.05);
-    const DNest4::Gaussian gauss1(0.0, 0.25);
-
+    const DNest4::Gaussian gauss1(-1.0, 0.05);
     typical_flux = gauss1.generate(rng);
-    // // Truncate to (-6, 6)
-    // do
-    // {
-    //     typical_flux = cauchy.generate(rng);
-    // }while(std::abs(typical_flux) >= 6.0);
-    // // Comment out because we use log of flux
-    // //typical_flux = exp(typical_flux);
-
-    // dev_log_flux = 3.0*rng.rand();
-    // const DNest4::Gaussian gauss2(0.5, 0.05);
     const DNest4::Gaussian gauss2(1.00, 0.10);
     dev_log_flux = gauss2.generate(rng);
 
-    // Comment out because we use log of size
-    //typical_radius = exp(2.0*rng.randn());
-    const DNest4::Gaussian gauss3(-2.0, 0.25);
+    const DNest4::Gaussian gauss3(-2.0, 0.05);
     typical_radius = gauss3.generate(rng);
-    const DNest4::Gaussian gauss4(1.00, 0.10);
+    const DNest4::Gaussian gauss4(2.00, 0.10);
     dev_log_radius = gauss4.generate(rng);
 }
 
@@ -50,43 +29,24 @@ double MyConditionalPrior::perturb_hyperparameters(RNG& rng)
 
     if(which == 0)
     {
-        // A Cauchy distribution
-        // const DNest4::Cauchy cauchy(0.0, 1.0);
-        // const DNest4::Cauchy cauchy(-2.0, 0.25);
-        const DNest4::Gaussian gauss1(0.0, 0.25);
-
-        //typical_flux = log(typical_flux);
+        const DNest4::Gaussian gauss1(-1.0, 0.05);
         logH += gauss1.perturb(typical_flux, rng);
-        // if(std::abs(typical_flux) >= 6.0)
-        // {
-        //     typical_flux = 1.0;
-        //     return -1E300;
-        // }
-        //typical_flux = exp(typical_flux);
     }
     else if(which == 1)
     {
         const DNest4::Gaussian gauss2(1.0, 0.10);
         logH += gauss2.perturb(dev_log_flux, rng);
-        // dev_log_flux += 2.0*rng.randh();
-        // DNest4::wrap(dev_log_flux, 0.0, 2.0);
     }
     else if(which == 2)
     {
-        const DNest4::Gaussian gauss3(-2.0, 0.25);
+        const DNest4::Gaussian gauss3(-2.0, 0.05);
         logH += gauss3.perturb(typical_radius, rng);
-        // logH -= -0.5*pow(typical_radius/2.0, 2);
-        // typical_radius += 2.0*rng.randh();
-        // logH += -0.5*pow(typical_radius/2.0, 2);
     }
     else if(which == 3)
     {
-        const DNest4::Gaussian gauss4(1.00, 0.10);
+        const DNest4::Gaussian gauss4(2.00, 0.10);
         logH += gauss4.perturb(dev_log_radius, rng);
-        // dev_log_radius += 3.0*rng.randh();
-        // DNest4::wrap(dev_log_radius, 0.0, 3.0);
     }
-
     return logH;
 }
 
@@ -96,8 +56,10 @@ double MyConditionalPrior::log_pdf(const std::vector<double>& vec) const
     double logp = 0.0;
 
     // Position
-    if(vec[0] < x_min || vec[0] > x_max || vec[1] < y_min || vec[1] > y_max)
-        return -1E300;
+    DNest4::Gaussian gaussx(0.0, std);
+    DNest4::Gaussian gaussy(0.0, std);
+    logp += gaussx.log_pdf(vec[0]);
+    logp += gaussy.log_pdf(vec[1]);
 
     // Flux
     // DNest4::Laplace laplace1(typical_flux, dev_log_flux);
@@ -117,8 +79,10 @@ double MyConditionalPrior::log_pdf(const std::vector<double>& vec) const
 void MyConditionalPrior::from_uniform(std::vector<double>& vec) const
 {
     // Position
-    vec[0] = x_min + (x_max - x_min)*vec[0];
-    vec[1] = y_min + (y_max - y_min)*vec[1];
+    DNest4::Gaussian gaussx(0.0, std);
+    vec[0] = gaussx.cdf_inverse(vec[0]);
+    DNest4::Gaussian gaussy(0.0, std);
+    vec[1] = gaussy.cdf_inverse(vec[1]);
 
     // Flux
     // DNest4::Laplace laplace1(typical_flux, dev_log_flux);
@@ -135,8 +99,10 @@ void MyConditionalPrior::from_uniform(std::vector<double>& vec) const
 void MyConditionalPrior::to_uniform(std::vector<double>& vec) const
 {
     // Position
-    vec[0] = (vec[0] - x_min)/(x_max - x_min);
-    vec[1] = (vec[1] - y_min)/(y_max - y_min);
+    DNest4::Gaussian gaussx(0.0, std);
+    vec[0] = gaussx.cdf(vec[0]);
+    DNest4::Gaussian gaussy(0.0, std);
+    vec[1] = gaussy.cdf(vec[1]);
 
     // Flux
     // DNest4::Laplace laplace1(typical_flux, dev_log_flux);

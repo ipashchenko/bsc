@@ -3,7 +3,7 @@
 #include "RNG.h"
 
 
-DNestModel::DNestModel() : logjitter(0.0), components(4, 30, false, MyConditionalPrior(-10, 10, -10, 10), DNest4::PriorType::log_uniform) {
+DNestModel::DNestModel() : components(4, 30, false, MyConditionalPrior(30), DNest4::PriorType::log_uniform) {
     int refant_ant_i = 1;
     gains = new Gains(Data::get_instance(), refant_ant_i);
 }
@@ -14,10 +14,9 @@ DNestModel::~DNestModel() {
 }
 
 
-DNestModel::DNestModel(const DNestModel& other) : components(4, 30, false, MyConditionalPrior(-10, 10, -10, 10), DNest4::PriorType::log_uniform) {
+DNestModel::DNestModel(const DNestModel& other) : components(4, 30, false, MyConditionalPrior(30), DNest4::PriorType::log_uniform) {
     components = other.components;
     gains = new Gains(*other.gains);
-    logjitter = other.logjitter;
     mu_real = other.mu_real;
     mu_imag = other.mu_imag;
     mu_real_full = other.mu_real_full;
@@ -29,7 +28,6 @@ DNestModel& DNestModel::operator=(const DNestModel& other) {
     if (this != &other) {
         components = other.components;
         *(gains) = *(other.gains);
-        logjitter = other.logjitter;
         mu_real = other.mu_real;
         mu_imag = other.mu_imag;
         mu_real_full = other.mu_real_full;
@@ -47,7 +45,6 @@ void DNestModel::from_prior(DNest4::RNG &rng) {
     mu_imag = zero;
     mu_imag_full = zero;
     mu_real_full = zero;
-    logjitter = -4.0 + 1.0*rng.randn();
     components.from_prior(rng);
     recenter();
     gains->from_prior_hp_amp(rng);
@@ -76,24 +73,9 @@ double DNestModel::perturb(DNest4::RNG &rng) {
 
     double u = rng.rand();
 
-    // Perturb jitter
-    if(u <= 0.05) {
-        logH -= -0.5*pow((logjitter+4)/1.0, 2.0);
-        logjitter += 1.0*rng.randh();
-        logH += -0.5*pow((logjitter+4)/1.0, 2.0);
-
-        // Pre-reject
-        if(rng.rand() >= exp(logH)) {
-            return -1E300;
-        }
-        else
-            logH = 0.0;
-        // No need to re-calculate sky_model or full model. Just calculate loglike.
-        return logH;
-    }
 
     // Perturb SkyModel
-    else if(0.05 < u && u <= 0.25) {
+    if(u < 0.2) {
         logH += components.perturb(rng);
 
         // Pre-reject
@@ -209,8 +191,8 @@ double DNestModel::log_likelihood() const {
     // Variance
     const std::valarray<double> var = sigma*sigma;
     // Complex Gaussian sampling distribution
-    std::valarray<double> result = -log(2*M_PI*(var+exp(2.0*logjitter))) - 0.5*(pow(vis_real - mu_real_full, 2) +
-        pow(vis_imag - mu_imag_full, 2))/(var+exp(2.0*logjitter))   ;
+    std::valarray<double> result = -log(2*M_PI*var) - 0.5*(pow(vis_real - mu_real_full, 2) +
+        pow(vis_imag - mu_imag_full, 2))/var   ;
     double loglik = result.sum();
     return loglik;
 
@@ -218,7 +200,6 @@ double DNestModel::log_likelihood() const {
 
 
 void DNestModel::print(std::ostream &out) const {
-    out << logjitter << '\t';
     gains->print(out);
     // This will be printed by RJObject
     components.print(out); out << '\t';
@@ -230,7 +211,6 @@ std::string DNestModel::description() const
     std::string descr;
 
     // Anything printed by DNestModel::print (except the last line)
-    descr += "logjitter ";
     descr += gains->description();
 
 
