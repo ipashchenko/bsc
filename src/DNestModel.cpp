@@ -219,9 +219,9 @@ double DNestModel::log_likelihood() const {
 
 void DNestModel::print(std::ostream &out) const {
     out << logjitter << '\t';
-    gains->print(out);
-    // This will be printed by RJObject
     components.print(out); out << '\t';
+    gains->print(out);
+
 }
 
 
@@ -231,8 +231,6 @@ std::string DNestModel::description() const
 
     // Anything printed by DNestModel::print (except the last line)
     descr += "logjitter ";
-    descr += gains->description();
-
 
     // The rest is all what happens when you call .print on an RJObject
     descr += " dim_components max_num_components ";
@@ -254,6 +252,9 @@ std::string DNestModel::description() const
         descr += " logflux[" + std::to_string(i) + "] ";
     for(int i=0; i<30; ++i)
         descr += " logbmaj[" + std::to_string(i) + "] ";
+
+    descr += gains->description();
+
     return descr;
 }
 
