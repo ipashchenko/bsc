@@ -323,6 +323,9 @@ def create_data_file_many_IFs(uvfits, outfile, step_amp=30, step_phase=30, use_s
     uvdata = UVData(uvfits)
     noise = uvdata.noise(use_V=False)
 
+    # Assuming only one FRQSEL (frequency ID)
+    if_freqs = np.array([freq + uvdata.hdulist["AIPS FQ"].data["IF FREQ"][0][i] for i in range(uvdata.nif)])
+
     df = pd.DataFrame(columns=["times", "ant1", "ant2", "u", "v", "STOKES", "IF", "vis_re", "vis_im",
                                "error"])
 
@@ -346,18 +349,20 @@ def create_data_file_many_IFs(uvfits, outfile, step_amp=30, step_phase=30, use_s
 
         bl_noise = noise[float(baseline)]/np.sqrt(2.)
 
-        u = group[suffix]
-        v = group[suffix]
-
-        if abs(u) < 1.:
-            u *= freq
-            v *= freq
+        u_sec = group[suffix]
+        v_sec = group[suffix]
+        if u_sec > 100.:
+            raise Exception("UV not in light seconds!")
 
         # IF, STOKES, COMPLEX
         data = group["DATA"][0, 0, :, 0, :, :]
         n_IF = data.shape[0]
         n_stokes = data.shape[1]
         for i_IF in range(n_IF):
+
+            u = u_sec*if_freqs[i_IF]
+            v = v_sec*if_freqs[i_IF]
+
             for i_stokes in range(n_stokes):
                 weight = data[i_IF, i_stokes][2]
                 if weight <= 0:
@@ -780,7 +785,7 @@ if __name__ == "__main__":
     IF = 0
     # data_only_fname = "/home/ilya/github/time_machine/bsc/reals/RA/tests/BLLAC_STOKES_{}_IF_{}_amp120_phase60.txt".format(STOKES, IF)
     # data_only_fname = "/home/ilya/github/time_machine/bsc/reals/1502/1502_STOKES_{}_IF_{}_amp60_phase30.txt".format(STOKES, IF)
-    data_only_fname = "/home/ilya/github/time_machine/bsc/reals/J0005/J0005_amp30_phase30_aver30.txt"
+    data_only_fname = "/home/ilya/github/time_machine/bsc/reals/J0005/J0005_amp30_phase30_aver30_different_uv.txt"
     # df = create_data_file(uvfits_fname, data_only_fname, STOKES=STOKES, IF=IF, step_amp=60, step_phase=30,
     #                       use_scans_for_amplitudes=False, calculate_noise=False)
                           # antennas_to_skip=(3, 8, 12, 13, 14, 16, 17))
