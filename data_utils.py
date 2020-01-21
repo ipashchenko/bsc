@@ -2,6 +2,7 @@ import numpy as np
 import astropy.io.fits as pf
 from astropy.time import Time
 from astropy import units as u
+from tqdm import tqdm
 import pandas as pd
 import matplotlib
 import matplotlib.pyplot as plt
@@ -96,7 +97,15 @@ def create_data_file(uvfits, outfile, STOKES, IF, step_amp=30, step_phase=30, us
     df = pd.DataFrame(columns=["times", "ant1", "ant2", "u", "v", "vis_re", "vis_im",
                                "error"])
 
-    for group in data_all:
+    suffix = None
+    for possible in ['UU', 'UU--', 'UU---SIN']:
+        if possible in data_all.parnames:
+            suffix = possible
+            break
+    if suffix is None:
+        raise Exception("CHECK BASELINE COORDINATES SYSTEM!")
+
+    for group in tqdm(data_all):
         time = Time(group['DATE'] + group['_DATE'], format='jd')
         baseline = group["BASELINE"]
         ant1 = int(baseline//256)
@@ -107,12 +116,8 @@ def create_data_file(uvfits, outfile, STOKES, IF, step_amp=30, step_phase=30, us
                 continue
         bl_noise = noise[float(baseline)]/np.sqrt(2.)
 
-        try:
-            u = group["UU"]
-            v = group["VV"]
-        except KeyError:
-            u = group["UU--"]
-            v = group["VV--"]
+        u = group[suffix]
+        v = group[suffix]
         if abs(u) < 1.:
             u *= freq
             v *= freq
@@ -291,7 +296,8 @@ def create_data_file(uvfits, outfile, STOKES, IF, step_amp=30, step_phase=30, us
     return df
 
 
-def create_data_file_many_IFs(uvfits, outfile, step_amp=60, step_phase=None, use_scans_for_amplitudes=True):
+def create_data_file_many_IFs(uvfits, outfile, step_amp=30, step_phase=30, use_scans_for_amplitudes=False,
+                              calculate_noise=False, antennas_to_skip=None):
     """
     :param uvfits:
         Path to UVFITS file.
@@ -314,21 +320,35 @@ def create_data_file_many_IFs(uvfits, outfile, step_amp=60, step_phase=None, use
     header = hdus[0].header
     freq = header["CRVAL4"]
 
+    uvdata = UVData(uvfits)
+    noise = uvdata.noise(use_V=False)
+
     df = pd.DataFrame(columns=["times", "ant1", "ant2", "u", "v", "STOKES", "IF", "vis_re", "vis_im",
                                "error"])
 
-    for group in data_all:
+    suffix = None
+    for possible in ['UU', 'UU--', 'UU---SIN']:
+        if possible in data_all.parnames:
+            suffix = possible
+            break
+    if suffix is None:
+        raise Exception("CHECK BASELINE COORDINATES SYSTEM!")
+
+    for group in tqdm(data_all):
         time = Time(group['DATE'] + group['_DATE'], format='jd')
         baseline = group["BASELINE"]
         ant1 = int(baseline//256)
         ant2 = int(baseline-ant1*256)
+        if antennas_to_skip is not None:
+            if ant1 in antennas_to_skip or ant2 in antennas_to_skip:
+                print("Skipping baseline {} - {}".format(ant1, ant2))
+                continue
 
-        try:
-            u = group["UU"]
-            v = group["VV"]
-        except KeyError:
-            u = group["UU--"]
-            v = group["VV--"]
+        bl_noise = noise[float(baseline)]/np.sqrt(2.)
+
+        u = group[suffix]
+        v = group[suffix]
+
         if abs(u) < 1.:
             u *= freq
             v *= freq
@@ -342,7 +362,12 @@ def create_data_file_many_IFs(uvfits, outfile, step_amp=60, step_phase=None, use
                 weight = data[i_IF, i_stokes][2]
                 if weight <= 0:
                     continue
-                error = 1/np.sqrt(weight)
+
+                if calculate_noise:
+                    error = bl_noise[IF, STOKES]
+                else:
+                    error = 1/np.sqrt(weight)
+
                 vis_re = data[i_IF, i_stokes][0]
                 vis_im = data[i_IF, i_stokes][1]
 
@@ -746,17 +771,20 @@ def radplot(df, fig=None, color=None, label=None, style="ap"):
 if __name__ == "__main__":
     # uvfits_fname = "/home/ilya/github/time_machine/bsc/reals/uvfs/J2038+5119_S_2005_07_20_yyk_uve.fits"
     # uvfits_fname = "/home/ilya/github/time_machine/bsc/reals/uvfs/BLLAC_RA_times.uvf"
-    uvfits_fname = "/home/ilya/github/time_machine/bsc/reals/uvfs/1502/1502_30s.uvf"
+    # uvfits_fname = "/home/ilya/github/time_machine/bsc/reals/uvfs/1502/1502_30s.uvf"
+    uvfits_fname = "/home/ilya/github/time_machine/bsc/reals/J0005/J0005_30s.uvf"
 
     # for STOKES in range(2):
     #     for IF in range(2):
     STOKES = 0
     IF = 0
     # data_only_fname = "/home/ilya/github/time_machine/bsc/reals/RA/tests/BLLAC_STOKES_{}_IF_{}_amp120_phase60.txt".format(STOKES, IF)
-    data_only_fname = "/home/ilya/github/time_machine/bsc/reals/1502/1502_STOKES_{}_IF_{}_amp60_phase30.txt".format(STOKES, IF)
-    df = create_data_file(uvfits_fname, data_only_fname, STOKES=STOKES, IF=IF, step_amp=60, step_phase=30,
-                          use_scans_for_amplitudes=False, calculate_noise=False)
+    # data_only_fname = "/home/ilya/github/time_machine/bsc/reals/1502/1502_STOKES_{}_IF_{}_amp60_phase30.txt".format(STOKES, IF)
+    data_only_fname = "/home/ilya/github/time_machine/bsc/reals/J0005/J0005_amp30_phase30_aver30.txt"
+    # df = create_data_file(uvfits_fname, data_only_fname, STOKES=STOKES, IF=IF, step_amp=60, step_phase=30,
+    #                       use_scans_for_amplitudes=False, calculate_noise=False)
                           # antennas_to_skip=(3, 8, 12, 13, 14, 16, 17))
+    df = create_data_file_many_IFs(uvfits_fname, data_only_fname, step_amp=30, step_phase=30, calculate_noise=True)
     import sys
     sys.exit(0)
 # # Load data frame
