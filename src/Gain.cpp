@@ -83,65 +83,6 @@ Gain::Gain(std::set<double> new_times) :
     }
 
 
-void Gain::print_times(std::ostream &out) const
-{
-    out << "times amp = " << std::endl;
-    for (int i=0; i<times_amp.size(); i++) {
-        out << times_amp[i] << ", ";
-    }
-    out << std::endl;
-
-    out << "times phase = " << std::endl;
-    for (int i=0; i<times_phase.size(); i++) {
-        out << times_phase[i] << ", ";
-    }
-    out << std::endl;
-
-}
-
-
-void Gain::print_hp(std::ostream &out) const
-{
-    out << "For amplitude: logamplitude = " << logamp_amp << ", " << "logscale = " << logscale_amp << std::endl;
-    out << "For phase: logamplitude = " << logamp_phase << ", " << "logscale = " << logscale_phase << std::endl;
-
-}
-
-
-void Gain::print_v(std::ostream &out) const
-{
-    out << "v amp = " << std::endl;
-    for (int i=0; i<v_amp.size(); i++) {
-        out << v_amp[i] << ", ";
-    }
-    out << std::endl;
-
-    out << "v_phase = " << std::endl;
-    for (int i=0; i<v_phase.size(); i++) {
-        out << v_phase[i] << ", ";
-    }
-    out << std::endl;
-}
-
-
-void Gain::print_C(std::ostream &out) const
-{
-    out << "C amp = " << std::endl;
-    out << C_amp << std::endl;
-    out << "C phase = " << std::endl;
-    out << C_phase << std::endl;
-}
-
-
-void Gain::print_L(std::ostream &out) const
-{
-    out << "L amp = " << std::endl;
-    out << L_amp << std::endl;
-    out << "L phase= " << std::endl;
-    out << L_phase << std::endl;
-}
-
-
 void Gain::from_prior_v_amp(DNest4::RNG &rng) {
     v_amp = make_normal_random(size_amp(), rng);
 }

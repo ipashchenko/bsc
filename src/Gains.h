@@ -25,7 +25,7 @@ class Gains {
         double perturb(DNest4::RNG& rng);
         int size() const;
         // Getting i-th gain
-        Gain* operator[](int i);
+        std::vector<Gain*>& operator[](int i);
 
         // Calculate covariance matrixes using current hyperparameters for all gains
         void calculate_C_amp();
@@ -36,18 +36,11 @@ class Gains {
         // Calculate amplitudes and phases of all gains using current rotation matrixes and latent variables
         void calculate_amplitudes();
         void calculate_phases();
-        // Print for all individual antennas gains
-        void print_amplitudes(std::ostream& out) const;
-        void print_phases(std::ostream& out) const;
-        void print_times(std::ostream &out) const;
-        void print_hp(std::ostream &out) const;
-        void print_v(std::ostream &out) const;
-        void print_C(std::ostream &out) const;
-        void print_L(std::ostream &out) const;
         std::string description() const;
         void print(std::ostream &out) const;
     private:
-        std::vector<Gain*> gains;
+        // Vector length ``n_ant`` of vectors length ``n_IF`` each
+        std::vector<std::vector<Gain*>> gains;
         int refant{};
         std::vector<int> antennas_changing_gain;
 };

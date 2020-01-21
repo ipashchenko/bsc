@@ -13,6 +13,8 @@ class Data
         // Static "global" instance
         static Data instance;
         std::vector<int> antennas;
+        std::vector<int> stokes_unique;
+        std::vector<int> IF_unique;
         // Map between ant_i and its position in antennas vector
         std::unordered_map<int, int> antennas_map;
         // Map between antenna position in antennas vector and ant_i
@@ -28,6 +30,9 @@ class Data
         // uv-coordinates
         std::valarray<double> u;
         std::valarray<double> v;
+        // Stokes and IF numbers
+        std::vector<int> stokes;
+        std::vector<int> IF;
         // visibilities
         std::valarray<double> vis_real;
         std::valarray<double> vis_imag;
@@ -55,7 +60,10 @@ class Data
         { return instance; }
         int n_antennas() const
         { return antennas.size(); }
-
+        int n_IF() const
+        { return IF_unique.size(); }
+        int n_stokes() const
+        { return stokes_unique.size(); }
         // Load data from a file
         void load(const char* filename);
 
@@ -68,6 +76,10 @@ class Data
         { return u; }
         const std::valarray<double>& get_v() const
         { return v; }
+        const std::vector<int>& get_stokes() const
+        { return stokes; }
+        const std::vector<int>& get_IF() const
+        { return IF; }
         const std::valarray<double>& get_vis_real() const
         { return vis_real; }
         const std::valarray<double>& get_vis_imag() const

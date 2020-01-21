@@ -167,6 +167,8 @@ void DNestModel::calculate_mu() {
     // Grab antenna numbers and indexes in gain curves of individual visibility measurements
     const std::vector<int>& ant_i = Data::get_instance().get_ant_i();
     const std::vector<int>& ant_j = Data::get_instance().get_ant_j();
+    const std::vector<int>& stokes = Data::get_instance().get_stokes();
+    const std::vector<int>& IF = Data::get_instance().get_IF();
     const std::vector<int>& idx_amp_ant_i = Data::get_instance().get_idx_amp_ant_i();
     const std::vector<int>& idx_amp_ant_j = Data::get_instance().get_idx_amp_ant_j();
     const std::vector<int>& idx_phase_ant_i = Data::get_instance().get_idx_phase_ant_i();
@@ -184,10 +186,11 @@ void DNestModel::calculate_mu() {
         auto ant_jk = antennas_map[ant_j[k]];
         auto idx_ik = idx_amp_ant_i[k];
         auto idx_jk = idx_amp_ant_j[k];
-        amp_ant_i[k] += gains->operator[](ant_ik)->get_amplitudes()[idx_ik];
-        amp_ant_j[k] += gains->operator[](ant_jk)->get_amplitudes()[idx_jk];
-        phase_ant_i[k] += gains->operator[](ant_ik)->get_phases()[idx_ik];
-        phase_ant_j[k] += gains->operator[](ant_jk)->get_phases()[idx_jk];
+        auto ifk = IF[k];
+        amp_ant_i[k] += gains->operator[](ant_ik)[ifk]->get_amplitudes()[idx_ik];
+        amp_ant_j[k] += gains->operator[](ant_jk)[ifk]->get_amplitudes()[idx_jk];
+        phase_ant_i[k] += gains->operator[](ant_ik)[ifk]->get_phases()[idx_ik];
+        phase_ant_j[k] += gains->operator[](ant_jk)[ifk]->get_phases()[idx_jk];
     }
 
     // SkyModel modified by gains
