@@ -85,54 +85,54 @@ std::vector<Gain*>& Gains::operator[](int i) {
 
 
 void Gains::from_prior_amp_mean(DNest4::RNG &rng) {
-    for (const auto &gain_vector : gains) {
-        for (auto i : antennas_changing_gain) {
-            gain_vector[i]->from_prior_amp_mean(rng);
+    for (auto i : antennas_changing_gain) {
+        for (auto gain: gains[i]) {
+            gain->from_prior_amp_mean(rng);
         }
     }
 }
 
 
 void Gains::from_prior_v_amp(DNest4::RNG &rng) {
-    for (const auto &gain_vector : gains) {
-        for (auto i : antennas_changing_gain) {
-            gain_vector[i]->from_prior_v_amp(rng);
+    for (auto i : antennas_changing_gain) {
+        for (auto gain: gains[i]) {
+            gain->from_prior_v_amp(rng);
         }
     }
 }
 
 
 void Gains::from_prior_phase_mean(DNest4::RNG &rng) {
-    for (const auto &gain_vector : gains) {
-        for (auto i : antennas_changing_gain) {
-            gain_vector[i]->from_prior_phase_mean(rng);
+    for (auto i : antennas_changing_gain) {
+        for (auto gain: gains[i]) {
+            gain->from_prior_phase_mean(rng);
         }
     }
 }
 
 
 void Gains::from_prior_v_phase(DNest4::RNG &rng) {
-    for (const auto &gain_vector : gains) {
-        for (auto i : antennas_changing_gain) {
-            gain_vector[i]->from_prior_v_phase(rng);
+    for (auto i : antennas_changing_gain) {
+        for (auto gain: gains[i]) {
+            gain->from_prior_v_phase(rng);
         }
     }
 }
 
 
 void Gains::from_prior_hp_amp(DNest4::RNG &rng) {
-    for (const auto &gain_vector : gains) {
-        for (auto i : antennas_changing_gain) {
-            gain_vector[i]->from_prior_hp_amp(rng);
+    for (auto i : antennas_changing_gain) {
+        for (auto gain: gains[i]) {
+            gain->from_prior_hp_amp(rng);
         }
     }
 }
 
 
 void Gains::from_prior_hp_phase(DNest4::RNG &rng) {
-    for (const auto &gain_vector : gains) {
-        for (auto i : antennas_changing_gain) {
-            gain_vector[i]->from_prior_v_amp(rng);
+    for (auto i : antennas_changing_gain) {
+        for (auto gain: gains[i]) {
+            gain->from_prior_v_amp(rng);
         }
     }
 }
