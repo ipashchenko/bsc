@@ -12,6 +12,7 @@ class Gains {
         Gains(Gains& other);
         Gains& operator=(const Gains& other);
         ~Gains();
+        void from_prior_global_scale(DNest4::RNG& rng);
         // Generate HP for amplitudes and phases for all gains
         void from_prior_hp_amp(DNest4::RNG& rng);
         void from_prior_hp_phase(DNest4::RNG& rng);

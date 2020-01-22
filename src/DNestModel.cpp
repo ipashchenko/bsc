@@ -50,6 +50,7 @@ void DNestModel::from_prior(DNest4::RNG &rng) {
     logjitter = -4.0 + 1.0*rng.randn();
     components.from_prior(rng);
     recenter();
+    gains->from_prior_global_scale(rng);
     gains->from_prior_hp_amp(rng);
     gains->from_prior_hp_phase(rng);
     gains->from_prior_amp_mean(rng);
@@ -180,6 +181,7 @@ void DNestModel::calculate_mu() {
     std::valarray<double> amp_ant_j (0.0, ant_i.size());
     std::valarray<double> phase_ant_i (0.0, ant_i.size());
     std::valarray<double> phase_ant_j (0.0, ant_i.size());
+    std::valarray<double> global_scale (0.0, ant_i.size());
 
     for (int k=0; k<ant_i.size(); k++) {
         auto ant_ik = antennas_map[ant_i[k]];
@@ -191,6 +193,9 @@ void DNestModel::calculate_mu() {
         amp_ant_j[k] += gains->operator[](ant_jk)[ifk]->get_amplitudes()[idx_jk];
         phase_ant_i[k] += gains->operator[](ant_ik)[ifk]->get_phases()[idx_ik];
         phase_ant_j[k] += gains->operator[](ant_jk)[ifk]->get_phases()[idx_jk];
+        // Global scale in log so adding them
+        global_scale[k] += gains->operator[](ant_ik)[ifk]->get_global_scale();
+        global_scale[k] += gains->operator[](ant_jk)[ifk]->get_global_scale();
     }
 
     // SkyModel modified by gains
@@ -198,7 +203,7 @@ void DNestModel::calculate_mu() {
     auto diff = phase_ant_i-phase_ant_j;
     auto cos_diff = cos(diff);
     auto sin_diff = sin(diff);
-    auto amp_amp = amp_ant_i*amp_ant_j;
+    auto amp_amp = amp_ant_i*amp_ant_j*exp(global_scale);
     mu_real_full = amp_amp*(cos_diff*mu_real - sin_diff*mu_imag);
     mu_imag_full = amp_amp*(cos_diff*mu_imag + sin_diff*mu_real);
 }

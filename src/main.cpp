@@ -11,7 +11,7 @@ int main(int argc, char** argv)
     //Data::get_instance().load("/home/ilya/github/time_machine/bsc/reals/RA/tests/BLLAC_STOKES_0_IF_0_amp120_phase60.txt");
     //Data::get_instance().load("/home/ilya/github/time_machine/bsc/reals/1502/1502_STOKES_0_IF_0_amp60_phase30.txt");
     //Data::get_instance().load("/home/ilya/github/time_machine/bsc/reals/J2038/2038S_STOKES_RR_IF_0.txt");
-    Data::get_instance().load("/home/ilya/github/time_machine/bsc/data_only.txt");
+    Data::get_instance().load("//home/ilya/github/time_machine/bsc/reals/J0005/J0005_amp30_phase30_aver30_different_uv.txt");
     // set the sampler and run it!
     Sampler<DNestModel> sampler = setup<DNestModel>(argc, argv);
     sampler.run();

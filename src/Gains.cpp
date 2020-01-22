@@ -84,6 +84,15 @@ std::vector<Gain*>& Gains::operator[](int i) {
 }
 
 
+void Gains::from_prior_global_scale(DNest4::RNG &rng) {
+    for (auto i : antennas_changing_gain) {
+        for (auto gain: gains[i]) {
+            gain->from_prior_global_scale(rng);
+        }
+    }
+}
+
+
 void Gains::from_prior_amp_mean(DNest4::RNG &rng) {
     for (auto i : antennas_changing_gain) {
         for (auto gain: gains[i]) {

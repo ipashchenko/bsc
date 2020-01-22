@@ -22,7 +22,8 @@ Gain::Gain(std::set<double> new_times_amp, std::set<double> new_times_phase) :
     logscale_amp(5.0),
     logscale_phase(5.0),
     phase_mean(0.0),
-    amp_mean(1.0)
+    amp_mean(1.0),
+    global_scale(0.0)
 
     {
     // Get unique times of gain amplitudes
@@ -57,7 +58,8 @@ Gain::Gain(std::set<double> new_times) :
     logscale_amp(5.0),
     logscale_phase(5.0),
     phase_mean(0.0),
-    amp_mean(1.0)
+    amp_mean(1.0),
+    global_scale(0.0)
 
     {
     // Get unique times of gain amplitude & phase
@@ -81,6 +83,12 @@ Gain::Gain(std::set<double> new_times) :
     calculate_L_amp();
     calculate_L_phase();
     }
+
+
+
+void Gain::from_prior_global_scale(DNest4::RNG& rng) {
+    global_scale = 0.0 + 0.5*rng.rand();
+}
 
 
 void Gain::from_prior_v_amp(DNest4::RNG &rng) {
@@ -192,24 +200,6 @@ void Gain::calculate_phases() {
 }
 
 
-void Gain::print_amplitudes(std::ostream &out) const {
-    out << "amplitudes = " << std::endl;
-    for (int i=0; i < times_amp.size(); i++) {
-        out << amplitudes[i] << ", ";
-    }
-    out << std::endl;
-}
-
-
-void Gain::print_phases(std::ostream &out) const {
-    out << "phases = " << std::endl;
-    for (int i=0; i < times_phase.size(); i++) {
-        out << phases[i] << ", ";
-    }
-    out << std::endl;
-}
-
-
 double Gain::perturb(DNest4::RNG &rng) {
     double logH = 0.;
 
@@ -217,8 +207,10 @@ double Gain::perturb(DNest4::RNG &rng) {
     // Amplitude GP
     if(which == 0) {
 
+        double u = rng.rand();
+
         // More often perturb phase latent variables
-        if(rng.rand() <= 0.9) {
+        if(u < 0.9) {
             // Choose what value to perturb
             int which = rng.rand_int(amplitudes.size());
 
@@ -229,9 +221,10 @@ double Gain::perturb(DNest4::RNG &rng) {
             // Pre-reject
             if(rng.rand() >= exp(logH)) {
                 return -1E300;
-            } else
+            } else {
                 logH = 0.0;
-        } else {
+            }
+        } else if(0.9 <= u && u < 0.95) {
             logH -= -0.5*pow((amp_mean-1.0)/0.1, 2.0);
             amp_mean += 0.1*rng.randh();
             logH += -0.5*pow((amp_mean-1.0)/0.1, 2.0);
@@ -239,8 +232,20 @@ double Gain::perturb(DNest4::RNG &rng) {
             // Pre-reject
             if (rng.rand() >= exp(logH)) {
                 return -1E300;
-            } else
+            } else {
                 logH = 0.0;
+            }
+        } else {
+            logH -= -0.5*pow(global_scale/0.5, 2.0);
+            global_scale += 0.5*rng.randh();
+            logH += -0.5*pow(global_scale/0.5, 2.0);
+
+            // Pre-reject
+            if (rng.rand() >= exp(logH)) {
+                return -1E300;
+            } else {
+                logH = 0.0;
+            }
         }
 
         calculate_amplitudes();
@@ -285,6 +290,7 @@ double Gain::perturb(DNest4::RNG &rng) {
 
 std::string Gain::description() const {
     std::string descr;
+    descr += "global_scale ";
     descr += "amp_mean ";
     for (int i = 0; i < times_amp.size(); i++) {
         descr += ("amp" + std::to_string(i) + " ");
@@ -299,6 +305,7 @@ std::string Gain::description() const {
 
 
 void Gain::print(std::ostream &out) const {
+    out << global_scale << '\t';
     out << amp_mean << '\t';
     for (int i = 0; i < times_amp.size(); i++) {
         out << amplitudes[i] << '\t';

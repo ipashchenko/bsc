@@ -27,11 +27,7 @@ class Gain {
         //Gain&operator=(const Gain& other);
 
         void print(std::ostream &out) const;
-        void print_times(std::ostream &out) const;
-        void print_hp(std::ostream &out) const;
-        void print_v(std::ostream &out) const;
-        void print_C(std::ostream &out) const;
-        void print_L(std::ostream &out) const;
+        void from_prior_global_scale(DNest4::RNG& rng);
         // Generate from prior HP for amplitude and phase
         void from_prior_hp_amp(DNest4::RNG& rng);
         void from_prior_hp_phase(DNest4::RNG& rng);
@@ -51,6 +47,9 @@ class Gain {
         void calculate_L_phase();
         int size_amp();
         int size_phase();
+        double get_global_scale() {
+            return global_scale;
+        }
 
         // Calculate amplitudes and phases using current values of ``L`` and ``v``.
         void calculate_amplitudes();
@@ -67,6 +66,8 @@ class Gain {
         // Times when gains are measured
         Eigen::VectorXd times_amp;
         Eigen::VectorXd times_phase;
+        // Global scale factor
+        double global_scale;
         // Hyperparameters of GP for amplitude and phase time dependence
         double logamp_amp;
         double logamp_phase;
