@@ -33,6 +33,8 @@ class Data
         // Stokes and IF numbers
         std::vector<int> stokes;
         std::vector<int> IF;
+        // Frequencies
+        std::valarray<double> freq;
         // visibilities
         std::valarray<double> vis_real;
         std::valarray<double> vis_imag;
@@ -80,6 +82,8 @@ class Data
         { return stokes; }
         const std::vector<int>& get_IF() const
         { return IF; }
+        const std::valarray<double>& get_freq() const
+        { return freq; }
         const std::valarray<double>& get_vis_real() const
         { return vis_real; }
         const std::valarray<double>& get_vis_imag() const

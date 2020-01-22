@@ -17,6 +17,7 @@ void Data::load(const char* filename)
     // Vectors to hold the data
     std::vector<double> _u;
     std::vector<double> _v;
+    std::vector<double> _freq;
     std::vector<double> _vis_real;
     std::vector<double> _vis_imag;
     std::vector<double> _sigma;
@@ -25,14 +26,15 @@ void Data::load(const char* filename)
     fstream fin(filename, ios::in);
 
     // Temporary variables
-    // time, u, v, stokes, if, re, im, sigma, times_amp,  times_phase,
-    double temp1, temp2, temp3, temp31, temp32, temp4, temp5, temp6, temp7, temp8;
+    // time, u, v, stokes, if, freq, re, im, sigma, times_amp,  times_phase,
+    double temp1, temp2, temp3, temp31, temp32, temp33, temp4, temp5, temp6, temp7, temp8;
     // i, j, idx_amp_ant_i, idx_amp_ant_j, idx_phase_ant_i, idx_phase_ant_j
     int temp9, temp10, temp11, temp12, temp13, temp14;
 
     // Read until end of file
-    while(fin>>temp1 && fin>>temp9 && fin>>temp10 && fin>>temp2 && fin>>temp3 && fin>>temp31 && fin>>temp32 && fin>>temp4 && fin>>temp5 && fin>>temp6
-        && fin>>temp7 && fin>>temp11 && fin>>temp12 && fin>>temp8 && fin>>temp13 && fin>>temp14)
+    while(fin>>temp1 && fin>>temp9 && fin>>temp10 && fin>>temp2 && fin>>temp3 && fin>>temp31 && fin>>temp32 &&
+          fin>>temp33 && fin>>temp4 && fin>>temp5 && fin>>temp6 && fin>>temp7 && fin>>temp11 && fin>>temp12 &&
+          fin>>temp8 && fin>>temp13 && fin>>temp14)
     {
         times.push_back(temp1);
         ant_i.push_back(temp9);
@@ -41,6 +43,7 @@ void Data::load(const char* filename)
         _v.push_back(temp3);
         stokes.push_back(temp31);
         IF.push_back(temp32);
+        _freq.push_back(temp33);
         _vis_real.push_back(temp4);
         _vis_imag.push_back(temp5);
         _sigma.push_back(temp6);
@@ -95,6 +98,7 @@ void Data::load(const char* filename)
     // Copy the data to the valarrays
     u = valarray<double>(&_u[0], _u.size());
     v = valarray<double>(&_v[0], _v.size());
+    freq = valarray<double>(&_freq[0], _freq.size());
     vis_real = valarray<double>(&_vis_real[0], _vis_real.size());
     vis_imag = valarray<double>(&_vis_imag[0], _vis_imag.size());
     sigma = valarray<double>(&_sigma[0], _sigma.size());

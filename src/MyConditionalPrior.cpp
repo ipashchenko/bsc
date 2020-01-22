@@ -11,7 +11,7 @@ MyConditionalPrior::MyConditionalPrior(double std)
 
 void MyConditionalPrior::from_prior(RNG& rng)
 {
-    const DNest4::Gaussian gauss1(-1.0, 0.05);
+    const DNest4::Gaussian gauss1(0.00, 0.05);
     typical_flux = gauss1.generate(rng);
     const DNest4::Gaussian gauss2(1.00, 0.10);
     dev_log_flux = gauss2.generate(rng);
@@ -20,17 +20,22 @@ void MyConditionalPrior::from_prior(RNG& rng)
     typical_radius = gauss3.generate(rng);
     const DNest4::Gaussian gauss4(2.00, 0.10);
     dev_log_radius = gauss4.generate(rng);
+
+    const DNest4::Gaussian gauss5(-1.0, 0.05);
+    typical_alpha = gauss5.generate(rng);
+    const DNest4::Gaussian gauss6(0.5, 0.03);
+    dev_alpha = gauss6.generate(rng);
 }
 
 double MyConditionalPrior::perturb_hyperparameters(RNG& rng)
 {
     double logH = 0.0;
 
-    int which = rng.rand_int(4);
+    int which = rng.rand_int(6);
 
     if(which == 0)
     {
-        const DNest4::Gaussian gauss1(-1.0, 0.05);
+        const DNest4::Gaussian gauss1(0.0, 0.05);
         logH += gauss1.perturb(typical_flux, rng);
     }
     else if(which == 1)
@@ -48,6 +53,16 @@ double MyConditionalPrior::perturb_hyperparameters(RNG& rng)
         const DNest4::Gaussian gauss4(2.00, 0.10);
         logH += gauss4.perturb(dev_log_radius, rng);
     }
+    else if(which == 4)
+    {
+        const DNest4::Gaussian gauss5(-1.0, 0.05);
+        logH += gauss5.perturb(typical_alpha, rng);
+    }
+    else if(which == 5)
+    {
+        const DNest4::Gaussian gauss6(0.50, 0.03);
+        logH += gauss6.perturb(dev_alpha, rng);
+    }
 
     return logH;
 }
@@ -57,7 +72,6 @@ double MyConditionalPrior::log_pdf(const std::vector<double>& vec) const
 {
     double logp = 0.0;
 
-    // Position
     // Position
     DNest4::Gaussian gaussx(0.0, std);
     DNest4::Gaussian gaussy(0.0, std);
@@ -75,6 +89,11 @@ double MyConditionalPrior::log_pdf(const std::vector<double>& vec) const
     DNest4::Gaussian gauss2(typical_radius, dev_log_radius);
     //logp += -log(vec[3]) + laplace2.log_pdf(log(vec[3]));
     logp += gauss2.log_pdf(vec[3]);
+
+    // Spectral index
+    DNest4::Gaussian gauss3(typical_alpha, dev_alpha);
+    //logp += -log(vec[3]) + laplace2.log_pdf(log(vec[3]));
+    logp += gauss3.log_pdf(vec[4]);
 
     return logp;
 }
@@ -97,6 +116,10 @@ void MyConditionalPrior::from_uniform(std::vector<double>& vec) const
     DNest4::Gaussian gauss2(typical_radius, dev_log_radius);
     vec[3] = gauss2.cdf_inverse(vec[3]);
 
+    // Spectral index
+    DNest4::Gaussian gauss3(typical_alpha, dev_alpha);
+    vec[4] = gauss3.cdf_inverse(vec[4]);
+
 }
 
 void MyConditionalPrior::to_uniform(std::vector<double>& vec) const
@@ -117,10 +140,15 @@ void MyConditionalPrior::to_uniform(std::vector<double>& vec) const
     DNest4::Gaussian gauss2(typical_radius, dev_log_radius);
     vec[3] = gauss2.cdf(vec[3]);
 
+    // Spectral index
+    DNest4::Gaussian gauss3(typical_alpha, dev_alpha);
+    vec[4] = gauss3.cdf(vec[4]);
+
 }
 
 void MyConditionalPrior::print(std::ostream& out) const
 {
     out << typical_flux << ' ' << dev_log_flux << ' ';
     out << typical_radius << ' ' << dev_log_radius << ' ';
+    out << typical_alpha << ' ' << dev_alpha << ' ';
 }

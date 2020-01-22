@@ -13,6 +13,7 @@ class MyConditionalPrior:public DNest4::ConditionalPrior
         double std;
         double typical_flux, dev_log_flux;
         double typical_radius, dev_log_radius;
+        double typical_alpha, dev_alpha;
 
         double perturb_hyperparameters(DNest4::RNG& rng);
 

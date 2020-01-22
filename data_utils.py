@@ -326,7 +326,7 @@ def create_data_file_many_IFs(uvfits, outfile, step_amp=30, step_phase=30, use_s
     # Assuming only one FRQSEL (frequency ID)
     if_freqs = np.array([freq + uvdata.hdulist["AIPS FQ"].data["IF FREQ"][0][i] for i in range(uvdata.nif)])
 
-    df = pd.DataFrame(columns=["times", "ant1", "ant2", "u", "v", "STOKES", "IF", "vis_re", "vis_im",
+    df = pd.DataFrame(columns=["times", "ant1", "ant2", "u", "v", "STOKES", "IF", "freq", "vis_re", "vis_im",
                                "error"])
 
     suffix = None
@@ -376,8 +376,9 @@ def create_data_file_many_IFs(uvfits, outfile, step_amp=30, step_phase=30, use_s
                 vis_re = data[i_IF, i_stokes][0]
                 vis_im = data[i_IF, i_stokes][1]
 
-                df_ = pd.Series({"times": time, "ant1": ant1, "ant2": ant2, "u": u, "v": v, "STOKES": i_stokes, "IF": i_IF,
-                                 "vis_re": vis_re, "vis_im": vis_im, "error": error})
+                df_ = pd.Series({"times": time, "ant1": ant1, "ant2": ant2, "u": u, "v": v, "STOKES": i_stokes,
+                                 "IF": i_IF, "freq": if_freqs[i_IF]/10.0**9, "vis_re": vis_re, "vis_im": vis_im,
+                                 "error": error})
                 df = df.append(df_, ignore_index=True)
 
     mint = np.min(df["times"])
@@ -522,7 +523,7 @@ def create_data_file_many_IFs(uvfits, outfile, step_amp=30, step_phase=30, use_s
 
     df = df[["times",
              "ant1", "ant2",
-             "u", "v", "STOKES", "IF",
+             "u", "v", "STOKES", "IF", "freq",
              "vis_re", "vis_im", "error",
              "times_amp", "idx_amp_ant1", "idx_amp_ant2",
              "times_phase", "idx_phase_ant1", "idx_phase_ant2"]]
@@ -785,7 +786,7 @@ if __name__ == "__main__":
     IF = 0
     # data_only_fname = "/home/ilya/github/time_machine/bsc/reals/RA/tests/BLLAC_STOKES_{}_IF_{}_amp120_phase60.txt".format(STOKES, IF)
     # data_only_fname = "/home/ilya/github/time_machine/bsc/reals/1502/1502_STOKES_{}_IF_{}_amp60_phase30.txt".format(STOKES, IF)
-    data_only_fname = "/home/ilya/github/time_machine/bsc/reals/J0005/J0005_amp30_phase30_aver30_different_uv.txt"
+    data_only_fname = "/home/ilya/github/time_machine/bsc/testing.txt"
     # df = create_data_file(uvfits_fname, data_only_fname, STOKES=STOKES, IF=IF, step_amp=60, step_phase=30,
     #                       use_scans_for_amplitudes=False, calculate_noise=False)
                           # antennas_to_skip=(3, 8, 12, 13, 14, 16, 17))
