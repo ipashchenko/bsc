@@ -9,6 +9,8 @@
 #include <iostream>
 #include <Distributions/Gaussian.h>
 #include <Distributions/Uniform.h>
+#include <Distributions/Laplace.h>
+#include <Distributions/Cauchy.h>
 #include "RNG.h"
 #include "Utils.h"
 
@@ -87,7 +89,8 @@ Gain::Gain(std::set<double> new_times) :
 
 
 void Gain::from_prior_global_scale(DNest4::RNG& rng) {
-    global_scale = 0.0 + 0.5*rng.rand();
+    DNest4::Cauchy cauchy(0.0, 0.1);
+    global_scale = cauchy.generate(rng);
 }
 
 
@@ -236,10 +239,8 @@ double Gain::perturb(DNest4::RNG &rng) {
                 logH = 0.0;
             }
         } else {
-            logH -= -0.5*pow(global_scale/0.5, 2.0);
-            global_scale += 0.5*rng.randh();
-            logH += -0.5*pow(global_scale/0.5, 2.0);
-
+            DNest4::Cauchy cauchy(0.0, 0.1);
+            logH += cauchy.perturb(global_scale, rng);
             // Pre-reject
             if (rng.rand() >= exp(logH)) {
                 return -1E300;
