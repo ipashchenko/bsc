@@ -242,26 +242,27 @@ std::string DNestModel::description() const
     descr += "logjitter ";
 
     // The rest is all what happens when you call .print on an RJObject
-    descr += " dim_components max_num_components ";
+    descr += "dim_components max_num_components ";
 
     // Then the hyperparameters (i.e. whatever MyConditionalPrior::print prints)
-    descr += " typical_flux dev_log_flux typical_radius dev_log_radius ";
+    descr += "typical_flux dev_log_flux typical_radius dev_log_radius ";
 
     // Then the actual number of components
-    descr += " num_components ";
+    descr += "num_components";
 
     // Then it's all the components, padded with zeros
     // max_num_components is known in this model, so that's how far the
     // zero padding goes.
     for(int i=0; i<30; ++i)
-        descr += " x[" + std::to_string(i) + "] ";
+        descr += " x[" + std::to_string(i) + "]";
     for(int i=0; i<30; ++i)
-        descr += " y[" + std::to_string(i) + "] ";
+        descr += " y[" + std::to_string(i) + "]";
     for(int i=0; i<30; ++i)
-        descr += " logflux[" + std::to_string(i) + "] ";
+        descr += " logflux[" + std::to_string(i) + "]";
     for(int i=0; i<30; ++i)
-        descr += " logbmaj[" + std::to_string(i) + "] ";
+        descr += " logbmaj[" + std::to_string(i) + "]";
 
+    descr += " ";
     descr += gains->description();
 
     return descr;
