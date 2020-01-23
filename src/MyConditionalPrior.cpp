@@ -1,4 +1,5 @@
 #include "MyConditionalPrior.h"
+#include "LogNormal.h"
 
 
 using namespace DNest4;
@@ -58,7 +59,6 @@ double MyConditionalPrior::log_pdf(const std::vector<double>& vec) const
     double logp = 0.0;
 
     // Position
-    // Position
     DNest4::Gaussian gaussx(0.0, std);
     DNest4::Gaussian gaussy(0.0, std);
     logp += gaussx.log_pdf(vec[0]);
@@ -66,9 +66,9 @@ double MyConditionalPrior::log_pdf(const std::vector<double>& vec) const
 
     // Flux
     // DNest4::Laplace laplace1(typical_flux, dev_log_flux);
-    DNest4::Gaussian gauss1(typical_flux, dev_log_flux);
+    LogNormal lognorm(typical_flux, dev_log_flux);
     //logp += -log(vec[2]) + laplace1.log_pdf(log(vec[2]));
-    logp += gauss1.log_pdf(vec[2]);
+    logp += lognorm.log_pdf(vec[2]);
 
     // Radius
     // DNest4::Laplace laplace2(typical_radius, dev_log_radius);
@@ -81,6 +81,7 @@ double MyConditionalPrior::log_pdf(const std::vector<double>& vec) const
 
 void MyConditionalPrior::from_uniform(std::vector<double>& vec) const
 {
+    //std::cout << "to_uniform" << vec[0] << " " << vec[1] << " " << vec[2] << " " << vec[3] << "\n";
     // Position
     DNest4::Gaussian gaussx(0.0, std);
     vec[0] = gaussx.cdf_inverse(vec[0]);
@@ -89,8 +90,8 @@ void MyConditionalPrior::from_uniform(std::vector<double>& vec) const
 
     // Flux
     // DNest4::Laplace laplace1(typical_flux, dev_log_flux);
-    DNest4::Gaussian gauss1(typical_flux, dev_log_flux);
-    vec[2] = gauss1.cdf_inverse(vec[2]);
+    LogNormal lognorm(typical_flux, dev_log_flux);
+    vec[2] = lognorm.cdf_inverse(vec[2]);
 
     // Radius
     // DNest4::Laplace laplace2(typical_radius, dev_log_radius);
@@ -101,6 +102,7 @@ void MyConditionalPrior::from_uniform(std::vector<double>& vec) const
 
 void MyConditionalPrior::to_uniform(std::vector<double>& vec) const
 {
+    //std::cout << "to_uniform" << vec[0] << " " << vec[1] << " " << vec[2] << " " << vec[3] << "\n";
     // Position
     DNest4::Gaussian gaussx(0.0, std);
     vec[0] = gaussx.cdf(vec[0]);
@@ -109,8 +111,8 @@ void MyConditionalPrior::to_uniform(std::vector<double>& vec) const
 
     // Flux
     // DNest4::Laplace laplace1(typical_flux, dev_log_flux);
-    DNest4::Gaussian gauss1(typical_flux, dev_log_flux);
-    vec[2] = gauss1.cdf(vec[2]);
+    LogNormal lognorm(typical_flux, dev_log_flux);
+    vec[2] = lognorm.cdf(vec[2]);
 
     // Radius
     // DNest4::Laplace laplace2(typical_radius, dev_log_radius);

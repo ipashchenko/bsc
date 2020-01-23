@@ -3,7 +3,7 @@
 #include "RNG.h"
 
 
-DNestModel::DNestModel() : logjitter(0.0), components(4, 30, false, MyConditionalPrior(30), DNest4::PriorType::log_uniform) {
+DNestModel::DNestModel() : logjitter(0.0), counter(0), components(4, 30, false, MyConditionalPrior(30), DNest4::PriorType::log_uniform) {
     int refant_ant_i = 1;
     gains = new Gains(Data::get_instance(), refant_ant_i);
 }
@@ -22,6 +22,7 @@ DNestModel::DNestModel(const DNestModel& other) : components(4, 30, false, MyCon
     mu_imag = other.mu_imag;
     mu_real_full = other.mu_real_full;
     mu_imag_full = other.mu_imag_full;
+    counter = other.counter;
 }
 
 
@@ -34,6 +35,7 @@ DNestModel& DNestModel::operator=(const DNestModel& other) {
         mu_imag = other.mu_imag;
         mu_real_full = other.mu_real_full;
         mu_imag_full = other.mu_imag_full;
+        counter = other.counter;
     }
     return *this;
 }
@@ -65,7 +67,7 @@ void DNestModel::from_prior(DNest4::RNG &rng) {
     gains->calculate_amplitudes();
     gains->calculate_phases();
     // Calculate SkyModel
-    calculate_sky_mu(false);
+    calculate_sky_mu();
     // Calculate full model (SkyModel + gains)
     calculate_mu();
 }
@@ -96,7 +98,9 @@ double DNestModel::perturb(DNest4::RNG &rng) {
     // Perturb SkyModel
     else if(0.05 < u && u <= 0.3) {
         logH += components.perturb(rng);
-
+        components.consolidate_diff();
+        // After this ``removed`` is empty and gone to ``added`` with ``-`` sign. We use ``added`` when
+        // ``update = True``. Else we use all components.
         // Pre-reject
         if(rng.rand() >= exp(logH)) {
             return -1E300;
@@ -104,8 +108,10 @@ double DNestModel::perturb(DNest4::RNG &rng) {
             logH = 0.0;
         }
         // This shouldn't be called in case of pre-rejection
+        // This actually moves all old (before re-centering) components to ``removed``. New re-centered components now
+        // in ``components`` and ``added``. Last means that speedup via update=True is useless.
         recenter();
-        calculate_sky_mu(false);
+        calculate_sky_mu();
     }
     // Perturb Gains
     else {
@@ -124,7 +130,7 @@ double DNestModel::perturb(DNest4::RNG &rng) {
 }
 
 
-void DNestModel::calculate_sky_mu(bool update) {
+void DNestModel::calculate_sky_mu() {
     const std::valarray<double>& u = Data::get_instance().get_u();
     const std::valarray<double>& v = Data::get_instance().get_v();
 
@@ -133,24 +139,33 @@ void DNestModel::calculate_sky_mu(bool update) {
     std::valarray<double> b;
     std::valarray<double> ft;
 
+    // Update or from scratch?
+    // FIXME: After re-centering all components in ``added``
+    bool update = (components.get_added().size() < components.get_components().size()) &&
+        (counter <= 10);
     // Get the components
     const std::vector<std::vector<double>>& comps = (update)?(components.get_added()):
                                                     (components.get_components());
 
     if(!update)
     {
+        std::cout << "Full update" << "\n";
         // Zero the sky model prediction
         mu_real *= 0.0;
         mu_imag *= 0.0;
+        counter = 0;
+    } else {
+        std::cout << "diff " << counter << "\n";
+        counter++;
     }
 
-    for(auto comp: comps)
+    for(const auto& comp: comps)
     {
         // Phase shift due to not being in a phase center
         theta = 2*M_PI*mas_to_rad*(u*comp[0]+v*comp[1]);
         // Calculate FT of a Gaussian in a phase center
         c = pow(M_PI*exp(comp[3])*mas_to_rad, 2)/(4.*log(2.));
-        ft = exp(comp[2]-c*(u*u + v*v));
+        ft = comp[2] * exp(-c*(u*u + v*v));
         // Prediction of visibilities
         mu_real += ft*cos(theta);
         mu_imag += ft*sin(theta);
@@ -267,7 +282,7 @@ std::string DNestModel::description() const
 std::pair<double, double> DNestModel::center_mass() const {
     double x_b = 0;
     double y_b = 0;
-    double flux_b = -100;
+    double flux_b = 0;
     for (auto comp : components.get_components()) {
         if(comp[2] > flux_b) {
             x_b = comp[0];
