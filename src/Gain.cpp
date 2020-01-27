@@ -356,10 +356,14 @@ std::string Gain::description() const {
     std::string suffix;
     suffix += "_ant" + std::to_string(ant) + "_" + "IF" + std::to_string(IF);
     std::string descr;
+    descr += "amp_amplitude" + suffix + " ";
+    descr += "amp_scale" + suffix + " ";
     descr += "amp_mean" + suffix + " ";
     for (int i = 0; i < times_amp.size(); i++) {
         descr += ("amp" + std::to_string(i) + suffix + " ");
     }
+    descr += "phase_amplitude" + suffix + " ";
+    descr += "phase_scale" + suffix + " ";
     descr += "phase_mean ";
     for (int i = 0; i < times_phase.size(); i++) {
         descr += ("phase" + std::to_string(i) + suffix + " ");
@@ -370,10 +374,14 @@ std::string Gain::description() const {
 
 
 void Gain::print(std::ostream &out) const {
+    out << logamp_amp << '\t';
+    out << logscale_amp << '\t';
     out << amp_mean << '\t';
     for (int i = 0; i < times_amp.size(); i++) {
         out << amplitudes[i] << '\t';
     }
+    out << logamp_phase << '\t';
+    out << logscale_phase << '\t';
     out << phase_mean << '\t';
     for (int i = 0; i < times_phase.size(); i++) {
         out << phases[i] << '\t';
