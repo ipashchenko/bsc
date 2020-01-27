@@ -109,18 +109,18 @@ void Gain::from_prior_phase_mean(DNest4::RNG& rng) {
 
 
 void Gain::from_prior_hp_amp(DNest4::RNG& rng) {
-    //logamp_amp = -3.0 + 1.0*rng.randn();
-    //logscale_amp = 7.0 + 1.0*rng.randn();
-    logamp_amp = -3.0;
-    logscale_amp = 5.0;
+    logamp_amp = -3.0 + 1.0*rng.randn();
+    logscale_amp = 5.0 + 1.0*rng.randn();
+    //logamp_amp = -3.0;
+    //logscale_amp = 5.0;
 }
 
 
 void Gain::from_prior_hp_phase(DNest4::RNG& rng) {
-    //logamp_phase = -3.0 + 1.0*rng.randn();
-    //logscale_phase = 5.0 + 1.0*rng.randn();
-    logamp_phase = -2.0;
-    logscale_phase = 5.0;
+    logamp_phase = -3.0 + 1.0*rng.randn();
+    logscale_phase = 5.0 + 1.0*rng.randn();
+    //logamp_phase = -2.0;
+    //logscale_phase = 5.0;
 }
 
 
@@ -221,8 +221,10 @@ double Gain::perturb(DNest4::RNG &rng) {
     // Amplitude GP
     if(which == 0) {
 
+        double u = rng.rand();
+
         // More often perturb phase latent variables
-        if(rng.rand() <= 0.9) {
+        if(u <= 0.8) {
             // Choose what value to perturb
             int which = rng.rand_int(amplitudes.size());
 
@@ -235,7 +237,36 @@ double Gain::perturb(DNest4::RNG &rng) {
                 return -1E300;
             } else
                 logH = 0.0;
-        } else {
+        }
+        // Perturb HP of amplitude GP
+        else if (0.8 < u && u < 0.95) {
+            if(rng.rand() <= 0.5) {
+                logH -= -0.5*pow((logamp_amp+3.0)/1.0, 2.0);
+                logamp_amp += 1.0*rng.randh();
+                logH += -0.5*pow((logamp_amp+3.0)/1.0, 2.0);
+                // Pre-reject
+                if (rng.rand() >= exp(logH)) {
+                    return -1E300;
+                } else {
+                    logH = 0.0;
+                }
+            } else {
+                logH -= -0.5*pow((logscale_amp-5.0)/1.0, 2.0);
+                logscale_amp += 1.0*rng.randh();
+                logH += -0.5*pow((logscale_amp-5.0)/1.0, 2.0);
+                // Pre-reject
+                if (rng.rand() >= exp(logH)) {
+                    return -1E300;
+                } else {
+                    logH = 0.0;
+                }
+            }
+            // Re-calculate rotation matrix for latent v.
+            calculate_C_amp();
+            calculate_L_amp();
+        }
+        // Perturb mean of amplitude GP
+        else {
             logH -= -0.5*pow((amp_mean-1.0)/0.1, 2.0);
             amp_mean += 0.1*rng.randh();
             logH += -0.5*pow((amp_mean-1.0)/0.1, 2.0);
@@ -243,8 +274,9 @@ double Gain::perturb(DNest4::RNG &rng) {
             // Pre-reject
             if (rng.rand() >= exp(logH)) {
                 return -1E300;
-            } else
+            } else {
                 logH = 0.0;
+            }
         }
 
         calculate_amplitudes();
@@ -252,8 +284,10 @@ double Gain::perturb(DNest4::RNG &rng) {
     // Phase GP
     else {
 
+        double u = rng.rand();
+
         // More often perturb phase latent variables
-        if(rng.rand() <= 0.9) {
+        if(u <= 0.8) {
 
             // Choose what value to perturb
             int which = rng.rand_int(phases.size());
@@ -268,15 +302,46 @@ double Gain::perturb(DNest4::RNG &rng) {
             } else
                 logH = 0.0;
 
-        } else {
+        }
+
+        // Perturb HP of amplitude GP
+        else if (0.8 < u && u < 0.95) {
+            if(rng.rand() <= 0.5) {
+                logH -= -0.5*pow((logamp_phase+3.0)/1.0, 2.0);
+                logamp_phase += 1.0*rng.randh();
+                logH += -0.5*pow((logamp_phase+3.0)/1.0, 2.0);
+                // Pre-reject
+                if (rng.rand() >= exp(logH)) {
+                    return -1E300;
+                } else {
+                    logH = 0.0;
+                }
+            } else {
+                logH -= -0.5*pow((logscale_phase-5.0)/1.0, 2.0);
+                logscale_phase += 1.0*rng.randh();
+                logH += -0.5*pow((logscale_phase-5.0)/1.0, 2.0);
+                // Pre-reject
+                if (rng.rand() >= exp(logH)) {
+                    return -1E300;
+                } else {
+                    logH = 0.0;
+                }
+            }
+            // Re-calculate rotation matrix for latent v.
+            calculate_C_phase();
+            calculate_L_phase();
+        }
+
+        else {
             phase_mean += 2.0*M_PI*rng.randh();
             DNest4::wrap(phase_mean, -1.0*M_PI, M_PI);
 
             // Pre-reject
             if (rng.rand() >= exp(logH)) {
                 return -1E300;
-            } else
+            } else {
                 logH = 0.0;
+            }
         }
 
         calculate_phases();
