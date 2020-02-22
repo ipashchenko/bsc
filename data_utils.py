@@ -6,10 +6,10 @@ from tqdm import tqdm
 import pandas as pd
 import matplotlib
 import matplotlib.pyplot as plt
-
 import sys
 sys.path.insert(0, '/home/ilya/github/ve/vlbi_errors')
 from uv_data import UVData
+from spydiff import time_average
 
 label_size = 16
 matplotlib.rcParams['xtick.labelsize'] = label_size
@@ -296,13 +296,15 @@ def create_data_file(uvfits, outfile, STOKES, IF, step_amp=30, step_phase=30, us
     return df
 
 
-def create_data_file_many_IFs(uvfits, outfile, step_amp=30, step_phase=30, use_scans_for_amplitudes=False,
+def create_data_file_many_IFs(uvfits, outfile, STOKES, step_amp=30, step_phase=30, use_scans_for_amplitudes=False,
                               calculate_noise=False, antennas_to_skip=None):
     """
     :param uvfits:
         Path to UVFITS file.
     :param outfile:
         Path to output txt-file.
+    :param STOKES:
+        Stokes number.
     :param step_amp: (optional)
         Time interval for constant gain amplitudes [s]. If ``None`` and
         ``use_scans_for_amplitudes`` is ``False`` - use different gain
@@ -347,7 +349,7 @@ def create_data_file_many_IFs(uvfits, outfile, step_amp=30, step_phase=30, use_s
                 print("Skipping baseline {} - {}".format(ant1, ant2))
                 continue
 
-        bl_noise = noise[float(baseline)]/np.sqrt(2.)
+        bl_noise = noise[float(baseline)]
 
         u_sec = group[suffix]
         v_sec = group[suffix]
@@ -364,12 +366,17 @@ def create_data_file_many_IFs(uvfits, outfile, step_amp=30, step_phase=30, use_s
             v = v_sec*if_freqs[i_IF]
 
             for i_stokes in range(n_stokes):
+
+                # Get only STOKES data
+                if i_stokes != STOKES:
+                    continue
+
                 weight = data[i_IF, i_stokes][2]
                 if weight <= 0:
                     continue
 
                 if calculate_noise:
-                    error = bl_noise[IF, STOKES]
+                    error = bl_noise[i_IF, i_stokes]
                 else:
                     error = 1/np.sqrt(weight)
 
@@ -774,22 +781,35 @@ def radplot(df, fig=None, color=None, label=None, style="ap"):
 
 
 if __name__ == "__main__":
+    import os
     # uvfits_fname = "/home/ilya/github/time_machine/bsc/reals/uvfs/J2038+5119_S_2005_07_20_yyk_uve.fits"
     # uvfits_fname = "/home/ilya/github/time_machine/bsc/reals/uvfs/BLLAC_RA_times.uvf"
     # uvfits_fname = "/home/ilya/github/time_machine/bsc/reals/uvfs/1502/1502_30s.uvf"
-    uvfits_fname = "/home/ilya/github/time_machine/bsc/reals/J0005/J0005_30s.uvf"
+    # uvfits_fname = "/home/ilya/github/time_machine/bsc/reals/J0005/J0005_30s.uvf"
+    uvfits_fname = "/home/ilya/Downloads/2200+420.u.2015_02_20.uvf"
+    # uvfits_fname = "/home/ilya/github/time_machine/bsc/reals/J0005/J0005_30s.uvf"
+
+
+    time_average_sec = 30
+    if time_average_sec is not None:
+        path, fname = os.path.split(uvfits_fname)
+        to_read_uvfits = os.path.join(path, "ta{}sec_{}".format(time_average_sec, fname))
+        time_average(uvfits_fname, to_read_uvfits, time_sec=time_average_sec)
+    else:
+        to_read_uvfits = uvfits_fname
 
     # for STOKES in range(2):
     #     for IF in range(2):
-    STOKES = 0
-    IF = 0
+    # STOKES = 0
+    # IF = 0
     # data_only_fname = "/home/ilya/github/time_machine/bsc/reals/RA/tests/BLLAC_STOKES_{}_IF_{}_amp120_phase60.txt".format(STOKES, IF)
     # data_only_fname = "/home/ilya/github/time_machine/bsc/reals/1502/1502_STOKES_{}_IF_{}_amp60_phase30.txt".format(STOKES, IF)
-    data_only_fname = "/home/ilya/github/time_machine/bsc/reals/J0005/J0005_amp30_phase30_aver30_different_uv.txt"
+    data_only_fname = "/home/ilya/github/time_machine/bsc/reals/bllac/bllac_amp30_phase30_aver30_8IFs.txt"
     # df = create_data_file(uvfits_fname, data_only_fname, STOKES=STOKES, IF=IF, step_amp=60, step_phase=30,
     #                       use_scans_for_amplitudes=False, calculate_noise=False)
                           # antennas_to_skip=(3, 8, 12, 13, 14, 16, 17))
-    df = create_data_file_many_IFs(uvfits_fname, data_only_fname, step_amp=30, step_phase=30, calculate_noise=True)
+    df = create_data_file_many_IFs(uvfits_fname, data_only_fname, STOKES=0, step_amp=30, step_phase=30,
+                                   calculate_noise=True)
     import sys
     sys.exit(0)
 # # Load data frame

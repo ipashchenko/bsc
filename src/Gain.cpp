@@ -16,7 +16,9 @@ using Eigen::VectorXd;
 using Eigen::MatrixXd;
 
 
-Gain::Gain(std::set<double> new_times_amp, std::set<double> new_times_phase) :
+Gain::Gain(int ant_, int IF_, std::set<double> new_times_amp, std::set<double> new_times_phase) :
+    ant(ant_),
+    IF(IF_),
     logamp_amp(-3.0),
     logamp_phase(-2.0),
     logscale_amp(5.0),
@@ -51,7 +53,9 @@ Gain::Gain(std::set<double> new_times_amp, std::set<double> new_times_phase) :
     }
 
 
-Gain::Gain(std::set<double> new_times) :
+Gain::Gain(int ant_, int IF_, std::set<double> new_times) :
+    ant(ant_),
+    IF(IF_),
     logamp_amp(-3.0),
     logamp_phase(-2.0),
     logscale_amp(5.0),
@@ -284,14 +288,16 @@ double Gain::perturb(DNest4::RNG &rng) {
 
 
 std::string Gain::description() const {
+    std::string suffix;
+    suffix += "_ant" + std::to_string(ant) + "_" + "IF" + std::to_string(IF);
     std::string descr;
-    descr += "amp_mean ";
+    descr += "amp_mean" + suffix + " ";
     for (int i = 0; i < times_amp.size(); i++) {
-        descr += ("amp" + std::to_string(i) + " ");
+        descr += ("amp" + std::to_string(i) + suffix + " ");
     }
     descr += "phase_mean ";
     for (int i = 0; i < times_phase.size(); i++) {
-        descr += ("phase" + std::to_string(i) + " ");
+        descr += ("phase" + std::to_string(i) + suffix + " ");
     }
     descr.pop_back();
     return descr;

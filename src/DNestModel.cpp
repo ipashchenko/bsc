@@ -3,7 +3,7 @@
 #include "RNG.h"
 
 
-DNestModel::DNestModel() : logjitter(0.0), counter(0), components(4, 30, false, MyConditionalPrior(30), DNest4::PriorType::log_uniform) {
+DNestModel::DNestModel() : logjitter(0.0), counter(0), components(4, 7, true, MyConditionalPrior(30), DNest4::PriorType::log_uniform) {
     int refant_ant_i = 1;
     gains = new Gains(Data::get_instance(), refant_ant_i);
 }
@@ -14,7 +14,7 @@ DNestModel::~DNestModel() {
 }
 
 
-DNestModel::DNestModel(const DNestModel& other) : components(4, 30, false, MyConditionalPrior(30), DNest4::PriorType::log_uniform) {
+DNestModel::DNestModel(const DNestModel& other) : components(4, 7, true, MyConditionalPrior(30), DNest4::PriorType::log_uniform) {
     components = other.components;
     gains = new Gains(*other.gains);
     logjitter = other.logjitter;
@@ -98,7 +98,7 @@ double DNestModel::perturb(DNest4::RNG &rng) {
     // Perturb SkyModel
     else if(0.05 < u && u <= 0.3) {
         logH += components.perturb(rng);
-        components.consolidate_diff();
+        //components.consolidate_diff();
         // After this ``removed`` is empty and gone to ``added`` with ``-`` sign. We use ``added`` when
         // ``update = True``. Else we use all components.
         // Pre-reject
@@ -143,19 +143,18 @@ void DNestModel::calculate_sky_mu() {
     // FIXME: After re-centering all components in ``added``
     bool update = (components.get_added().size() < components.get_components().size()) &&
         (counter <= 10);
+    update = false;
     // Get the components
     const std::vector<std::vector<double>>& comps = (update)?(components.get_added()):
                                                     (components.get_components());
 
     if(!update)
     {
-        std::cout << "Full update" << "\n";
         // Zero the sky model prediction
         mu_real *= 0.0;
         mu_imag *= 0.0;
         counter = 0;
     } else {
-        std::cout << "diff " << counter << "\n";
         counter++;
     }
 
@@ -252,26 +251,27 @@ std::string DNestModel::description() const
     descr += "logjitter ";
 
     // The rest is all what happens when you call .print on an RJObject
-    descr += " dim_components max_num_components ";
+    descr += "dim_components max_num_components ";
 
     // Then the hyperparameters (i.e. whatever MyConditionalPrior::print prints)
-    descr += " typical_flux dev_log_flux typical_radius dev_log_radius ";
+    descr += "typical_flux dev_log_flux typical_radius dev_log_radius ";
 
     // Then the actual number of components
-    descr += " num_components ";
+    descr += "num_components";
 
     // Then it's all the components, padded with zeros
     // max_num_components is known in this model, so that's how far the
     // zero padding goes.
-    for(int i=0; i<30; ++i)
-        descr += " x[" + std::to_string(i) + "] ";
-    for(int i=0; i<30; ++i)
-        descr += " y[" + std::to_string(i) + "] ";
-    for(int i=0; i<30; ++i)
-        descr += " logflux[" + std::to_string(i) + "] ";
-    for(int i=0; i<30; ++i)
-        descr += " logbmaj[" + std::to_string(i) + "] ";
+    for(int i=0; i<components.get_max_num_components(); ++i)
+        descr += " x[" + std::to_string(i) + "]";
+    for(int i=0; i<components.get_max_num_components(); ++i)
+        descr += " y[" + std::to_string(i) + "]";
+    for(int i=0; i<components.get_max_num_components(); ++i)
+        descr += " logflux[" + std::to_string(i) + "]";
+    for(int i=0; i<components.get_max_num_components(); ++i)
+        descr += " logbmaj[" + std::to_string(i) + "]";
 
+    descr += " ";
     descr += gains->description();
 
     return descr;
