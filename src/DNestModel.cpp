@@ -3,7 +3,7 @@
 #include "RNG.h"
 
 
-DNestModel::DNestModel() : logjitter(0.0), counter(0), components(4, 7, true, MyConditionalPrior(30), DNest4::PriorType::log_uniform) {
+DNestModel::DNestModel() : counter(0), components(4, 7, true, MyConditionalPrior(30), DNest4::PriorType::log_uniform) {
     int refant_ant_i = 1;
     gains = new Gains(Data::get_instance(), refant_ant_i);
 }
@@ -49,7 +49,9 @@ void DNestModel::from_prior(DNest4::RNG &rng) {
     mu_imag = zero;
     mu_imag_full = zero;
     mu_real_full = zero;
-    logjitter = -4.0 + 1.0*rng.randn();
+    for (int i=0;i<Data::get_instance().n_IF();i++) {
+        logjitter.push_back(-4.0 + 1.0*rng.randn());
+    }
     components.from_prior(rng);
     recenter();
     gains->from_prior_hp_amp(rng);
@@ -80,9 +82,10 @@ double DNestModel::perturb(DNest4::RNG &rng) {
 
     // Perturb jitter
     if(u <= 0.05) {
-        logH -= -0.5*pow((logjitter+4)/1.0, 2.0);
-        logjitter += 1.0*rng.randh();
-        logH += -0.5*pow((logjitter+4)/1.0, 2.0);
+        int which_jitter = rng.rand_int(Data::get_instance().n_IF());
+        logH -= -0.5*pow((logjitter[which_jitter]+4)/1.0, 2.0);
+        logjitter[which_jitter] += rng.randh();
+        logH += -0.5*pow((logjitter[which_jitter]+4)/1.0, 2.0);
 
         // Pre-reject
         if(rng.rand() >= exp(logH)) {
@@ -224,11 +227,17 @@ double DNestModel::log_likelihood() const {
     const std::valarray<double>& vis_imag = Data::get_instance().get_vis_imag();
     const std::valarray<double>& sigma = Data::get_instance().get_sigma();
 
+    const std::vector<int>& IF = Data::get_instance().get_IF();
+    std::valarray<double> logjitter_array (0.0, vis_real.size());
+    for (int i=0; i<vis_real.size(); i++) {
+        logjitter_array[i] = logjitter[IF[i]];
+    }
+
     // Variance
     const std::valarray<double> var = sigma*sigma;
     // Complex Gaussian sampling distribution
-    std::valarray<double> result = -log(2*M_PI*(var+exp(2.0*logjitter))) - 0.5*(pow(vis_real - mu_real_full, 2) +
-        pow(vis_imag - mu_imag_full, 2))/(var+exp(2.0*logjitter))   ;
+    std::valarray<double> result = -log(2*M_PI*(var+exp(2.0*logjitter_array))) - 0.5*(pow(vis_real - mu_real_full, 2) +
+        pow(vis_imag - mu_imag_full, 2))/(var+exp(2.0*logjitter_array))   ;
     double loglik = result.sum();
     return loglik;
 
@@ -236,7 +245,9 @@ double DNestModel::log_likelihood() const {
 
 
 void DNestModel::print(std::ostream &out) const {
-    out << logjitter << '\t';
+    for (double i : logjitter) {
+        out << i << '\t';
+    }
     components.print(out); out << '\t';
     gains->print(out);
 
@@ -248,8 +259,9 @@ std::string DNestModel::description() const
     std::string descr;
 
     // Anything printed by DNestModel::print (except the last line)
-    descr += "logjitter ";
-
+    for (int i = 0; i < logjitter.size(); i++) {
+        descr += ("logjitter" + std::to_string(i) + " ");
+    }
     // The rest is all what happens when you call .print on an RJObject
     descr += "dim_components max_num_components ";
 

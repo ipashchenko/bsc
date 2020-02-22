@@ -37,7 +37,7 @@ class DNestModel {
 
         DNest4::RJObject<MyConditionalPrior> components;
         Gains* gains{};
-        double logjitter;
+        std::vector<double> logjitter;
         // Prediction of SkyModel only
         std::valarray<double> mu_real;
         std::valarray<double> mu_imag;
