@@ -26,7 +26,7 @@ Gains::Gains(Data data, int refant_) {
     auto antennas_map_inv = data.get_antennas_map_inv();
     for (int i=0; i<data.n_antennas(); i++) {
         for (int j=0; j<data.n_IF(); j++) {
-            gains[i].emplace_back(new Gain(data.get_times_amp()[antennas_map_inv[i]], data.get_times_phase()[antennas_map_inv[i]]));}
+            gains[i].emplace_back(new Gain(antennas_map_inv[i], j+1, data.get_times_amp()[antennas_map_inv[i]], data.get_times_phase()[antennas_map_inv[i]]));}
     }
 }
 
