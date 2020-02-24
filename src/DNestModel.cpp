@@ -198,13 +198,15 @@ void DNestModel::calculate_mu() {
     for (int k=0; k<ant_i.size(); k++) {
         auto ant_ik = antennas_map[ant_i[k]];
         auto ant_jk = antennas_map[ant_j[k]];
-        auto idx_ik = idx_amp_ant_i[k];
-        auto idx_jk = idx_amp_ant_j[k];
+        auto idx_ik_amp = idx_amp_ant_i[k];
+        auto idx_jk_amp = idx_amp_ant_j[k];
+        auto idx_ik_phase = idx_phase_ant_i[k];
+        auto idx_jk_phase = idx_phase_ant_j[k];
         auto ifk = IF[k];
-        amp_ant_i[k] += gains->operator[](ant_ik)[ifk]->get_amplitudes()[idx_ik];
-        amp_ant_j[k] += gains->operator[](ant_jk)[ifk]->get_amplitudes()[idx_jk];
-        phase_ant_i[k] += gains->operator[](ant_ik)[ifk]->get_phases()[idx_ik];
-        phase_ant_j[k] += gains->operator[](ant_jk)[ifk]->get_phases()[idx_jk];
+        amp_ant_i[k] += gains->operator[](ant_ik)[ifk]->get_amplitudes()[idx_ik_amp];
+        amp_ant_j[k] += gains->operator[](ant_jk)[ifk]->get_amplitudes()[idx_jk_amp];
+        phase_ant_i[k] += gains->operator[](ant_ik)[ifk]->get_phases()[idx_ik_phase];
+        phase_ant_j[k] += gains->operator[](ant_jk)[ifk]->get_phases()[idx_jk_phase];
     }
 
     // SkyModel modified by gains

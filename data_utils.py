@@ -782,11 +782,11 @@ def radplot(df, fig=None, color=None, label=None, style="ap"):
 
 if __name__ == "__main__":
     import os
-    # uvfits_fname = "/home/ilya/github/time_machine/bsc/reals/uvfs/J2038+5119_S_2005_07_20_yyk_uve.fits"
+    uvfits_fname = "/home/ilya/github/time_machine/bsc/reals/uvfs/J2038+5119_S_2005_07_20_yyk_uve.fits"
     # uvfits_fname = "/home/ilya/github/time_machine/bsc/reals/uvfs/BLLAC_RA_times.uvf"
     # uvfits_fname = "/home/ilya/github/time_machine/bsc/reals/uvfs/1502/1502_30s.uvf"
     # uvfits_fname = "/home/ilya/github/time_machine/bsc/reals/J0005/J0005_30s.uvf"
-    uvfits_fname = "/home/ilya/github/time_machine/bsc/reals/bllac/2200+420.u.2015_02_20.uvf_raw_edt"
+    # uvfits_fname = "/home/ilya/github/time_machine/bsc/reals/bllac/2200+420.u.2015_02_20.uvf_raw_edt"
     # uvfits_fname = "/home/ilya/github/time_machine/bsc/reals/J0005/J0005_30s.uvf"
 
 
@@ -804,7 +804,8 @@ if __name__ == "__main__":
     # IF = 0
     # data_only_fname = "/home/ilya/github/time_machine/bsc/reals/RA/tests/BLLAC_STOKES_{}_IF_{}_amp120_phase60.txt".format(STOKES, IF)
     # data_only_fname = "/home/ilya/github/time_machine/bsc/reals/1502/1502_STOKES_{}_IF_{}_amp60_phase30.txt".format(STOKES, IF)
-    data_only_fname = "/home/ilya/github/time_machine/bsc/reals/bllac/bllac_amp30_phase30_aver30_8IFs.txt"
+    # data_only_fname = "/home/ilya/github/time_machine/bsc/reals/bllac/bllac_amp30_phase30_aver30_8IFs.txt"
+    data_only_fname = "/home/ilya/github/time_machine/bsc/reals/J2038/test/J2038_amp30_phase30_aver30_4IFs.txt"
     # df = create_data_file(uvfits_fname, data_only_fname, STOKES=STOKES, IF=IF, step_amp=60, step_phase=30,
     #                       use_scans_for_amplitudes=False, calculate_noise=False)
                           # antennas_to_skip=(3, 8, 12, 13, 14, 16, 17))
