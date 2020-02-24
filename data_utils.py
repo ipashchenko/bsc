@@ -786,7 +786,7 @@ if __name__ == "__main__":
     # uvfits_fname = "/home/ilya/github/time_machine/bsc/reals/uvfs/BLLAC_RA_times.uvf"
     # uvfits_fname = "/home/ilya/github/time_machine/bsc/reals/uvfs/1502/1502_30s.uvf"
     # uvfits_fname = "/home/ilya/github/time_machine/bsc/reals/J0005/J0005_30s.uvf"
-    uvfits_fname = "/home/ilya/Downloads/2200+420.u.2015_02_20.uvf"
+    uvfits_fname = "/home/ilya/github/time_machine/bsc/reals/bllac/2200+420.u.2015_02_20.uvf_raw_edt"
     # uvfits_fname = "/home/ilya/github/time_machine/bsc/reals/J0005/J0005_30s.uvf"
 
 
