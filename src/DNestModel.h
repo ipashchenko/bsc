@@ -33,7 +33,8 @@ class DNestModel {
 
         SkyModel* sky_model{};
         Gains* gains{};
-        double logjitter;
+        //double logjitter;
+        std::vector<double> logjitter;
         // Prediction of SkyModel + Gains
         std::valarray<double> mu_real_full;
         std::valarray<double> mu_imag_full;

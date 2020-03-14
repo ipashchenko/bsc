@@ -1,14 +1,16 @@
+import os
 import numpy as np
 import astropy.io.fits as pf
 from astropy.time import Time
 from astropy import units as u
+from tqdm import tqdm
 import pandas as pd
 import matplotlib
 import matplotlib.pyplot as plt
-
 import sys
 sys.path.insert(0, '/home/ilya/github/ve/vlbi_errors')
 from uv_data import UVData
+from spydiff import time_average
 
 label_size = 16
 matplotlib.rcParams['xtick.labelsize'] = label_size
@@ -63,7 +65,8 @@ def gaussian_circ_ft(flux, dx, dy, bmaj, uv):
 
 # TODO: Check STOKES/IF
 def create_data_file(uvfits, outfile, STOKES, IF, step_amp=30, step_phase=30, use_scans_for_amplitudes=False,
-                     calculate_noise=False, antennas_to_skip=None):
+                     calculate_noise=False, antennas_to_skip=None, include_gains_info=True, time_average_sec=None,
+                     uvrad_max_ml=None):
     """
     :param uvfits:
         Path to UVFITS file.
@@ -85,37 +88,55 @@ def create_data_file(uvfits, outfile, STOKES, IF, step_amp=30, step_phase=30, us
         (default: ``False``)
     :return:
     """
-    hdus = pf.open(uvfits)
+
+    if time_average_sec is not None:
+        path, fname = os.path.split(uvfits)
+        to_read_uvfits = os.path.join(path, "ta{}sec_{}".format(time_average_sec, fname))
+        time_average(uvfits, to_read_uvfits, time_sec=time_average_sec)
+    else:
+        to_read_uvfits = uvfits
+
+    hdus = pf.open(to_read_uvfits)
     data_all = hdus[0].data
     header = hdus[0].header
     freq = header["CRVAL4"]
 
-    uvdata = UVData(uvfits)
+    uvdata = UVData(to_read_uvfits)
     noise = uvdata.noise(use_V=False)
 
     df = pd.DataFrame(columns=["times", "ant1", "ant2", "u", "v", "vis_re", "vis_im",
                                "error"])
 
-    for group in data_all:
+    suffix = None
+    for possible in ['UU', 'UU--', 'UU---SIN']:
+        if possible in data_all.parnames:
+            suffix = possible
+            break
+    if suffix is None:
+        raise Exception("CHECK BASELINE COORDINATES SYSTEM!")
+
+    for group in tqdm(data_all):
         time = Time(group['DATE'] + group['_DATE'], format='jd')
         baseline = group["BASELINE"]
         ant1 = int(baseline//256)
         ant2 = int(baseline-ant1*256)
         if antennas_to_skip is not None:
             if ant1 in antennas_to_skip or ant2 in antennas_to_skip:
-                print("Skipping baseline {} - {}".format(ant1, ant2))
                 continue
-        bl_noise = noise[float(baseline)]/np.sqrt(2.)
+        bl_noise = noise[float(baseline)]
 
-        try:
-            u = group["UU"]
-            v = group["VV"]
-        except KeyError:
-            u = group["UU--"]
-            v = group["VV--"]
+        u = group[suffix]
+        v = group[suffix.replace("UU", "VV")]
         if abs(u) < 1.:
             u *= freq
             v *= freq
+
+        if uvrad_max_ml is not None:
+            r_uv = np.hypot(u, v)
+            if r_uv > uvrad_max_ml*10**6:
+                print("Skipping measurement with r_uv = {} Ml > uv_rad_max = {} Ml".format(int(r_uv/10**6), uvrad_max_ml))
+                continue
+
         # data = group["DATA"].squeeze()
         # IF, STOKES, COMPLEX
         data = group["DATA"][0, 0, IF, 0, STOKES, :]
@@ -278,15 +299,20 @@ def create_data_file(uvfits, outfile, STOKES, IF, step_amp=30, step_phase=30, us
         df["idx_phase_ant2"] = df["id_ant2"]
         df["times_phase"] = df["times"]
 
-    df = df[["times",
-             "ant1", "ant2",
-             "u", "v",
-             "vis_re", "vis_im", "error",
-             "times_amp", "idx_amp_ant1", "idx_amp_ant2",
-             "times_phase", "idx_phase_ant1", "idx_phase_ant2"]]
+    if include_gains_info:
+        df = df[["times",
+                 "ant1", "ant2",
+                 "u", "v",
+                 "vis_re", "vis_im", "error",
+                 "times_amp", "idx_amp_ant1", "idx_amp_ant2",
+                 "times_phase", "idx_phase_ant1", "idx_phase_ant2"]]
 
-    df["ant1"] = df["ant1"].astype(int)
-    df["ant2"] = df["ant2"].astype(int)
+        df["ant1"] = df["ant1"].astype(int)
+        df["ant2"] = df["ant2"].astype(int)
+        df.to_csv(outfile, sep=" ", index=False, header=True)
+    else:
+        df = df[["u", "v",
+                 "vis_re", "vis_im", "error"]]
     df.to_csv(outfile, sep=" ", index=False, header=True)
     return df
 
@@ -530,19 +556,22 @@ def radplot(df, fig=None, color=None, label=None, style="ap"):
 
 
 if __name__ == "__main__":
-    # uvfits_fname = "/home/ilya/github/time_machine/bsc/reals/uvfs/J2038+5119_S_2005_07_20_yyk_uve.fits"
-    # uvfits_fname = "/home/ilya/github/time_machine/bsc/reals/uvfs/BLLAC_RA_times.uvf"
-    uvfits_fname = "/home/ilya/github/time_machine/bsc/reals/uvfs/1502/1502_30s.uvf"
+    # uvfits_fname = "/home/ilya/github/time_machine/bsc/reals/uvfs/J2038+5119_S_2005_07_20_yyk_uvs.fits"
+    uvfits_fname = "/home/ilya/github/time_machine/bsc/reals/uvfs/RA_BLLac_scan.uvf"
+    # uvfits_fname = "/home/ilya/github/time_machine/bsc/reals/uvfs/1502/1502_30s.uvf"
+    # uvfits_fname = "/home/ilya/github/time_machine/bsc/reals/bllac/2200+420.u.2015_02_20_aver30s.uvf_raw_edt"
 
     # for STOKES in range(2):
     #     for IF in range(2):
     STOKES = 0
     IF = 0
-    # data_only_fname = "/home/ilya/github/time_machine/bsc/reals/RA/tests/BLLAC_STOKES_{}_IF_{}_amp120_phase60.txt".format(STOKES, IF)
-    data_only_fname = "/home/ilya/github/time_machine/bsc/reals/1502/1502_STOKES_{}_IF_{}_amp60_phase30.txt".format(STOKES, IF)
-    df = create_data_file(uvfits_fname, data_only_fname, STOKES=STOKES, IF=IF, step_amp=60, step_phase=30,
-                          use_scans_for_amplitudes=False, calculate_noise=False)
-                          # antennas_to_skip=(3, 8, 12, 13, 14, 16, 17))
+    data_only_fname = "/home/ilya/github/time_machine/bsc/reals/RA/tests/BLLAC_STOKES_{}_IF_{}_amp120_phase60_10ants_scan.txt".format(STOKES, IF)
+    # data_only_fname = "/home/ilya/github/time_machine/bsc/reals/bllac/bllac_2015_02_20_STOKES_{}_IF_{}_aver30s_amp60_phase30.txt".format(STOKES, IF)
+    # data_only_fname = "/home/ilya/github/time_machine/bsc/comparing/2038_SC_STOKES_{}_IF_{}_aver30s_amp30_phase30.txt".format(STOKES, IF)
+    df = create_data_file(uvfits_fname, data_only_fname, STOKES=STOKES, IF=IF, step_amp=120, step_phase=60,
+                          use_scans_for_amplitudes=False, calculate_noise=True, include_gains_info=True,
+                          time_average_sec=None, uvrad_max_ml=5000,
+                          antennas_to_skip=(8, 9, 10, 12, 13, 16))
     import sys
     sys.exit(0)
 # # Load data frame

@@ -3,10 +3,10 @@
 #include "RNG.h"
 
 
-DNestModel::DNestModel() : logjitter(0.0) {
+DNestModel::DNestModel() {
 
     sky_model = new SkyModel();
-    int ncomp = 2;
+    int ncomp = 7;
     for (int i=0; i<ncomp; i++) {
         auto* comp = new CGComponent();
         sky_model->add_component(comp);
@@ -46,7 +46,10 @@ DNestModel& DNestModel::operator=(const DNestModel& other) {
 
 
 void DNestModel::from_prior(DNest4::RNG &rng) {
-    logjitter = -4.0 + 1.0*rng.randn();
+    //logjitter = -4.0 + 1.0*rng.randn();
+    for (int i=0;i<Data::get_instance().n_antennas();i++) {
+        logjitter.push_back(-2.0 + 0.5*rng.randn());
+    }
     sky_model->from_prior(rng);
     gains->from_prior_hp_amp(rng);
     gains->from_prior_hp_phase(rng);
@@ -75,10 +78,14 @@ double DNestModel::perturb(DNest4::RNG &rng) {
     double u = rng.rand();
 
     // Perturb jitter
-    if(u <= 0.05) {
-        logH -= -0.5*pow((logjitter+4)/1.0, 2.0);
-        logjitter += 1.0*rng.randh();
-        logH += -0.5*pow((logjitter+4)/1.0, 2.0);
+    if(u <= 0.1) {
+        //logH -= -0.5*pow((logjitter+4)/1.0, 2.0);
+        //logjitter += 1.0*rng.randh();
+        //logH += -0.5*pow((logjitter+4)/1.0, 2.0);
+        int which_jitter = rng.rand_int(Data::get_instance().n_antennas());
+        logH -= -0.5*pow((logjitter[which_jitter]+2.0)/0.5, 2.0);
+        logjitter[which_jitter] += 0.5*rng.randh();
+        logH += -0.5*pow((logjitter[which_jitter]+2.0)/0.5, 2.0);
 
         // Pre-reject
         if(rng.rand() >= exp(logH)) {
@@ -91,7 +98,7 @@ double DNestModel::perturb(DNest4::RNG &rng) {
     }
 
     // Perturb SkyModel
-    else if(0.05 < u && u <= 0.25) {
+    else if(0.1 < u && u <= 0.4) {
         logH += sky_model->perturb(rng);
 
         // Pre-reject
@@ -157,12 +164,16 @@ void DNestModel::calculate_mu() {
     for (int k=0; k<ant_i.size(); k++) {
         auto ant_ik = antennas_map[ant_i[k]];
         auto ant_jk = antennas_map[ant_j[k]];
-        auto idx_ik = idx_amp_ant_i[k];
-        auto idx_jk = idx_amp_ant_j[k];
-        amp_ant_i[k] += gains->operator[](ant_ik)->get_amplitudes()[idx_ik];
-        amp_ant_j[k] += gains->operator[](ant_jk)->get_amplitudes()[idx_jk];
-        phase_ant_i[k] += gains->operator[](ant_ik)->get_phases()[idx_ik];
-        phase_ant_j[k] += gains->operator[](ant_jk)->get_phases()[idx_jk];
+
+        auto idx_ik_amp = idx_amp_ant_i[k];
+        auto idx_jk_amp = idx_amp_ant_j[k];
+        auto idx_ik_phase = idx_phase_ant_i[k];
+        auto idx_jk_phase = idx_phase_ant_j[k];
+
+        amp_ant_i[k] += gains->operator[](ant_ik)->get_amplitudes()[idx_ik_amp];
+        amp_ant_j[k] += gains->operator[](ant_jk)->get_amplitudes()[idx_jk_amp];
+        phase_ant_i[k] += gains->operator[](ant_ik)->get_phases()[idx_ik_phase];
+        phase_ant_j[k] += gains->operator[](ant_jk)->get_phases()[idx_jk_phase];
     }
 
     // SkyModel modified by gains
@@ -182,11 +193,18 @@ double DNestModel::log_likelihood() const {
     const std::valarray<double>& vis_imag = Data::get_instance().get_vis_imag();
     const std::valarray<double>& sigma = Data::get_instance().get_sigma();
 
+    const std::vector<int>& ant_i = Data::get_instance().get_ant_i();
+    const std::vector<int>& ant_j = Data::get_instance().get_ant_j();
+    std::valarray<double> logjitter_array (0.0, vis_real.size());
+    for (int i=0; i<vis_real.size(); i++) {
+        logjitter_array[i] = logjitter[ant_i[i]]+logjitter[ant_j[i]];
+    }
+
     // Variance
     const std::valarray<double> var = sigma*sigma;
     // Complex Gaussian sampling distribution
-    std::valarray<double> result = -log(2*M_PI*(var+exp(2.0*logjitter))) - 0.5*(pow(vis_real - mu_real_full, 2) +
-        pow(vis_imag - mu_imag_full, 2))/(var+exp(2.0*logjitter))   ;
+    std::valarray<double> result = -log(2*M_PI*(var+exp(2.0*logjitter_array))) - 0.5*(pow(vis_real - mu_real_full, 2) +
+        pow(vis_imag - mu_imag_full, 2))/(var+exp(2.0*logjitter_array))   ;
     double loglik = result.sum();
     return loglik;
 
@@ -194,7 +212,10 @@ double DNestModel::log_likelihood() const {
 
 
 void DNestModel::print(std::ostream &out) const {
-    out << logjitter << '\t';
+    //out << logjitter << '\t';
+    for (double i : logjitter) {
+        out << i << '\t';
+    }
     sky_model->print(out);
     gains->print(out);
 }
@@ -202,7 +223,12 @@ void DNestModel::print(std::ostream &out) const {
 
 std::string DNestModel::description() const {
     std::string descr;
-    descr += "logjitter ";
+    //descr += "logjitter ";
+    auto antennas_map_inv = Data::get_instance().get_antennas_map_inv();
+    // logjitter array must have the same length as number of antennas
+    for (int i = 0; i < Data::get_instance().n_antennas(); i++) {
+        descr += ("logjitter_" + std::to_string(antennas_map_inv[i]) + " ");
+    }
     descr += sky_model->description();
     descr += " ";
     descr += gains->description();

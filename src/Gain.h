@@ -18,9 +18,9 @@ std::valarray<double> make_normal_random(int number, DNest4::RNG& rng);
 class Gain {
     public:
         // Different times for amplitudes and phases of the gains ctor
-        Gain(std::set<double> times_amp, std::set<double> times_phase);
+        Gain(int ant, std::set<double> times_amp, std::set<double> times_phase);
         // The same times for amplitudes and phases ctor
-        explicit Gain(std::set<double> times);
+        Gain(int ant, std::set<double> times);
 
         //Gain(const Gain& other);
 
@@ -64,6 +64,8 @@ class Gain {
 
 
     private:
+        // Antenna number
+        int ant;
         // Times when gains are measured
         Eigen::VectorXd times_amp;
         Eigen::VectorXd times_phase;
