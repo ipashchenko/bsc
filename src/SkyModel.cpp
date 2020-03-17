@@ -131,6 +131,7 @@ std::pair<double, double> SkyModel::center_mass() const {
     double y_b = 0;
     double flux_b = 0;
     for (auto comp: components_) {
+        // get_flux() returns exp of log_flux
         if(comp->get_flux() > flux_b) {
             x_b = comp->get_x();
             y_b = comp->get_y();
@@ -147,7 +148,7 @@ std::pair<double, double> SkyModel::center_mass2() const {
     double flux = 0;
     double sum_flux = 0;
     for (auto comp: components_) {
-
+        // get_flux() returns exp of log_flux
         flux = comp->get_flux();
         x += comp->get_x()*flux;
         y += comp->get_y()*flux;
