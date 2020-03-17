@@ -88,121 +88,16 @@ void Gains::from_prior_phase_mean(DNest4::RNG &rng) {
 }
 
 
-void Gains::from_prior_v_amp(DNest4::RNG &rng) {
+void Gains::from_prior_amp(DNest4::RNG &rng) {
     for (auto i : antennas_changing_gain) {
-        gains[i]->from_prior_v_amp(rng);
+        gains[i]->from_prior_amp(rng);
     }
 }
 
 
-void Gains::from_prior_v_phase(DNest4::RNG &rng) {
+void Gains::from_prior_phase(DNest4::RNG &rng) {
     for (auto i : antennas_changing_gain) {
-        gains[i]->from_prior_v_phase(rng);
-    }
-}
-
-
-void Gains::from_prior_hp_amp(DNest4::RNG &rng) {
-    for (auto i : antennas_changing_gain) {
-        gains[i]->from_prior_hp_amp(rng);
-    }
-}
-
-
-void Gains::from_prior_hp_phase(DNest4::RNG &rng) {
-    for (auto i : antennas_changing_gain) {
-        gains[i]->from_prior_hp_phase(rng);
-    }
-}
-
-
-void Gains::calculate_C_amp() {
-    for (auto gain: gains) {
-        gain->calculate_C_amp();
-    }
-}
-
-
-void Gains::calculate_C_phase() {
-    for (auto gain: gains) {
-        gain->calculate_C_phase();
-    }
-}
-
-
-void Gains::calculate_L_amp() {
-    for (auto gain: gains) {
-        gain->calculate_L_amp();
-    }
-}
-
-
-void Gains::calculate_L_phase() {
-    for (auto gain: gains) {
-        gain->calculate_L_phase();
-    }
-}
-
-
-void Gains::calculate_amplitudes() {
-    for (auto gain: gains) {
-        gain->calculate_amplitudes();
-    }
-}
-
-
-void Gains::calculate_phases() {
-    for (auto gain: gains) {
-        gain->calculate_phases();
-    }
-}
-
-
-void Gains::print_amplitudes(std::ostream &out) const {
-    for (auto gain: gains) {
-        gain->print_amplitudes(out);
-    }
-}
-
-
-void Gains::print_phases(std::ostream &out) const {
-    for (auto gain: gains) {
-        gain->print_phases(out);
-    }
-}
-
-
-void Gains::print_times(std::ostream &out) const {
-    for (auto gain: gains) {
-        gain->print_times(out);
-    }
-}
-
-
-void Gains::print_hp(std::ostream &out) const {
-    for (auto gain: gains) {
-        gain->print_hp(out);
-    }
-}
-
-
-void Gains::print_v(std::ostream &out) const {
-    for (auto gain: gains) {
-        gain->print_v(out);
-    }
-}
-
-
-void Gains::print_C(std::ostream &out) const {
-    for (auto gain: gains) {
-        gain->print_C(out);
-    }
-}
-
-
-void Gains::print_L(std::ostream &out) const {
-    for (auto gain: gains) {
-        gain->print_L(out);
+        gains[i]->from_prior_phase(rng);
     }
 }
 

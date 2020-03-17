@@ -18,10 +18,6 @@ using Eigen::MatrixXd;
 
 Gain::Gain(int ant_, const std::set<double>& new_times_amp, const std::set<double>& new_times_phase) :
     ant(ant_),
-    logamp_amp(-3.0),
-    logamp_phase(-2.0),
-    logscale_amp(5.0),
-    logscale_phase(4.0),
     phase_mean(0.0),
     amp_mean(1.0)
 
@@ -38,26 +34,11 @@ Gain::Gain(int ant_, const std::set<double>& new_times_amp, const std::set<doubl
 
     amplitudes = std::valarray<double>(0.0, times_amp.size());
     phases = std::valarray<double>(0.0, times_amp.size());
-    v_amp = std::valarray<double>(0.0, times_amp.size());
-    v_phase = std::valarray<double>(0.0, times_phase.size());
-    C_amp = MatrixXd(times_amp.size(), times_amp.size());
-    C_phase = MatrixXd(times_phase.size(), times_phase.size());
-    L_amp = MatrixXd(times_amp.size(), times_amp.size());
-    L_phase = MatrixXd(times_phase.size(), times_phase.size());
-
-    calculate_C_amp();
-    calculate_C_phase();
-    calculate_L_amp();
-    calculate_L_phase();
     }
 
 
 Gain::Gain(int ant_, const std::set<double>& new_times) :
     ant(ant_),
-    logamp_amp(-3.0),
-    logamp_phase(-2.0),
-    logscale_amp(5.0),
-    logscale_phase(4.0),
     phase_mean(0.0),
     amp_mean(1.0)
 
@@ -71,17 +52,6 @@ Gain::Gain(int ant_, const std::set<double>& new_times) :
 
     amplitudes = std::valarray<double>(0.0, times_amp.size());
     phases = std::valarray<double>(0.0, times_amp.size());
-    v_amp = std::valarray<double>(0.0, times_amp.size());
-    v_phase = std::valarray<double>(0.0, times_phase.size());
-    C_amp = MatrixXd(times_amp.size(), times_amp.size());
-    C_phase = MatrixXd(times_phase.size(), times_phase.size());
-    L_amp = MatrixXd(times_amp.size(), times_amp.size());
-    L_phase = MatrixXd(times_phase.size(), times_phase.size());
-
-    calculate_C_amp();
-    calculate_C_phase();
-    calculate_L_amp();
-    calculate_L_phase();
     }
 
 
@@ -102,55 +72,13 @@ void Gain::print_times(std::ostream &out) const
 }
 
 
-void Gain::print_hp(std::ostream &out) const
-{
-    out << "For amplitude: logamplitude = " << logamp_amp << ", " << "logscale = " << logscale_amp << std::endl;
-    out << "For phase: logamplitude = " << logamp_phase << ", " << "logscale = " << logscale_phase << std::endl;
-
+void Gain::from_prior_amp(DNest4::RNG &rng) {
+    amplitudes = make_normal_random(size_amp(), 0.0, 0.05, rng);
 }
 
 
-void Gain::print_v(std::ostream &out) const
-{
-    out << "v amp = " << std::endl;
-    for (int i=0; i<v_amp.size(); i++) {
-        out << v_amp[i] << ", ";
-    }
-    out << std::endl;
-
-    out << "v_phase = " << std::endl;
-    for (int i=0; i<v_phase.size(); i++) {
-        out << v_phase[i] << ", ";
-    }
-    out << std::endl;
-}
-
-
-void Gain::print_C(std::ostream &out) const
-{
-    out << "C amp = " << std::endl;
-    out << C_amp << std::endl;
-    out << "C phase = " << std::endl;
-    out << C_phase << std::endl;
-}
-
-
-void Gain::print_L(std::ostream &out) const
-{
-    out << "L amp = " << std::endl;
-    out << L_amp << std::endl;
-    out << "L phase= " << std::endl;
-    out << L_phase << std::endl;
-}
-
-
-void Gain::from_prior_v_amp(DNest4::RNG &rng) {
-    v_amp = make_normal_random(size_amp(), rng);
-}
-
-
-void Gain::from_prior_v_phase(DNest4::RNG &rng) {
-    v_phase = make_normal_random(size_phase(), rng);
+void Gain::from_prior_phase(DNest4::RNG &rng) {
+    phases = make_normal_random(size_phase(), 0.0, 0.1, rng);
 }
 
 
@@ -165,56 +93,6 @@ void Gain::from_prior_phase_mean(DNest4::RNG& rng) {
 }
 
 
-void Gain::from_prior_hp_amp(DNest4::RNG& rng) {
-    //logamp_amp = -3.0 + 1.0*rng.randn();
-    //logscale_amp = 7.0 + 1.0*rng.randn();
-    logamp_amp = -3.0;
-    logscale_amp = 5.0;
-}
-
-
-void Gain::from_prior_hp_phase(DNest4::RNG& rng) {
-    //logamp_phase = -3.0 + 1.0*rng.randn();
-    //logscale_phase = 5.0 + 1.0*rng.randn();
-    logamp_phase = -2.0;
-    logscale_phase = 4.0;
-}
-
-
-void Gain::calculate_C_amp() {
-    Eigen::MatrixXd sqdist = - 2*times_amp*times_amp.transpose();
-    sqdist.rowwise() += times_amp.array().square().transpose().matrix();
-    sqdist.colwise() += times_amp.array().square().matrix();
-    sqdist *= (-0.5/(exp(2.0*logscale_amp)));
-    C_amp = exp(logamp_amp) * sqdist.array().exp();
-}
-
-
-void Gain::calculate_C_phase() {
-    Eigen::MatrixXd sqdist = - 2*times_phase*times_phase.transpose();
-    sqdist.rowwise() += times_phase.array().square().transpose().matrix();
-    sqdist.colwise() += times_phase.array().square().matrix();
-    sqdist *= (-0.5/(exp(2.0*logscale_phase)));
-    C_phase = exp(logamp_phase) * sqdist.array().exp();
-}
-
-
-void Gain::calculate_L_amp() {
-    // perform the Cholesky decomposition of covariance matrix
-    Eigen::LLT<Eigen::MatrixXd> cholesky = C_amp.llt();
-    // get the lower triangular matrix L
-    L_amp = cholesky.matrixL();
-}
-
-
-void Gain::calculate_L_phase() {
-    // perform the Cholesky decomposition of covariance matrix
-    Eigen::LLT<Eigen::MatrixXd> cholesky = C_phase.llt();
-    // get the lower triangular matrix L
-    L_phase = cholesky.matrixL();
-}
-
-
 int Gain::size_amp() {
     return times_amp.size();
 }
@@ -225,33 +103,15 @@ int Gain::size_phase() {
 }
 
 
-std::valarray<double>& Gain::get_amplitudes() {
-    return amplitudes;
+
+std::valarray<double> Gain::get_amplitudes() const {
+    return amplitudes + amp_mean;
 }
 
 
-std::valarray<double>& Gain::get_phases() {
-    return phases;
+std::valarray<double> Gain::get_phases() const {
+    return phases + phase_mean;
 }
-
-
-void Gain::calculate_amplitudes() {
-    // Convert std::valarray ``v_amp`` to Eigen::VectorXd
-    VectorXd v_amp_vec = Eigen::Map<Eigen::VectorXd, Eigen::Unaligned>(&v_amp[0], v_amp.size());
-    VectorXd amp = L_amp*v_amp_vec;
-    // Convert Eigen::VectorXd to std::valarray
-    amplitudes = amp_mean + std::valarray<double>(amp.data(), amp.size());
-}
-
-
-void Gain::calculate_phases() {
-    // Convert std::valarray ``v_amp`` to Eigen::VectorXd
-    VectorXd v_phase_vec = Eigen::Map<Eigen::VectorXd, Eigen::Unaligned>(&v_phase[0], v_phase.size());
-    VectorXd phase = L_phase*v_phase_vec;
-    // Convert Eigen::VectorXd to std::valarray
-    phases = phase_mean + std::valarray<double>(phase.data(), phase.size());
-}
-
 
 void Gain::print_amplitudes(std::ostream &out) const {
     out << "amplitudes = " << std::endl;
@@ -283,9 +143,9 @@ double Gain::perturb(DNest4::RNG &rng) {
             // Choose what value to perturb
             int which = rng.rand_int(amplitudes.size());
 
-            logH -= -0.5*pow(v_amp[which], 2.0);
-            v_amp[which] += rng.randn();
-            logH += -0.5*pow(v_amp[which], 2.0);
+            logH -= -0.5*pow(amplitudes[which]/0.05, 2.0);
+            amplitudes[which] += 0.05*rng.randn();
+            logH += -0.5*pow(amplitudes[which]/0.05, 2.0);
 
             // Pre-reject
             if(rng.rand() >= exp(logH)) {
@@ -304,7 +164,6 @@ double Gain::perturb(DNest4::RNG &rng) {
                 logH = 0.0;
         }
 
-        calculate_amplitudes();
     }
     // Phase GP
     else {
@@ -315,9 +174,9 @@ double Gain::perturb(DNest4::RNG &rng) {
             // Choose what value to perturb
             int which = rng.rand_int(phases.size());
 
-            logH -= -0.5*pow(v_phase[which], 2.0);
-            v_phase[which] += rng.randn();
-            logH += -0.5*pow(v_phase[which], 2.0);
+            logH -= -0.5*pow(phases[which]/0.1, 2.0);
+            phases[which] += 0.1*rng.randn();
+            logH += -0.5*pow(phases[which]/0.1, 2.0);
 
             // Pre-reject
             if (rng.rand() >= exp(logH)) {
@@ -335,8 +194,6 @@ double Gain::perturb(DNest4::RNG &rng) {
             } else
                 logH = 0.0;
         }
-
-        calculate_phases();
 
     }
 
@@ -375,23 +232,9 @@ void Gain::print(std::ostream &out) const {
 }
 
 
-std::valarray<double> make_normal_random(int number)
+std::valarray<double> make_normal_random(int number, double mu, double scale, DNest4::RNG& rng)
 {
-    std::random_device rd;
-    std::normal_distribution<double> normalDistr(0, 1);
-    std::minstd_rand generator(rd());
-    std::valarray<double> randNums(number);
-
-    for (int i=0; i<number; i++) {
-        randNums[i] = normalDistr(generator);
-    }
-    return randNums;
-}
-
-
-std::valarray<double> make_normal_random(int number, DNest4::RNG& rng)
-{
-    const DNest4::Gaussian gauss(0.0, 1.0);
+    const DNest4::Gaussian gauss(mu, scale);
     std::valarray<double> randNums(number);
     for (int i=0; i<number; i++) {
         randNums[i] = gauss.generate(rng);

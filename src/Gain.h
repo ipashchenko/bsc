@@ -12,7 +12,7 @@ using Eigen::MatrixXd;
 
 
 std::valarray<double> make_normal_random(int number);
-std::valarray<double> make_normal_random(int number, DNest4::RNG& rng);
+std::valarray<double> make_normal_random(int number, double mu, double scale, DNest4::RNG& rng);
 
 
 class Gain {
@@ -28,35 +28,18 @@ class Gain {
 
         void print(std::ostream &out) const;
         void print_times(std::ostream &out) const;
-        void print_hp(std::ostream &out) const;
-        void print_v(std::ostream &out) const;
-        void print_C(std::ostream &out) const;
-        void print_L(std::ostream &out) const;
-        // Generate from prior HP for amplitude and phase
-        void from_prior_hp_amp(DNest4::RNG& rng);
-        void from_prior_hp_phase(DNest4::RNG& rng);
-        // Generate from prior latent variables of amplitude and phase GP
-        void from_prior_v_amp(DNest4::RNG &rng);
-        void from_prior_v_phase(DNest4::RNG &rng);
+        void from_prior_amp(DNest4::RNG &rng);
+        void from_prior_phase(DNest4::RNG &rng);
         // Generate from prior mean of the GP phase
         void from_prior_phase_mean(DNest4::RNG& rng);
         void from_prior_amp_mean(DNest4::RNG& rng);
         // MH proposals returning logH
         double perturb(DNest4::RNG& rng);
-        // Calculate covariance matrixes using current hyperparameters of the gain amplitude and phase
-        void calculate_C_amp();
-        void calculate_C_phase();
-        // Calculate rotation matrixes using current covariance matrixes
-        void calculate_L_amp();
-        void calculate_L_phase();
         int size_amp();
         int size_phase();
 
-        // Calculate amplitudes and phases using current values of ``L`` and ``v``.
-        void calculate_amplitudes();
-        void calculate_phases();
-        std::valarray<double>& get_amplitudes();
-        std::valarray<double>& get_phases();
+        std::valarray<double> get_amplitudes() const;
+        std::valarray<double> get_phases() const;
 
         void print_amplitudes(std::ostream& out) const;
         void print_phases(std::ostream& out) const;
@@ -69,27 +52,13 @@ class Gain {
         // Times when gains are measured
         Eigen::VectorXd times_amp;
         Eigen::VectorXd times_phase;
-        // Hyperparameters of GP for amplitude and phase time dependence
-        double logamp_amp;
-        double logamp_phase;
-        double logscale_amp;
-        double logscale_phase;
-        // Latent variables ~ N(0, 1)
-        std::valarray<double> v_amp;
-        std::valarray<double> v_phase;
         // Amplitudes and phases of the gains
         std::valarray<double> amplitudes;
         std::valarray<double> phases;
-        // Mean of the amplitude GP
+        // Mean of the amplitude
         double amp_mean;
-        // Mean of the phase GP
+        // Mean of the phase
         double phase_mean;
-        // Covariance matrix given times and HP
-        MatrixXd C_amp;
-        MatrixXd C_phase;
-        // Choleski-decomposed C that rotates coefficients
-        MatrixXd L_amp;
-        MatrixXd L_phase;
 
 };
 

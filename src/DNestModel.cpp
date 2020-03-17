@@ -51,24 +51,15 @@ void DNestModel::from_prior(DNest4::RNG &rng) {
     //    logjitter.push_back(-2.0 + 0.5*rng.randn());
     //}
     sky_model->from_prior(rng);
-    gains->from_prior_hp_amp(rng);
-    gains->from_prior_hp_phase(rng);
     gains->from_prior_amp_mean(rng);
     gains->from_prior_phase_mean(rng);
-    gains->from_prior_v_amp(rng);
-    gains->from_prior_v_phase(rng);
-    // Calculate C, L matrixes for rotation of v
-    gains->calculate_C_amp();
-    gains->calculate_C_phase();
-    gains->calculate_L_amp();
-    gains->calculate_L_phase();
-    // Calculate latent v using calculated L and generated from prior v
-    gains->calculate_amplitudes();
-    gains->calculate_phases();
+    gains->from_prior_amp(rng);
+    gains->from_prior_phase(rng);
     // Calculate SkyModel
     calculate_sky_mu();
     // Calculate full model (SkyModel + gains)
     calculate_mu();
+
 }
 
 
@@ -174,6 +165,7 @@ void DNestModel::calculate_mu() {
         amp_ant_j[k] += gains->operator[](ant_jk)->get_amplitudes()[idx_jk_amp];
         phase_ant_i[k] += gains->operator[](ant_ik)->get_phases()[idx_ik_phase];
         phase_ant_j[k] += gains->operator[](ant_jk)->get_phases()[idx_jk_phase];
+
     }
 
     // SkyModel modified by gains
