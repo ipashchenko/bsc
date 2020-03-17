@@ -336,6 +336,6 @@ void DNestModel::shift_xy(std::pair<double, double> xy) {
 
 
 void DNestModel::recenter() {
-    auto xy = center_mass2();
+    auto xy = center_mass();
     shift_xy(xy);
 }
