@@ -16,6 +16,7 @@ class SkyModel {
         void add_component(Component* component);
         void ft(const std::valarray<double>& u, const std::valarray<double>& v);
         std::pair<double,double> center_mass() const;
+        std::pair<double,double> center_mass2() const;
         void shift_xy(std::pair<double, double> xy);
         void recenter();
         std::valarray<double> get_mu_real() const { return mu_real; }
