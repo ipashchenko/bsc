@@ -16,13 +16,13 @@ using Eigen::VectorXd;
 using Eigen::MatrixXd;
 
 
-Gain::Gain(int ant_, int IF_, std::set<double> new_times_amp, std::set<double> new_times_phase) :
+Gain::Gain(int ant_, int IF_, const std::set<double>& new_times_amp, const std::set<double>& new_times_phase) :
     ant(ant_),
     IF(IF_),
     logamp_amp(-3.0),
     logamp_phase(-2.0),
     logscale_amp(5.0),
-    logscale_phase(5.0),
+    logscale_phase(4.0),
     phase_mean(0.0),
     amp_mean(1.0)
 
@@ -53,7 +53,7 @@ Gain::Gain(int ant_, int IF_, std::set<double> new_times_amp, std::set<double> n
     }
 
 
-Gain::Gain(int ant_, int IF_, std::set<double> new_times) :
+Gain::Gain(int ant_, int IF_, const std::set<double>& new_times) :
     ant(ant_),
     IF(IF_),
     logamp_amp(-3.0),
@@ -120,7 +120,7 @@ void Gain::from_prior_hp_phase(DNest4::RNG& rng) {
     //logamp_phase = -3.0 + 1.0*rng.randn();
     //logscale_phase = 5.0 + 1.0*rng.randn();
     logamp_phase = -2.0;
-    logscale_phase = 5.0;
+    logscale_phase = 4.0;
 }
 
 
