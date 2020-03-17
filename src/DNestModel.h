@@ -30,6 +30,7 @@ class DNestModel {
         std::string description() const;
 
         std::pair<double,double> center_mass() const;
+        std::pair<double,double> center_mass2() const;
         void shift_xy(std::pair<double, double> xy);
         void recenter();
 

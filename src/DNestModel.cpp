@@ -285,7 +285,8 @@ std::pair<double, double> DNestModel::center_mass() const {
     double x_b = 0;
     double y_b = 0;
     double flux_b = 0;
-    for (auto comp : components.get_components()) {
+    for (const auto &comp : components.get_components()) {
+        // Flux is real flux - not log (log-Normal)
         if(comp[2] > flux_b) {
             x_b = comp[0];
             y_b = comp[1];
@@ -293,6 +294,22 @@ std::pair<double, double> DNestModel::center_mass() const {
         }
     }
     return std::make_pair<double, double>(reinterpret_cast<double &&>(x_b), reinterpret_cast<double &&>(y_b));
+}
+
+
+std::pair<double, double> DNestModel::center_mass2() const {
+    double x = 0;
+    double y = 0;
+    double flux = 0;
+    double sum_flux = 0;
+    for (const auto& comp : components.get_components()) {
+        // Flux is real flux - not log (log-Normal)
+        flux = comp[2];
+        x += comp[0]*flux;
+        y += comp[1]*flux;
+        sum_flux += flux;
+    }
+    return std::make_pair<double, double>(x/sum_flux, y/sum_flux);
 }
 
 
@@ -309,6 +326,6 @@ void DNestModel::shift_xy(std::pair<double, double> xy) {
 
 
 void DNestModel::recenter() {
-    auto xy = center_mass();
+    auto xy = center_mass2();
     shift_xy(xy);
 }
