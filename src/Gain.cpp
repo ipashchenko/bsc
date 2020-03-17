@@ -16,7 +16,7 @@ using Eigen::VectorXd;
 using Eigen::MatrixXd;
 
 
-Gain::Gain(int ant_, std::set<double> new_times_amp, std::set<double> new_times_phase) :
+Gain::Gain(int ant_, const std::set<double>& new_times_amp, const std::set<double>& new_times_phase) :
     ant(ant_),
     logamp_amp(-3.0),
     logamp_phase(-2.0),
@@ -52,7 +52,7 @@ Gain::Gain(int ant_, std::set<double> new_times_amp, std::set<double> new_times_
     }
 
 
-Gain::Gain(int ant_, std::set<double> new_times) :
+Gain::Gain(int ant_, const std::set<double>& new_times) :
     ant(ant_),
     logamp_amp(-3.0),
     logamp_phase(-2.0),
