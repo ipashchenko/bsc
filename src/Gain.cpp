@@ -211,9 +211,9 @@ std::string Gain::description() const {
     for (int i = 0; i < times_amp.size(); i++) {
         descr += ("amp" + std::to_string(i) + suffix + " ");
     }
-    descr += "phase_mean ";
+    descr += "phase_mean " + suffix + " ";
     for (int i = 0; i < times_phase.size(); i++) {
-        descr += ("amp" + std::to_string(i) + suffix + " ");
+        descr += ("phase" + std::to_string(i) + suffix + " ");
     }
     descr.pop_back();
     return descr;
