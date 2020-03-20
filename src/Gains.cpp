@@ -103,8 +103,8 @@ void Gains::from_prior_phase(DNest4::RNG &rng) {
 
 
 void Gains::sum() {
-    for (auto i : antennas_changing_gain) {
-        gains[i]->sum();
+    for (auto gain : gains) {
+        gain->sum();
     }
 }
 
