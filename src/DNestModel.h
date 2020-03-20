@@ -47,10 +47,10 @@ class DNestModel {
         std::vector<size_t > idx_jk_phase;
 
         // This runs ``ft`` method of SkyModel with (u, v) from Data and updates SkyModel predictions
-        void calculate_sky_mu();
+        void calculate_sky_mu(bool update);
         // This calculates full model (SkyModel with gains) and updates ``mu_real/imag_full``
         void calculate_mu();
-
+        size_t ft_calc_counter;
 };
 
 #endif //BSC__DNESTMODEL_H_

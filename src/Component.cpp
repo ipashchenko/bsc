@@ -90,12 +90,18 @@ void CGComponent::print(std::ostream &out) const
 
 
 void CGComponent::from_prior(DNest4::RNG &rng) {
-     // Normal diffuse prior for x & y
-     dx_ = 10.0*rng.randn();
-     dy_ = 10.0*rng.randn();
-     // Log-normal prior for flux and bmaj
-     logflux_ = -1.0 + 1.0*rng.randn();
-     logbmaj_ = -2.5 + 2.0*rng.randn();
+    //const std::valarray<double>& u = Data::get_instance().get_u();
+    //std::valarray<double> zero (0.0, u.size());
+    //mu_real = zero;
+    //mu_imag = zero;
+    //mu_real_old = zero;
+    //mu_imag_old = zero;
+    // Normal diffuse prior for x & y
+    dx_ = 10.0*rng.randn();
+    dy_ = 10.0*rng.randn();
+    // Log-normal prior for flux and bmaj
+    logflux_ = -1.0 + 1.0*rng.randn();
+    logbmaj_ = -2.5 + 2.0*rng.randn();
 }
 
 
@@ -107,18 +113,22 @@ double CGComponent::perturb(DNest4::RNG &rng) {
         log_H -= -0.5*pow(dx_/10.0, 2);
         dx_ += 10.0*rng.randh();
         log_H += -0.5*pow(dx_/10.0, 2);
+        is_position_updated = true;
     }
     else if(which%4 == 1)
     {
         log_H -= -0.5*pow(dy_/10.0, 2);
         dy_ += 10.0*rng.randh();
         log_H += -0.5*pow(dy_/10.0, 2);
+        is_position_updated = true;
+
     }
     else if(which%4 == 2)
     {
         log_H -= -0.5*pow((logflux_+1.0)/1.0, 2);
         logflux_ += 1.0*rng.randh();
         log_H += -0.5*pow((logflux_+1.0)/1.0, 2);
+
     }
     else
     {

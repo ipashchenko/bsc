@@ -8,6 +8,7 @@
 #include <iostream>
 #include "RNG.h"
 #include "Utils.h"
+#include "Data.h"
 
 const double mas_to_rad = 4.84813681109536e-09;
 
@@ -19,10 +20,32 @@ class Component {
         std::valarray<double> get_mu_real() const {
             return mu_real;
         }
-
         std::valarray<double> get_mu_imag() const {
             return mu_imag;
         }
+        std::valarray<double> get_mu_real_old() const {
+            return mu_real_old;
+        }
+        std::valarray<double> get_mu_imag_old() const {
+            return mu_imag_old;
+        }
+        void update_old() {
+            mu_real_old = mu_real;
+            mu_imag_old = mu_imag;
+        }
+        void phase_shift_mu_old(std::pair<double, double> shift) {
+            //std::cout << "In Component.phase_shift_old " << std::endl;
+            //std::cout << "mu_real_old[0]" << mu_real_old[0];
+            const std::valarray<double>& u = Data::get_instance().get_u();
+            const std::valarray<double>& v = Data::get_instance().get_v();
+
+            auto theta = 2*M_PI*mas_to_rad*(-u*shift.first-v*shift.second);
+            auto cos_theta = cos(theta);
+            auto sin_theta = sin(theta);
+            mu_real_old = cos_theta*mu_real_old - sin_theta*mu_imag_old;
+            mu_imag_old = cos_theta*mu_imag_old + sin_theta*mu_real_old;
+        }
+
         virtual void print(std::ostream& out) const = 0;
         virtual std::string description() const = 0;
         virtual void from_prior(DNest4::RNG& rng) = 0;
@@ -33,11 +56,16 @@ class Component {
         virtual void shift_xy(std::pair<double, double>) = 0;
         // See also https://softwareengineering.stackexchange.com/a/337565 for unique_ptr
         virtual Component* clone() = 0;
+        bool is_updated;
+        bool is_position_updated;
 
     protected:
         // SkyModel prediction
         std::valarray<double> mu_real;
         std::valarray<double> mu_imag;
+        // Previous contribution
+        std::valarray<double> mu_real_old;
+        std::valarray<double> mu_imag_old;
 };
 
 

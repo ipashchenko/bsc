@@ -3,7 +3,7 @@
 #include "RNG.h"
 
 
-DNestModel::DNestModel() : logjitter(0.0) {
+DNestModel::DNestModel() : logjitter(0.0), ft_calc_counter(0) {
 
     sky_model = new SkyModel();
     int ncomp = 7;
@@ -50,6 +50,7 @@ DNestModel::DNestModel(const DNestModel& other) {
     sky_model = new SkyModel(*other.sky_model);
     gains = new Gains(*other.gains);
     logjitter = other.logjitter;
+    ft_calc_counter = other.ft_calc_counter;
     mu_real_full = other.mu_real_full;
     mu_imag_full = other.mu_imag_full;
     ant_ik = other.ant_ik;
@@ -66,6 +67,7 @@ DNestModel& DNestModel::operator=(const DNestModel& other) {
         *(sky_model) = *(other.sky_model);
         *(gains) = *(other.gains);
         logjitter = other.logjitter;
+        ft_calc_counter = other.ft_calc_counter;
         mu_real_full = other.mu_real_full;
         mu_imag_full = other.mu_imag_full;
         ant_ik = other.ant_ik;
@@ -80,6 +82,7 @@ DNestModel& DNestModel::operator=(const DNestModel& other) {
 
 
 void DNestModel::from_prior(DNest4::RNG &rng) {
+    //std::cout << "From prior DNestModel" << std::endl;
     logjitter = -4.0 + 1.0*rng.randn();
     //for (int i=0;i<Data::get_instance().n_antennas();i++) {
     //    logjitter.push_back(-2.0 + 0.5*rng.randn());
@@ -91,7 +94,7 @@ void DNestModel::from_prior(DNest4::RNG &rng) {
     gains->from_prior_phase(rng);
     gains->sum();
     // Calculate SkyModel
-    calculate_sky_mu();
+    calculate_sky_mu(false);
     // Calculate full model (SkyModel + gains)
     calculate_mu();
 
@@ -135,7 +138,7 @@ double DNestModel::perturb(DNest4::RNG &rng) {
         }
         // This shouldn't be called in case of pre-rejection
         sky_model->recenter();
-        calculate_sky_mu();
+        calculate_sky_mu(true);
     }
     // Perturb Gains
     else {
@@ -154,12 +157,21 @@ double DNestModel::perturb(DNest4::RNG &rng) {
 }
 
 
-void DNestModel::calculate_sky_mu() {
+void DNestModel::calculate_sky_mu(bool update) {
     // Get (u, v)-points for calculating SkyModel predictions
     const std::valarray<double>& u = Data::get_instance().get_u();
     const std::valarray<double>& v = Data::get_instance().get_v();
     // FT (calculate SkyModel prediction)
-    sky_model->ft(u, v);
+    if(update && ft_calc_counter < 30) {
+        //std::cout << "Update" << std::endl;
+        sky_model->ft_update(u, v);
+        ft_calc_counter += 1;
+    } else {
+        //std::cout << "Full" << std::endl;
+        sky_model->ft(u, v);
+        ft_calc_counter = 0;
+    }
+    //std::cout << "COUNTER = " << ft_calc_counter << std::endl;
 }
 
 
