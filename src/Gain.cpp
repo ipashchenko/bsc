@@ -34,6 +34,8 @@ Gain::Gain(int ant_, const std::set<double>& new_times_amp, const std::set<doubl
 
     amplitudes = std::valarray<double>(0.0, times_amp.size());
     phases = std::valarray<double>(0.0, times_amp.size());
+    amplitudes_full = std::valarray<double>(0.0, times_amp.size());
+    phases_full = std::valarray<double>(0.0, times_amp.size());
     }
 
 
@@ -52,6 +54,8 @@ Gain::Gain(int ant_, const std::set<double>& new_times) :
 
     amplitudes = std::valarray<double>(0.0, times_amp.size());
     phases = std::valarray<double>(0.0, times_amp.size());
+    amplitudes_full = std::valarray<double>(0.0, times_amp.size());
+    phases_full = std::valarray<double>(0.0, times_amp.size());
     }
 
 
@@ -103,14 +107,18 @@ int Gain::size_phase() {
 }
 
 
+void Gain::sum() {
+    amplitudes_full = amplitudes + amp_mean;
+    phases_full = phases + phase_mean;
+}
 
-std::valarray<double> Gain::get_amplitudes() const {
-    return amplitudes + amp_mean;
+const std::valarray<double>& Gain::get_amplitudes() const {
+    return amplitudes_full;
 }
 
 
-std::valarray<double> Gain::get_phases() const {
-    return phases + phase_mean;
+const std::valarray<double>& Gain::get_phases() const {
+    return phases_full;
 }
 
 void Gain::print_amplitudes(std::ostream &out) const {

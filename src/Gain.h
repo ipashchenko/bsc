@@ -38,8 +38,9 @@ class Gain {
         int size_amp();
         int size_phase();
 
-        std::valarray<double> get_amplitudes() const;
-        std::valarray<double> get_phases() const;
+        const std::valarray<double>& get_amplitudes() const;
+        const std::valarray<double>& get_phases() const;
+        void sum();
 
         void print_amplitudes(std::ostream& out) const;
         void print_phases(std::ostream& out) const;
@@ -52,9 +53,12 @@ class Gain {
         // Times when gains are measured
         Eigen::VectorXd times_amp;
         Eigen::VectorXd times_phase;
-        // Amplitudes and phases of the gains
+        // Amplitudes and phases of the gains (around means)
         std::valarray<double> amplitudes;
         std::valarray<double> phases;
+        // Amplitudes and phases of the gains
+        std::valarray<double> amplitudes_full;
+        std::valarray<double> phases_full;
         // Mean of the amplitude
         double amp_mean;
         // Mean of the phase

@@ -17,6 +17,7 @@ class Gains {
         void from_prior_phase_mean(DNest4::RNG &rng);
         void from_prior_amp(DNest4::RNG &rng);
         void from_prior_phase(DNest4::RNG &rng);
+        void sum();
         // MH proposal that returns logH
         double perturb(DNest4::RNG& rng);
         int size() const;

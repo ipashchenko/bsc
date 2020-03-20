@@ -14,6 +14,28 @@ DNestModel::DNestModel() : logjitter(0.0) {
 
     int refant_ant_i = 1;
     gains = new Gains(Data::get_instance(), refant_ant_i);
+
+
+    // Mapping from antenna numbers (ant_i/j) to position in vector of antennas.
+    std::unordered_map<int, int>& antennas_map = Data::get_instance().get_antennas_map();
+
+    const std::vector<int>& idx_amp_ant_i = Data::get_instance().get_idx_amp_ant_i();
+    const std::vector<int>& idx_amp_ant_j = Data::get_instance().get_idx_amp_ant_j();
+    const std::vector<int>& idx_phase_ant_i = Data::get_instance().get_idx_phase_ant_i();
+    const std::vector<int>& idx_phase_ant_j = Data::get_instance().get_idx_phase_ant_j();
+
+    const std::vector<int>& ant_i = Data::get_instance().get_ant_i();
+    const std::vector<int>& ant_j = Data::get_instance().get_ant_j();
+
+    for (int k=0; k<ant_i.size(); k++) {
+        ant_ik.emplace_back(antennas_map[ant_i[k]]);
+        ant_jk.emplace_back(antennas_map[ant_j[k]]);
+
+        idx_ik_amp.emplace_back(idx_amp_ant_i[k]);
+        idx_jk_amp.emplace_back(idx_amp_ant_j[k]);
+        idx_ik_phase.emplace_back(idx_phase_ant_i[k]);
+        idx_jk_phase.emplace_back(idx_phase_ant_j[k]);
+    }
 }
 
 
@@ -30,6 +52,12 @@ DNestModel::DNestModel(const DNestModel& other) {
     logjitter = other.logjitter;
     mu_real_full = other.mu_real_full;
     mu_imag_full = other.mu_imag_full;
+    ant_ik = other.ant_ik;
+    ant_jk = other.ant_jk;
+    idx_ik_amp = other.idx_ik_amp;
+    idx_jk_amp = other.idx_jk_amp;
+    idx_ik_phase = other.idx_ik_phase;
+    idx_jk_phase = other.idx_jk_phase;
 }
 
 
@@ -40,6 +68,12 @@ DNestModel& DNestModel::operator=(const DNestModel& other) {
         logjitter = other.logjitter;
         mu_real_full = other.mu_real_full;
         mu_imag_full = other.mu_imag_full;
+        ant_ik = other.ant_ik;
+        ant_jk = other.ant_jk;
+        idx_ik_amp = other.idx_ik_amp;
+        idx_jk_amp = other.idx_jk_amp;
+        idx_ik_phase = other.idx_ik_phase;
+        idx_jk_phase = other.idx_jk_phase;
     }
     return *this;
 }
@@ -55,6 +89,7 @@ void DNestModel::from_prior(DNest4::RNG &rng) {
     gains->from_prior_phase_mean(rng);
     gains->from_prior_amp(rng);
     gains->from_prior_phase(rng);
+    gains->sum();
     // Calculate SkyModel
     calculate_sky_mu();
     // Calculate full model (SkyModel + gains)
@@ -130,16 +165,8 @@ void DNestModel::calculate_sky_mu() {
 
 void DNestModel::calculate_mu() {
 
-    // Mapping from antenna numbers (ant_i/j) to position in vector of antennas.
-    std::unordered_map<int, int>& antennas_map = Data::get_instance().get_antennas_map();
-
     // Grab antenna numbers and indexes in gain curves of individual visibility measurements
     const std::vector<int>& ant_i = Data::get_instance().get_ant_i();
-    const std::vector<int>& ant_j = Data::get_instance().get_ant_j();
-    const std::vector<int>& idx_amp_ant_i = Data::get_instance().get_idx_amp_ant_i();
-    const std::vector<int>& idx_amp_ant_j = Data::get_instance().get_idx_amp_ant_j();
-    const std::vector<int>& idx_phase_ant_i = Data::get_instance().get_idx_phase_ant_i();
-    const std::vector<int>& idx_phase_ant_j = Data::get_instance().get_idx_phase_ant_j();
 
     // SkyModel predictions
     std::valarray<double> sky_model_mu_real = sky_model->get_mu_real();
@@ -152,19 +179,12 @@ void DNestModel::calculate_mu() {
     std::valarray<double> phase_ant_i (0.0, ant_i.size());
     std::valarray<double> phase_ant_j (0.0, ant_i.size());
 
+
     for (int k=0; k<ant_i.size(); k++) {
-        auto ant_ik = antennas_map[ant_i[k]];
-        auto ant_jk = antennas_map[ant_j[k]];
-
-        auto idx_ik_amp = idx_amp_ant_i[k];
-        auto idx_jk_amp = idx_amp_ant_j[k];
-        auto idx_ik_phase = idx_phase_ant_i[k];
-        auto idx_jk_phase = idx_phase_ant_j[k];
-
-        amp_ant_i[k] += gains->operator[](ant_ik)->get_amplitudes()[idx_ik_amp];
-        amp_ant_j[k] += gains->operator[](ant_jk)->get_amplitudes()[idx_jk_amp];
-        phase_ant_i[k] += gains->operator[](ant_ik)->get_phases()[idx_ik_phase];
-        phase_ant_j[k] += gains->operator[](ant_jk)->get_phases()[idx_jk_phase];
+        amp_ant_i[k] += gains->operator[](ant_ik[k])->get_amplitudes()[idx_ik_amp[k]];
+        amp_ant_j[k] += gains->operator[](ant_jk[k])->get_amplitudes()[idx_jk_amp[k]];
+        phase_ant_i[k] += gains->operator[](ant_ik[k])->get_phases()[idx_ik_phase[k]];
+        phase_ant_j[k] += gains->operator[](ant_jk[k])->get_phases()[idx_jk_phase[k]];
 
     }
 

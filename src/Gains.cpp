@@ -102,6 +102,13 @@ void Gains::from_prior_phase(DNest4::RNG &rng) {
 }
 
 
+void Gains::sum() {
+    for (auto i : antennas_changing_gain) {
+        gains[i]->sum();
+    }
+}
+
+
 double Gains::perturb(DNest4::RNG& rng) {
     double logH = 0;
     int which = rng.rand_int(antennas_changing_gain.size());
