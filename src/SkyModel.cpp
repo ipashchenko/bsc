@@ -68,22 +68,43 @@ void SkyModel::phase_shift_mu(std::pair<double, double> shift) {
     mu_imag = cos_theta*mu_imag + sin_theta*mu_real;
 }
 
+void SkyModel::phase_shift_mu_res(std::pair<double, double> shift) {
+    //std::cout << "In SkyModel.phase_shift_mu ";
+    const std::valarray<double>& u = Data::get_instance().get_u();
+    const std::valarray<double>& v = Data::get_instance().get_v();
+
+    auto theta = 2*M_PI*mas_to_rad*(-u*shift.first-v*shift.second);
+    auto cos_theta = cos(theta);
+    auto sin_theta = sin(theta);
+    mu_res_real = cos_theta*mu_res_real - sin_theta*mu_res_imag;
+    mu_res_imag = cos_theta*mu_res_imag + sin_theta*mu_res_real;
+}
+
 void SkyModel::ft_update(const std::valarray<double>& u, const std::valarray<double>& v) {
-    // All component are already shifted => phase shift old visibilities
-    // Traverse components and sum differences of new and old predictions for updated components.
-    //std::cout << "idx brightest = " << idx_brightest << ", old = " << idx_brightest_old << std::endl;
+    // M0 = m + m0
+    // M1 = dm + dm1
+    // M1 = M0 + (dm - m) + (dm1 - m0)
+    // M0 -``SkyModel.mu_real``
+    // m - residual prediction = M0 - m0
+    // dm - shifted
+    // m0 - ``Component.mu_real_old``
+    // dm1 - result of ``Component.ft`` with shifted component coordinates
     for (auto comp : components_) {
         if(comp->is_updated) {
-            // After possible shift (if needed)
+            // After possible shift (if needed) - chenges ``Component.mu_real``, ... with possibly shifted values
             comp->ft(u, v);
-            comp->update_old();
             // New brightest component OR position of the brightest component has changed
             if(idx_brightest =! idx_brightest_old || components_[idx_brightest]->is_position_updated) {
                 //std::cout << "Last shift = " << last_shift.first << ", " << last_shift.second << std::endl;
-                // Phase shift current sky model prediction
-                phase_shift_mu(last_shift);
-                // Phase shift old prediction of component;
-                comp->phase_shift_mu_old(last_shift);
+                // Residual sky model visibility (old)
+                mu_res_real = mu_real - comp->get_mu_real_old();
+                mu_res_imag = mu_imag - comp->get_mu_imag_old();
+                // We need add to old sky model prediction ``shifted residuals - residuals``
+                mu_real -= mu_res_real;
+                mu_imag -= mu_res_imag;
+                phase_shift_mu_res(last_shift);
+                mu_real += mu_res_real;
+                mu_imag += mu_res_imag;
             }
             // TODO: Here I can add to ``mu_real``, ``mu_imag`` w/o declaring new arrays. However ``mu_real/imag`` must
             // be already initialized. They are initialized to zeros in ``SkyModel.from_prior`` and first
@@ -92,7 +113,6 @@ void SkyModel::ft_update(const std::valarray<double>& u, const std::valarray<dou
             mu_imag += (comp->get_mu_imag() - comp->get_mu_imag_old());
             comp->is_updated = false;
             comp->is_position_updated = false;
-            //comp->update_old();
             break;
         }
     }
@@ -109,7 +129,8 @@ void SkyModel::ft(const std::valarray<double>& u, const std::valarray<double>& v
         // TODO: Here I can add to ``mu_real``, ``mu_imag`` w/o declaring new arrays.
         mu_real += comp->get_mu_real();
         mu_imag += comp->get_mu_imag();
-        comp->update_old();
+        // Done in ``Component.ft``
+        //comp->update_old();
     }
 }
 
@@ -141,6 +162,8 @@ void SkyModel::from_prior(DNest4::RNG &rng) {
     std::valarray<double> zero (0.0, u.size());
     mu_real = zero;
     mu_imag = zero;
+    mu_res_real = zero;
+    mu_res_imag = zero;
 
     for (auto comp: components_) {
         comp->from_prior(rng);

@@ -66,6 +66,7 @@ CGComponent::CGComponent() : EGComponent() {
 
 void CGComponent::ft(std::valarray<double> u, std::valarray<double> v)
 {
+    update_old();
     std::valarray<double> theta;
     double c;
     std::valarray<double> ft;

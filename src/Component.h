@@ -33,6 +33,20 @@ class Component {
             mu_real_old = mu_real;
             mu_imag_old = mu_imag;
         }
+
+        void phase_shift_mu(std::pair<double, double> shift) {
+            //std::cout << "In Component.phase_shift_old " << std::endl;
+            //std::cout << "mu_real_old[0]" << mu_real_old[0];
+            const std::valarray<double>& u = Data::get_instance().get_u();
+            const std::valarray<double>& v = Data::get_instance().get_v();
+
+            auto theta = 2*M_PI*mas_to_rad*(-u*shift.first-v*shift.second);
+            auto cos_theta = cos(theta);
+            auto sin_theta = sin(theta);
+            mu_real = cos_theta*mu_real - sin_theta*mu_imag;
+            mu_imag = cos_theta*mu_imag + sin_theta*mu_real;
+        }
+
         void phase_shift_mu_old(std::pair<double, double> shift) {
             //std::cout << "In Component.phase_shift_old " << std::endl;
             //std::cout << "mu_real_old[0]" << mu_real_old[0];

@@ -20,8 +20,8 @@ class SkyModel {
         std::pair<double,double> center_mass2() const;
         void shift_xy(std::pair<double, double> xy);
         void recenter();
-        std::valarray<double> get_mu_real() const { return mu_real; }
-        std::valarray<double> get_mu_imag() const { return mu_imag; }
+        const std::valarray<double>& get_mu_real() const { return mu_real; }
+        const std::valarray<double>& get_mu_imag() const { return mu_imag; }
         size_t size() const;
         void print(std::ostream& out) const;
         std::string description() const;
@@ -31,6 +31,7 @@ class SkyModel {
         int get_n_components();
         void find_brightest();
         void phase_shift_mu(std::pair<double, double> shift);
+        void phase_shift_mu_res(std::pair<double, double> shift);
 
     private:
         std::vector<Component*> components_;
@@ -38,6 +39,9 @@ class SkyModel {
         // SkyModel prediction
         std::valarray<double> mu_real;
         std::valarray<double> mu_imag;
+        // Residula prediction
+        std::valarray<double> mu_res_real;
+        std::valarray<double> mu_res_imag;
         int idx_brightest{-1};
         int idx_brightest_old{-1};
         std::pair<double,double> last_shift{};
