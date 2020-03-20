@@ -113,6 +113,7 @@ double Gains::perturb(DNest4::RNG& rng) {
     double logH = 0;
     int which = rng.rand_int(antennas_changing_gain.size());
     logH += gains[antennas_changing_gain[which]]->perturb(rng);
+    gains[antennas_changing_gain[which]]->sum();
     return logH;
 }
 

@@ -231,11 +231,11 @@ std::string Gain::description() const {
 void Gain::print(std::ostream &out) const {
     out << amp_mean << '\t';
     for (int i = 0; i < times_amp.size(); i++) {
-        out << amplitudes[i] << '\t';
+        out << amplitudes_full[i] << '\t';
     }
     out << phase_mean << '\t';
     for (int i = 0; i < times_phase.size(); i++) {
-        out << phases[i] << '\t';
+        out << phases_full[i] << '\t';
     }
 }
 
