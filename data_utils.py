@@ -557,7 +557,8 @@ def radplot(df, fig=None, color=None, label=None, style="ap"):
 
 if __name__ == "__main__":
     # uvfits_fname = "/home/ilya/github/time_machine/bsc/reals/uvfs/J2038+5119_S_2005_07_20_yyk_uvs.fits"
-    uvfits_fname = "/home/ilya/github/time_machine/bsc/reals/uvfs/RA_BLLac_scan.uvf"
+    # uvfits_fname = "/home/ilya/github/time_machine/bsc/reals/uvfs/RA_BLLac_scan.uvf"
+    uvfits_fname = "/home/ilya/github/time_machine/bsc/reals/uvfs/1502+106.u.2009_12_10.uvf_raw_edt"
     # uvfits_fname = "/home/ilya/github/time_machine/bsc/reals/uvfs/1502/1502_30s.uvf"
     # uvfits_fname = "/home/ilya/github/time_machine/bsc/reals/bllac/2200+420.u.2015_02_20_aver30s.uvf_raw_edt"
 
@@ -565,13 +566,14 @@ if __name__ == "__main__":
     #     for IF in range(2):
     STOKES = 0
     IF = 0
-    data_only_fname = "/home/ilya/github/time_machine/bsc/reals/RA/tests/BLLAC_STOKES_{}_IF_{}_amp120_phase60_10ants_scan.txt".format(STOKES, IF)
+    data_only_fname = "/home/ilya/github/time_machine/bsc/reals/1502/1502_STOKES_{}_IF_{}_amp60_phase30_aver30.txt".format(STOKES, IF)
+    # data_only_fname = "/home/ilya/github/time_machine/bsc/reals/RA/tests/BLLAC_STOKES_{}_IF_{}_amp120_phase60_10ants_scan.txt".format(STOKES, IF)
     # data_only_fname = "/home/ilya/github/time_machine/bsc/reals/bllac/bllac_2015_02_20_STOKES_{}_IF_{}_aver30s_amp60_phase30.txt".format(STOKES, IF)
     # data_only_fname = "/home/ilya/github/time_machine/bsc/comparing/2038_SC_STOKES_{}_IF_{}_aver30s_amp30_phase30.txt".format(STOKES, IF)
-    df = create_data_file(uvfits_fname, data_only_fname, STOKES=STOKES, IF=IF, step_amp=120, step_phase=60,
+    df = create_data_file(uvfits_fname, data_only_fname, STOKES=STOKES, IF=IF, step_amp=60, step_phase=30,
                           use_scans_for_amplitudes=False, calculate_noise=True, include_gains_info=True,
-                          time_average_sec=None, uvrad_max_ml=5000,
-                          antennas_to_skip=(8, 9, 10, 12, 13, 16))
+                          time_average_sec=30)#, uvrad_max_ml=5000,
+                          # antennas_to_skip=(8, 9, 10, 12, 13, 16))
     import sys
     sys.exit(0)
 # # Load data frame
