@@ -33,9 +33,9 @@ Gain::Gain(int ant_, const std::set<double>& new_times_amp, const std::set<doubl
     times_phase = Eigen::Map<Eigen::VectorXd, Eigen::Unaligned>(times_phase_vec.data(), times_phase_vec.size());
 
     amplitudes = std::valarray<double>(0.0, times_amp.size());
-    phases = std::valarray<double>(0.0, times_amp.size());
+    phases = std::valarray<double>(0.0, times_phase.size());
     amplitudes_full = std::valarray<double>(0.0, times_amp.size());
-    phases_full = std::valarray<double>(0.0, times_amp.size());
+    phases_full = std::valarray<double>(0.0, times_phase.size());
     }
 
 
@@ -53,9 +53,9 @@ Gain::Gain(int ant_, const std::set<double>& new_times) :
     times_phase = Eigen::Map<Eigen::VectorXd, Eigen::Unaligned>(times_vec.data(), times_vec.size());
 
     amplitudes = std::valarray<double>(0.0, times_amp.size());
-    phases = std::valarray<double>(0.0, times_amp.size());
+    phases = std::valarray<double>(0.0, times_phase.size());
     amplitudes_full = std::valarray<double>(0.0, times_amp.size());
-    phases_full = std::valarray<double>(0.0, times_amp.size());
+    phases_full = std::valarray<double>(0.0, times_phase.size());
     }
 
 
@@ -108,8 +108,13 @@ int Gain::size_phase() {
 
 
 void Gain::sum() {
+    //std::cout << "Gain::sum" << std::endl;
+    //std::cout << "amplitudes[0] = " << amplitudes[0] << std::endl;
+    //std::cout << "amp_mean = " << amp_mean << std::endl;
     amplitudes_full = amplitudes + amp_mean;
     phases_full = phases + phase_mean;
+    //std::cout << "amplitudes_full[0] after = " << amplitudes_full[0] << std::endl;
+
 }
 
 const std::valarray<double>& Gain::get_amplitudes() const {
@@ -219,7 +224,7 @@ std::string Gain::description() const {
     for (int i = 0; i < times_amp.size(); i++) {
         descr += ("amp" + std::to_string(i) + suffix + " ");
     }
-    descr += "phase_mean " + suffix + " ";
+    descr += "phase_mean" + suffix + " ";
     for (int i = 0; i < times_phase.size(); i++) {
         descr += ("phase" + std::to_string(i) + suffix + " ");
     }
