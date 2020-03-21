@@ -66,6 +66,7 @@ CGComponent::CGComponent() : EGComponent() {
 
 void CGComponent::ft(std::valarray<double> u, std::valarray<double> v)
 {
+    update_old();
     std::valarray<double> theta;
     double c;
     std::valarray<double> ft;
@@ -107,12 +108,14 @@ double CGComponent::perturb(DNest4::RNG &rng) {
         log_H -= -0.5*pow(dx_/10.0, 2);
         dx_ += 10.0*rng.randh();
         log_H += -0.5*pow(dx_/10.0, 2);
+        is_position_updated = true;
     }
     else if(which%4 == 1)
     {
         log_H -= -0.5*pow(dy_/10.0, 2);
         dy_ += 10.0*rng.randh();
         log_H += -0.5*pow(dy_/10.0, 2);
+        is_position_updated = true;
     }
     else if(which%4 == 2)
     {

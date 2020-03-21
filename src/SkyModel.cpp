@@ -13,6 +13,8 @@ SkyModel::SkyModel(const SkyModel &other) {
     components_sizes_ = other.components_sizes_;
     mu_real = other.mu_real;
     mu_imag = other.mu_imag;
+    idx_brightest = other.idx_brightest;
+    idx_brightest_old = other.idx_brightest_old;
 }
 
 
@@ -33,6 +35,8 @@ SkyModel& SkyModel::operator=(const SkyModel& other) {
     components_sizes_ = other.components_sizes_;
     mu_real = other.mu_real;
     mu_imag = other.mu_imag;
+    idx_brightest = other.idx_brightest;
+    idx_brightest_old = other.idx_brightest_old;
     return *this;
 }
 
@@ -49,6 +53,71 @@ SkyModel::~SkyModel() {
 void SkyModel::add_component(Component *component) {
     components_.push_back(component);
     components_sizes_.push_back(component->size());
+}
+
+
+void SkyModel::phase_shift_mu(std::pair<double, double> shift) {
+    //std::cout << "In SkyModel.phase_shift_mu ";
+    const std::valarray<double>& u = Data::get_instance().get_u();
+    const std::valarray<double>& v = Data::get_instance().get_v();
+
+    auto theta = 2*M_PI*mas_to_rad*(-u*shift.first-v*shift.second);
+    auto cos_theta = cos(theta);
+    auto sin_theta = sin(theta);
+    mu_real = cos_theta*mu_real - sin_theta*mu_imag;
+    mu_imag = cos_theta*mu_imag + sin_theta*mu_real;
+}
+
+
+void SkyModel::phase_shift_mu_res(std::pair<double, double> shift) {
+    //std::cout << "In SkyModel.phase_shift_mu ";
+    const std::valarray<double>& u = Data::get_instance().get_u();
+    const std::valarray<double>& v = Data::get_instance().get_v();
+
+    auto theta = 2*M_PI*mas_to_rad*(-u*shift.first-v*shift.second);
+    auto cos_theta = cos(theta);
+    auto sin_theta = sin(theta);
+    mu_res_real = cos_theta*mu_res_real - sin_theta*mu_res_imag;
+    mu_res_imag = cos_theta*mu_res_imag + sin_theta*mu_res_real;
+}
+
+
+void SkyModel::ft_update(const std::valarray<double>& u, const std::valarray<double>& v) {
+    // M0 = m + m0
+    // M1 = dm + dm1
+    // M1 = M0 + (dm - m) + (dm1 - m0)
+    // M0 -``SkyModel.mu_real``
+    // m - residual prediction = M0 - m0
+    // dm - shifted
+    // m0 - ``Component.mu_real_old``
+    // dm1 - result of ``Component.ft`` with shifted component coordinates
+    for (auto comp : components_) {
+        if(comp->is_updated) {
+            // After possible shift (if needed) - chenges ``Component.mu_real``, ... with possibly shifted values
+            comp->ft(u, v);
+            // New brightest component OR position of the brightest component has changed
+            if(idx_brightest =! idx_brightest_old || components_[idx_brightest]->is_position_updated) {
+                //std::cout << "Last shift = " << last_shift.first << ", " << last_shift.second << std::endl;
+                // Residual sky model visibility (old)
+                mu_res_real = mu_real - comp->get_mu_real_old();
+                mu_res_imag = mu_imag - comp->get_mu_imag_old();
+                // We need add to old sky model prediction ``shifted residuals - residuals``
+                mu_real -= mu_res_real;
+                mu_imag -= mu_res_imag;
+                phase_shift_mu_res(last_shift);
+                mu_real += mu_res_real;
+                mu_imag += mu_res_imag;
+            }
+            // TODO: Here I can add to ``mu_real``, ``mu_imag`` w/o declaring new arrays. However ``mu_real/imag`` must
+            // be already initialized. They are initialized to zeros in ``SkyModel.from_prior`` and first
+            // ``ft_from_all`` fills them with predictions.
+            mu_real += (comp->get_mu_real() - comp->get_mu_real_old());
+            mu_imag += (comp->get_mu_imag() - comp->get_mu_imag_old());
+            comp->is_updated = false;
+            comp->is_position_updated = false;
+            break;
+        }
+    }
 }
 
 
@@ -93,18 +162,21 @@ void SkyModel::from_prior(DNest4::RNG &rng) {
     std::valarray<double> zero (0.0, u.size());
     mu_real = zero;
     mu_imag = zero;
+    mu_res_real = zero;
+    mu_res_imag = zero;
 
     for (auto comp: components_) {
         comp->from_prior(rng);
+        comp->is_updated = true;
     }
-    // Move center of mass to the phase center
-    auto xy = center_mass();
-    shift_xy(xy);
+    // Find brightest, move brightest component to the phase center if necessary
+    recenter();
 }
 
 
 double SkyModel::perturb(DNest4::RNG &rng) {
     int which = rng.rand_int(get_n_components());
+    components_[which]->is_updated = true;
     return components_[which]->perturb(rng);
 }
 
@@ -126,19 +198,25 @@ std::string SkyModel::description() const {
 }
 
 
-std::pair<double, double> SkyModel::center_mass() const {
-    double x_b = 0;
-    double y_b = 0;
+void SkyModel::find_brightest() {
+    //std::cout << "Finding brightest component" << std::endl;
+    if(idx_brightest != -1) {
+        idx_brightest_old = idx_brightest;
+    }
     double flux_b = 0;
-    for (auto comp: components_) {
+    for(int i=0; i<components_.size(); i++) {
         // get_flux() returns exp of log_flux
-        if(comp->get_flux() > flux_b) {
-            x_b = comp->get_x();
-            y_b = comp->get_y();
-            flux_b = comp->get_flux();
+        if(components_[i]->get_flux() > flux_b) {
+            flux_b = components_[i]->get_flux();
+            idx_brightest = i;
         }
     }
-    return std::make_pair<double, double>(reinterpret_cast<double &&>(x_b), reinterpret_cast<double &&>(y_b));
+}
+
+
+std::pair<double, double> SkyModel::center_mass() const {
+    auto comp = components_[idx_brightest];
+    return std::make_pair<double, double>(comp->get_x(), comp->get_y());
 }
 
 
@@ -167,8 +245,11 @@ void SkyModel::shift_xy(std::pair<double, double> xy) {
 
 
 void SkyModel::recenter() {
-    auto xy = center_mass();
-    shift_xy(xy);
+    find_brightest();
+    // Shift phase center only if the brightest component has changed OR its position has changd
+    if (idx_brightest != idx_brightest_old || components_[idx_brightest]->is_position_updated) {
+        auto xy = center_mass();
+        shift_xy(xy);
+        last_shift = xy;
+    }
 }
-
-

@@ -37,7 +37,7 @@ Gain::Gain(int ant_, const std::set<double>& new_times_amp, const std::set<doubl
     times_phase = Eigen::Map<Eigen::VectorXd, Eigen::Unaligned>(times_phase_vec.data(), times_phase_vec.size());
 
     amplitudes = std::valarray<double>(0.0, times_amp.size());
-    phases = std::valarray<double>(0.0, times_amp.size());
+    phases = std::valarray<double>(0.0, times_phase.size());
     v_amp = std::valarray<double>(0.0, times_amp.size());
     v_phase = std::valarray<double>(0.0, times_phase.size());
     C_amp = MatrixXd(times_amp.size(), times_amp.size());
@@ -70,7 +70,7 @@ Gain::Gain(int ant_, const std::set<double>& new_times) :
     times_phase = Eigen::Map<Eigen::VectorXd, Eigen::Unaligned>(times_vec.data(), times_vec.size());
 
     amplitudes = std::valarray<double>(0.0, times_amp.size());
-    phases = std::valarray<double>(0.0, times_amp.size());
+    phases = std::valarray<double>(0.0, times_phase.size());
     v_amp = std::valarray<double>(0.0, times_amp.size());
     v_phase = std::valarray<double>(0.0, times_phase.size());
     C_amp = MatrixXd(times_amp.size(), times_amp.size());
@@ -354,9 +354,9 @@ std::string Gain::description() const {
     for (int i = 0; i < times_amp.size(); i++) {
         descr += ("amp" + std::to_string(i) + suffix + " ");
     }
-    descr += "phase_mean ";
+    descr += "phase_mean" + suffix + " ";
     for (int i = 0; i < times_phase.size(); i++) {
-        descr += ("amp" + std::to_string(i) + suffix + " ");
+        descr += ("phase" + std::to_string(i) + suffix + " ");
     }
     descr.pop_back();
     return descr;
