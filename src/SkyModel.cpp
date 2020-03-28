@@ -130,7 +130,7 @@ std::pair<double, double> SkyModel::center_mass() const {
     double x_b = 0;
     double y_b = 0;
     double flux_b = 0;
-    for (auto comp: components_) {
+    for (const auto &comp: components_) {
         if(comp->get_flux() > flux_b) {
             x_b = comp->get_x();
             y_b = comp->get_y();

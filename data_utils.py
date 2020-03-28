@@ -296,7 +296,7 @@ def create_data_file(uvfits, outfile, STOKES, IF, step_amp=30, step_phase=30, us
     return df
 
 
-def create_data_file_many_IFs(uvfits, outfile, STOKES, step_amp=30, step_phase=30, use_scans_for_amplitudes=False,
+def create_data_file_many_IFs(uvfits, outfile, STOKES, IF_slice, step_amp=30, step_phase=30, use_scans_for_amplitudes=False,
                               calculate_noise=False, antennas_to_skip=None):
     """
     :param uvfits:
@@ -352,7 +352,7 @@ def create_data_file_many_IFs(uvfits, outfile, STOKES, step_amp=30, step_phase=3
         bl_noise = noise[float(baseline)]
 
         u_sec = group[suffix]
-        v_sec = group[suffix]
+        v_sec = group[suffix.replace("UU", "VV")]
         if u_sec > 100.:
             raise Exception("UV not in light seconds!")
 
@@ -360,7 +360,7 @@ def create_data_file_many_IFs(uvfits, outfile, STOKES, step_amp=30, step_phase=3
         data = group["DATA"][0, 0, :, 0, :, :]
         n_IF = data.shape[0]
         n_stokes = data.shape[1]
-        for i_IF in range(n_IF):
+        for i_IF in range(n_IF)[IF_slice]:
 
             u = u_sec*if_freqs[i_IF]
             v = v_sec*if_freqs[i_IF]
@@ -786,7 +786,8 @@ if __name__ == "__main__":
     # uvfits_fname = "/home/ilya/github/time_machine/bsc/reals/uvfs/BLLAC_RA_times.uvf"
     # uvfits_fname = "/home/ilya/github/time_machine/bsc/reals/uvfs/1502/1502_30s.uvf"
     # uvfits_fname = "/home/ilya/github/time_machine/bsc/reals/J0005/J0005_30s.uvf"
-    uvfits_fname = "/home/ilya/Downloads/2200+420.u.2015_02_20.uvf"
+    # uvfits_fname = "/home/ilya/Downloads/2200+420.u.2015_02_20.uvf"
+    uvfits_fname = "/home/ilya/github/time_machine/bsc/reals/uvfs/0716/0716+714.u.2013_07_30.uvf_raw_edt"
     # uvfits_fname = "/home/ilya/github/time_machine/bsc/reals/J0005/J0005_30s.uvf"
 
 
@@ -804,11 +805,12 @@ if __name__ == "__main__":
     # IF = 0
     # data_only_fname = "/home/ilya/github/time_machine/bsc/reals/RA/tests/BLLAC_STOKES_{}_IF_{}_amp120_phase60.txt".format(STOKES, IF)
     # data_only_fname = "/home/ilya/github/time_machine/bsc/reals/1502/1502_STOKES_{}_IF_{}_amp60_phase30.txt".format(STOKES, IF)
-    data_only_fname = "/home/ilya/github/time_machine/bsc/reals/bllac/bllac_amp30_phase30_aver30_8IFs.txt"
+    # data_only_fname = "/home/ilya/github/time_machine/bsc/reals/bllac/bllac_amp30_phase30_aver30_8IFs.txt"
+    data_only_fname = "/home/ilya/github/time_machine/bsc/reals/0716/0716_STOKES_RR_IF_0_3_amp30_phase30_aver30.txt"
     # df = create_data_file(uvfits_fname, data_only_fname, STOKES=STOKES, IF=IF, step_amp=60, step_phase=30,
     #                       use_scans_for_amplitudes=False, calculate_noise=False)
                           # antennas_to_skip=(3, 8, 12, 13, 14, 16, 17))
-    df = create_data_file_many_IFs(uvfits_fname, data_only_fname, STOKES=0, step_amp=30, step_phase=30,
+    df = create_data_file_many_IFs(uvfits_fname, data_only_fname, STOKES=0, IF_slice=slice(0, 4), step_amp=30, step_phase=30,
                                    calculate_noise=True)
     import sys
     sys.exit(0)
